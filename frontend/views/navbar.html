@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>El Tremendo Gym - Panel de Navegación</title>
+    <meta name="description"
+        content="Sistema de navegación centralizado para El Tremendo Gym: Gimnasio, Clases Grupales, Canchas Deportivas, Pagos y Facturación, Usuarios y Perfil.">
+
+    <!-- Google Fonts: Bebas Neue para títulos de impacto, Plus Jakarta Sans para lectura moderna -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="../public/css/style.css">
+</head>
+
+<body>
+
+    <header class="tremendo-header" id="tremendo-header">
+        <div class="nav-container">
+
+            <!-- 1. Marca / Logotipo -->
+            <a href="#gym" class="nav-brand" id="brand-link" data-target="panel-gym"
+                aria-label="El Tremendo Gym Inicio">
+                <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 5v14M18 5v14M2 9h4M18 9h4M2 15h4M18 15h4M6 12h12" />
+                </svg>
+                <span class="brand-text">EL TREMENDO<span class="highlight"> GYM</span></span>
+            </a>
+
+            <!-- 2. Menú de Navegación Principal (Escritorio) -->
+            <nav class="nav-menu" aria-label="Navegación principal">
+                <ul class="nav-links">
+
+                    <!-- Enlace: GYM -->
+                    <li class="nav-item">
+                        <a href="#gym" class="nav-link active" data-target="panel-gym" id="nav-gym">
+                            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M6 5v14M18 5v14M2 9h4M18 9h4M2 15h4M18 15h4M6 12h12" />
+                            </svg>
+                            <span>Gym</span>
+
+                        </a>
+                    </li>
+
+                    <!-- Enlace: CLASES GRUPALES -->
+                    <li class="nav-item">
+                        <a href="#clases" class="nav-link" data-target="panel-clases" id="nav-clases">
+                            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                <line x1="16" y1="2" x2="16" y2="6" />
+                                <line x1="8" y1="2" x2="8" y2="6" />
+                                <line x1="3" y1="10" x2="21" y2="10" />
+                                <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01" />
+                            </svg>
+                            <span>Clases Grupales</span>
+                        </a>
+                    </li>
+
+                    <!-- Enlace: CANCHAS DEPORTIVAS -->
+                    <li class="nav-item">
+                        <a href="#canchas" class="nav-link" data-target="panel-canchas" id="nav-canchas">
+                            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10" />
+                                <line x1="2" y1="12" x2="22" y2="12" />
+                                <path
+                                    d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                            </svg>
+                            <span>Canchas Deportivas</span>
+                        </a>
+                    </li>
+
+                    <!-- Enlace: PAGOS Y FACTURACIÓN -->
+                    <li class="nav-item">
+                        <a href="#pagos" class="nav-link" data-target="panel-pagos" id="nav-pagos">
+                            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+                                <line x1="1" y1="10" x2="23" y2="10" />
+                                <path d="M6 15h2M10 15h4" />
+                            </svg>
+                            <span>Pagos y Facturación</span>
+                        </a>
+                    </li>
+
+                    <!-- Enlace: USUARIOS -->
+                    <li class="nav-item">
+                        <a href="#usuarios" class="nav-link" data-target="panel-usuarios" id="nav-usuarios">
+                            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                                <circle cx="9" cy="7" r="4" />
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                            </svg>
+                            <span>Usuarios</span>
+                        </a>
+                    </li>
+
+                </ul>
+            </nav>
+
+
+            <!-- Menú Desplegable: PERFIL -->
+            <div class="profile-menu" id="profile-menu">
+                <button type="button" class="profile-trigger" id="profile-trigger" aria-haspopup="true"
+                    aria-expanded="false" aria-label="Abrir menú de usuario y perfil">
+                    <div class="profile-avatar-wrap">
+                        <div class="profile-avatar">Gym</div>
+                        <span class="online-indicator" title="Conectado"></span>
+                    </div>
+                    <div class="profile-meta">
+                        <span class="profile-name">Totalmente no soy el Mati</span>
+                        <span class="profile-role">El Tremendo Plan</span>
+                    </div>
+                    <svg class="profile-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                </button>
+            </div>
+
+        </div>
+    </header>
+
+    <div class="demo-page-wrapper">
+        <main class="demo-content-container">
+
+            <div class="demo-hero">
+
+                <h1 class="demo-hero-title">EL TREMENDO <span class="highlight"> GYM</span></h1>
+                <p class="demo-hero-desc">Explora las distintas secciones del gimnasio directamente desde la barra de
+                    navegación. Cada vista mantiene el diseño estético de alta energía y contraste neón.</p>
+            </div>
+
+
+
+        </main>
+    </div>
+
+
+</body>
+
+</html>
