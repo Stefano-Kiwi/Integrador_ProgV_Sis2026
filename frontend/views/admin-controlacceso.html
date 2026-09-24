@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitZone Panel - Control de Acceso</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Enlace al CSS global -->
+    <link rel="stylesheet" href="../public/css/admin.css">
+
+    <!-- CSS específico solo para la vista de Acceso -->
+    <style>
+        /* Perfil del usuario en el sidebar */
+        .user-profile { display: flex; align-items: center; gap: 1rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); margin-top: auto; }
+        .user-avatar { width: 40px; height: 40px; border-radius: 50%; background-color: var(--bg-card); background-image: url('../../src/assets/gerardo.jpg'); background-size: cover; }
+        .user-info h4 { font-size: 0.9rem; margin-bottom: 0.1rem; }
+        .user-info p { font-size: 0.75rem; color: var(--text-muted); }
+
+        /* Layout de la vista: Escáner (izq) y Registro (der) */
+        .access-layout {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 1.5rem;
+            align-items: start;
+        }
+
+        /* --- ZONA IZQUIERDA: AFORO Y ESCÁNER --- */
+        .scanner-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Tarjeta de Aforo */
+        .aforo-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--bg-sidebar);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem 2rem;
+        }
+        .aforo-info h2 { font-size: 1.25rem; margin-bottom: 0.25rem; }
+        .aforo-info p { font-size: 0.85rem; color: var(--text-muted); }
+        
+        .aforo-stats { display: flex; align-items: center; gap: 1rem; }
+        .aforo-numbers { font-size: 2.5rem; font-weight: 800; color: var(--accent-orange); letter-spacing: -1px; }
+        .badge-aforo { 
+            background-color: rgba(255, 176, 32, 0.15); 
+            color: var(--accent-yellow); 
+            padding: 0.4rem 0.85rem; 
+            border-radius: 20px; 
+            font-size: 0.85rem; 
+            font-weight: 700; 
+            border: 1px solid rgba(255, 176, 32, 0.3);
+        }
+
+        /* Tarjeta Central: Escáner QR */
+        .qr-card {
+            background-color: var(--bg-sidebar);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 3rem 2rem 2rem 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2.5rem;
+            min-height: 500px;
+        }
+        
+        .qr-title { font-size: 1.15rem; font-weight: 700; }
+        
+        /* Contenedor del QR con el Rickroll */
+        .qr-container {
+            width: 220px;
+            height: 220px;
+            background-color: #fff;
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            box-shadow: 0 0 40px rgba(255, 255, 255, 0.05);
+        }
+        .qr-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+
+        /* Banner de Acceso Autorizado */
+        .success-banner {
+            width: 100%;
+            background-color: rgba(0, 255, 135, 0.05);
+            border: 1px solid var(--accent-green);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .banner-title { color: var(--accent-green); font-weight: 800; font-size: 1.05rem; letter-spacing: 0.5px; }
+        .banner-subtitle { color: var(--text-pure); font-size: 0.9rem; }
+
+        /* --- ZONA DERECHA: REGISTRO RECIENTE --- */
+        .history-section {
+            background-color: var(--bg-sidebar);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .history-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; }
+
+        .history-list { display: flex; flex-direction: column; gap: 0.75rem; }
+        
+        .history-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background-color: var(--bg-card);
+            padding: 1rem;
+            border-radius: var(--radius-md);
+            border: 1px solid transparent;
+            transition: 0.2s;
+        }
+        .history-item:hover { border-color: var(--border-color); }
+        
+        .history-avatar {
+            width: 42px; height: 42px;
+            border-radius: 50%;
+            background-color: var(--border-color);
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        .history-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+        .history-details { flex-grow: 1; display: flex; flex-direction: column; gap: 0.2rem; }
+        .history-name { font-size: 0.9rem; font-weight: 700; color: var(--text-pure); }
+        .history-status { font-size: 0.75rem; }
+        .status-ok { color: var(--accent-green); }
+        .status-fail { color: var(--accent-red); }
+
+        .history-time { font-size: 0.75rem; color: var(--text-muted); }
+
+    </style>
+</head>
+<body>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="brand">
+            <svg viewBox="0 0 24 24" fill="var(--accent-orange)" style="width: 24px;">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
+            <div class="brand-title">FITZONE <span>PANEL</span></div>
+        </div>
+        <div class="brand-subtitle">Sedes autorizadas: 25+</div>
+
+        <nav class="nav-menu">
+            <a href="AdmDash.html" class="nav-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+                Dashboard
+            </a>
+            <a href="Socios.html" class="nav-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                Socios
+            </a>
+            <a href="Clases.html" class="nav-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                Clases Grupales
+            </a>
+            <a href="Canchas.html" class="nav-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+                Canchas Deportivas
+            </a>
+            <!-- La clase "active" pasa a Control de Acceso -->
+            <a href="#" class="nav-link active">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                Control de Acceso
+            </a>
+            <a href="#" class="nav-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                Reportes & Analíticas
+            </a>
+        </nav>
+
+        <div class="user-profile">
+            <div class="user-avatar"></div>
+            <div class="user-info">
+                <h4>Gerardo Ruiz</h4>
+                <p>Gerente Central</p>
+            </div>
+        </div>
+    </aside>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="main-content">
+        
+        <!-- TOPBAR -->
+        <header class="topbar">
+            <div class="header-titles">
+                <h1>Molinete de Acceso</h1>
+                <p>Validación en tiempo real y estadísticas de aforo de la sede</p>
+            </div>
+            <div class="header-controls">
+                <button class="btn-secondary" style="display:flex; align-items:center; gap:0.5rem;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-red)" stroke-width="2" style="width:14px;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                    Todas las Sedes (25) ⌄
+                </button>
+                <button class="btn-secondary" style="padding: 0.75rem 1rem;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                </button>
+                <button class="btn-secondary" style="display:flex; align-items:center; gap:0.5rem;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    Hoy, 14 de Octubre
+                </button>
+            </div>
+        </header>
+
+        <!-- LAYOUT: Escáner y Registro -->
+        <div class="access-layout">
+            
+            <!-- ESCÁNER Y AFORO -->
+            <section class="scanner-section">
+                
+                <!-- Aforo en Tiempo Real -->
+                <div class="aforo-card">
+                    <div class="aforo-info">
+                        <h2>Aforo en Tiempo Real (Las Condes)</h2>
+                        <p>Capacidad máxima autorizada: 250 personas</p>
+                    </div>
+                    <div class="aforo-stats">
+                        <span class="aforo-numbers">195 / 250</span>
+                        <span class="badge-aforo">78% Aforo</span>
+                    </div>
+                </div>
+
+                <!-- Simulación Escaneo QR con la sorpresa -->
+                <div class="qr-card">
+                    <div class="qr-title">Simulación de Escaneo QR (RF-04)</div>
+                    
+                    <div class="qr-container">
+                        <!-- LA MAGIA: API de códigos QR apuntando al Rickroll -->
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://www.youtube.com/watch?v=dQw4w9WgXcQ" alt="QR Escáner Simulado">
+                    </div>
+
+                    <div class="success-banner">
+                        <div class="banner-title">● MOLINETE LIBERADO — ACCESO AUTORIZADO</div>
+                        <div class="banner-subtitle">Mateo Silva (Socio Activo) - DNI 34.981.203</div>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- REGISTRO RECIENTE (DERECHA) -->
+            <aside class="history-section">
+                
+                <h2 class="history-title">Registro Reciente de Ingresos</h2>
+
+                <div class="history-list">
+                    <!-- Registro 1 -->
+                    <div class="history-item">
+                        <div class="history-avatar">
+                            <!-- Usando la API de UI Avatars para generar fotos de perfil falsas -->
+                            <img src="https://ui-avatars.com/api/?name=Mateo+Silva&background=151b2b&color=fff" alt="Avatar">
+                        </div>
+                        <div class="history-details">
+                            <span class="history-name">Mateo Silva</span>
+                            <span class="history-status status-ok">Autorizado</span>
+                        </div>
+                        <span class="history-time">Hace 10 seg</span>
+                    </div>
+
+                    <!-- Registro 2 -->
+                    <div class="history-item">
+                        <div class="history-avatar">
+                            <img src="https://ui-avatars.com/api/?name=Constanza+Rivas&background=151b2b&color=fff" alt="Avatar">
+                        </div>
+                        <div class="history-details">
+                            <span class="history-name">Constanza Rivas</span>
+                            <span class="history-status status-ok">Autorizado</span>
+                        </div>
+                        <span class="history-time">Hace 2 min</span>
+                    </div>
+
+                    <!-- Registro 3 -->
+                    <div class="history-item">
+                        <div class="history-avatar">
+                            <img src="https://ui-avatars.com/api/?name=Andrés+Medina&background=151b2b&color=fff" alt="Avatar">
+                        </div>
+                        <div class="history-details">
+                            <span class="history-name">Andrés Medina</span>
+                            <span class="history-status status-ok">Autorizado</span>
+                        </div>
+                        <span class="history-time">Hace 5 min</span>
+                    </div>
+
+                    <!-- Registro 4 (Denegado) -->
+                    <div class="history-item">
+                        <div class="history-avatar">
+                            <img src="https://ui-avatars.com/api/?name=Juan+Pablo+Bravo&background=151b2b&color=fff" alt="Avatar">
+                        </div>
+                        <div class="history-details">
+                            <span class="history-name">Juan Pablo Bravo</span>
+                            <span class="history-status status-fail">Denegado (Vencido)</span>
+                        </div>
+                        <span class="history-time">Hace 12 min</span>
+                    </div>
+                </div>
+
+            </aside>
+
+        </div>
+
+    </main>
+</body>
+</html>

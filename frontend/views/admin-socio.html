@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitZone Panel - Gestión de Socios</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Enlace al CSS global que armamos -->
+    <link rel="stylesheet" href="../public/css/admin.css">
+
+    <!-- CSS específico solo para la vista de Socios -->
+    <style>
+        /* Perfil del usuario en el sidebar (Reutilizado) */
+        .user-profile { display: flex; align-items: center; gap: 1rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); margin-top: auto; }
+        .user-avatar { width: 40px; height: 40px; border-radius: 50%; background-color: var(--bg-card); background-image: url('../../src/assets/gerardo.jpg'); background-size: cover; }
+        .user-info h4 { font-size: 0.9rem; margin-bottom: 0.1rem; }
+        .user-info p { font-size: 0.75rem; color: var(--text-muted); }
+
+        /* Barra de Acciones (Buscador, Filtros y Botón) */
+        .action-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .action-group-left {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        /* Buscador con ícono */
+        .search-box { position: relative; display: flex; align-items: center; }
+        .search-icon { position: absolute; left: 12px; width: 16px; height: 16px; color: var(--text-muted); pointer-events: none; }
+        .search-input {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-pure);
+            padding: 0.7rem 1rem 0.7rem 2.5rem;
+            border-radius: var(--radius-md);
+            font-family: inherit;
+            font-size: 0.85rem;
+            width: 300px;
+            outline: none;
+            transition: 0.2s;
+        }
+        .search-input:focus { border-color: var(--accent-orange); }
+
+        /* Selectores de filtro */
+        .filter-select {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-pure);
+            padding: 0.7rem 2.5rem 0.7rem 1rem;
+            border-radius: var(--radius-md);
+            font-family: inherit;
+            font-size: 0.85rem;
+            outline: none;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238b95a5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+        }
+
+        /* Tabla de Socios - Ajustes Finos */
+        .table-container {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            overflow: hidden; /* Para que los bordes redondeados contengan la tabla */
+        }
+        .data-table th, .data-table td { padding: 1.25rem 1.5rem; }
+        
+        .user-name { font-weight: 700; color: var(--text-pure); }
+        .date-warning { color: var(--accent-yellow); font-weight: 600; }
+
+        /* Íconos de acción en la tabla */
+        .action-icons { display: flex; gap: 0.75rem; align-items: center; }
+        .action-icon-btn {
+            background: none; border: none; color: var(--text-muted); cursor: pointer; transition: 0.2s;
+        }
+        .action-icon-btn:hover { color: var(--text-pure); }
+        .action-icon-delete { color: var(--accent-red); }
+        .action-icon-delete:hover { filter: brightness(1.2); }
+        .action-icon-btn svg { width: 18px; height: 18px; }
+
+        /* Paginación (Pie de página) */
+        .pagination-area {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1.5rem;
+        }
+        .pagination-info { font-size: 0.85rem; color: var(--text-muted); }
+        
+        .pagination-controls { display: flex; gap: 0.5rem; }
+        .page-btn {
+            width: 32px; height: 32px;
+            display: flex; align-items: center; justify-content: center;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-family: inherit; font-size: 0.85rem; font-weight: 600;
+            transition: 0.2s;
+        }
+        .page-btn:hover:not(.active) { background-color: var(--bg-card-hover); color: var(--text-pure); }
+        .page-btn.active {
+            background-color: var(--accent-orange);
+            border-color: var(--accent-orange);
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="brand">
+            <svg viewBox="0 0 24 24" fill="var(--accent-orange)" style="width: 24px;">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
+            <div class="brand-title">FITZONE <span>PANEL</span></div>
+        </div>
+        <div class="brand-subtitle">Sedes autorizadas: 25+</div>
+
+        <nav class="nav-menu">
+            <a href="AdmDash.html" class="nav-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+                Dashboard
+            </a>
+            <!-- La clase "active" pasa a Socios -->
+            <a href="#" class="nav-link active">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                Socios
+            </a>
+            <a href="#" class="nav-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                Clases Grupales
+            </a>
+            <a href="#" class="nav-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+                Canchas Deportivas
+            </a>
+            <a href="#" class="nav-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                Control de Acceso
+            </a>
+            <a href="#" class="nav-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                Reportes & Analíticas
+            </a>
+        </nav>
+
+        <div class="user-profile">
+            <div class="user-avatar"></div>
+            <div class="user-info">
+                <h4>Gerardo Ruiz</h4>
+                <p>Gerente Central</p>
+            </div>
+        </div>
+    </aside>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="main-content">
+        
+        <!-- TOPBAR -->
+        <header class="topbar">
+            <div class="header-titles">
+                <h1>Gestión de Socios</h1>
+                <p>Administra las membresías, estados de cuenta y sedes de la comunidad FitZone</p>
+            </div>
+            <div class="header-controls">
+                <button class="btn-secondary" style="display:flex; align-items:center; gap:0.5rem;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-red)" stroke-width="2" style="width:14px;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                    Todas las Sedes (25)
+                </button>
+                <button class="btn-secondary" style="padding: 0.75rem 1rem;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                </button>
+                <button class="btn-secondary" style="display:flex; align-items:center; gap:0.5rem;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    Hoy, 14 de Octubre
+                </button>
+            </div>
+        </header>
+
+        <!-- BARRA DE ACCIONES Y FILTROS -->
+        <div class="action-bar">
+            <div class="action-group-left">
+                <!-- Buscador -->
+                <div class="search-box">
+                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" class="search-input" placeholder="Buscar socio por nombre o DNI...">
+                </div>
+                <!-- Filtros -->
+                <select class="filter-select">
+                    <option>Estado: Todos</option>
+                    <option>Activos</option>
+                    <option>Vencidos</option>
+                    <option>Suspendidos</option>
+                </select>
+                <select class="filter-select">
+                    <option>Plan: Anual</option>
+                    <option>Plan: Mensual</option>
+                    <option>Plan: Trimestral</option>
+                </select>
+            </div>
+            
+            <button class="btn-primary" style="display:flex; align-items:center; gap:0.5rem;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                Registrar Nuevo Socio
+            </button>
+        </div>
+
+        <!-- TABLA DE SOCIOS -->
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>DNI</th>
+                        <th>Plan</th>
+                        <th>Estado</th>
+                        <th>Sede Principal</th>
+                        <th>Fecha Vencimiento</th>
+                        <th style="text-align: right;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Fila 1 -->
+                    <tr>
+                        <td class="user-name">Mateo Silva</td>
+                        <td>34.981.203</td>
+                        <td>Anual Black</td>
+                        <td><span class="status-badge status-active">Activo</span></td>
+                        <td>Sede Las Condes</td>
+                        <td>15 Dic 2026</td>
+                        <td>
+                            <div class="action-icons" style="justify-content: flex-end;">
+                                <button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
+                                <button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
+                                <button class="action-icon-btn action-icon-delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                            </div>
+                        </td>
+                    </tr>
+                    <!-- Fila 2 -->
+                    <tr>
+                        <td class="user-name">Constanza Rivas</td>
+                        <td>29.430.129</td>
+                        <td>Trimestral</td>
+                        <td><span class="status-badge status-active">Activo</span></td>
+                        <td>Sede Vitacura</td>
+                        <td>24 Nov 2026</td>
+                        <td>
+                            <div class="action-icons" style="justify-content: flex-end;">
+                                <button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
+                                <button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
+                                <button class="action-icon-btn action-icon-delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                            </div>
+                        </td>
+                    </tr>
+                    <!-- Fila 3 (Vencido) -->
+                    <tr>
+                        <td class="user-name">Juan Pablo Bravo</td>
+                        <td>31.849.502</td>
+                        <td>Mensual Pase</td>
+                        <td><span class="status-badge status-warning">Vencido</span></td>
+                        <td>Sede Providencia</td>
+                        <td class="date-warning">08 Oct 2026</td>
+                        <td>
+                            <div class="action-icons" style="justify-content: flex-end;">
+                                <button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
+                                <button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
+                                <button class="action-icon-btn action-icon-delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                            </div>
+                        </td>
+                    </tr>
+                    <!-- Fila 4 (Suspendido) -->
+                    <tr>
+                        <td class="user-name">Francisca Soto</td>
+                        <td>35.109.832</td>
+                        <td>Anual Black</td>
+                        <td><span class="status-badge status-inactive">Suspendido</span></td>
+                        <td>Sede Las Condes</td>
+                        <td>12 Ene 2027</td>
+                        <td>
+                            <div class="action-icons" style="justify-content: flex-end;">
+                                <button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
+                                <button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
+                                <button class="action-icon-btn action-icon-delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                            </div>
+                        </td>
+                    </tr>
+                    <!-- Fila 5 -->
+                    <tr>
+                        <td class="user-name">Andrés Medina</td>
+                        <td>30.402.184</td>
+                        <td>Mensual Pase</td>
+                        <td><span class="status-badge status-active">Activo</span></td>
+                        <td>Sede Lo Barnechea</td>
+                        <td>05 Nov 2026</td>
+                        <td>
+                            <div class="action-icons" style="justify-content: flex-end;">
+                                <button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
+                                <button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
+                                <button class="action-icon-btn action-icon-delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                            </div>
+                        </td>
+                    </tr>
+                    <!-- Fila 6 -->
+                    <tr>
+                        <td class="user-name">Isabel Fuentes</td>
+                        <td>28.591.032</td>
+                        <td>Trimestral</td>
+                        <td><span class="status-badge status-active">Activo</span></td>
+                        <td>Sede Providencia</td>
+                        <td>20 Nov 2026</td>
+                        <td>
+                            <div class="action-icons" style="justify-content: flex-end;">
+                                <button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
+                                <button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
+                                <button class="action-icon-btn action-icon-delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- PAGINACIÓN -->
+        <div class="pagination-area">
+            <span class="pagination-info">Mostrando 1-6 de 1,280 socios registrados</span>
+            <div class="pagination-controls">
+                <button class="page-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+                <button class="page-btn active">1</button>
+                <button class="page-btn">2</button>
+                <button class="page-btn">3</button>
+                <button class="page-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+            </div>
+        </div>
+
+    </main>
+</body>
+</html>

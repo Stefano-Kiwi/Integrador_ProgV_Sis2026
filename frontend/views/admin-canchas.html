@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitZone Panel - Control de Canchas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Enlace al CSS global -->
+    <link rel="stylesheet" href="../public/css/admin.css">
+
+    <!-- CSS específico solo para la vista de Canchas -->
+    <style>
+        /* Perfil del usuario en el sidebar */
+        .user-profile { display: flex; align-items: center; gap: 1rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); margin-top: auto; }
+        .user-avatar { width: 40px; height: 40px; border-radius: 50%; background-color: var(--bg-card); background-image: url('../../src/assets/gerardo.jpg'); background-size: cover; }
+        .user-info h4 { font-size: 0.9rem; margin-bottom: 0.1rem; }
+        .user-info p { font-size: 0.75rem; color: var(--text-muted); }
+
+        /* Layout de la vista: Grilla (izq) y Configuración (der) */
+        .courts-layout {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 1.5rem;
+            align-items: start;
+        }
+
+        /* --- ZONA IZQUIERDA: GRILLA DE TURNOS --- */
+        .grid-section {
+            background-color: var(--bg-sidebar);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Cabecera con Tabs y Fecha */
+        .grid-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .tabs-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .tab-btn {
+            background-color: var(--bg-body);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 0.6rem 1.25rem;
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        
+        .tab-btn.active {
+            background-color: var(--accent-orange);
+            border-color: var(--accent-orange);
+            color: #fff;
+        }
+
+        .grid-date {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Contenido de las Canchas */
+        .courts-list {
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .court-row {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1.25rem;
+        }
+
+        .court-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .court-title {
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        /* Botones de Horarios */
+        .time-slots {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .time-slot {
+            background-color: var(--bg-body);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 0.5rem 0.85rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+
+        .time-slot.available {
+            border-color: rgba(255, 94, 58, 0.4);
+            color: var(--text-pure);
+        }
+
+        .time-slot.reserved {
+            background-color: rgba(255, 255, 255, 0.03);
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .maintenance-msg {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            padding: 0.5rem 0;
+        }
+
+        /* --- ZONA DERECHA: CONFIGURACIÓN --- */
+        .config-section {
+            background-color: var(--bg-sidebar);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .config-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        /* Esquema Tarifario */
+        .pricing-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+        }
+
+        .pricing-header {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--accent-orange);
+            margin-bottom: 0.25rem;
+        }
+
+        .pricing-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+        }
+
+        .pricing-label { color: var(--text-muted); }
+        .pricing-val { font-weight: 700; }
+        .val-green { color: var(--accent-green); }
+        .val-yellow { color: var(--accent-yellow); }
+
+        /* Mantenimiento Preventivo */
+        .maintenance-block {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .maintenance-header {
+            font-size: 0.95rem;
+            font-weight: 700;
+        }
+
+        .maintenance-desc {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .btn-outline-red {
+            background-color: transparent;
+            border: 1px solid var(--accent-red);
+            color: var(--accent-red);
+            padding: 0.85rem;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 0.9rem;
+            font-family: inherit;
+            cursor: pointer;
+            transition: 0.2s;
+            text-align: center;
+        }
+
+        .btn-outline-red:hover {
+            background-color: rgba(255, 75, 114, 0.1);
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="brand">
+            <svg viewBox="0 0 24 24" fill="var(--accent-orange)" style="width: 24px;">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
+            <div class="brand-title">FITZONE <span>PANEL</span></div>
+        </div>
+        <div class="brand-subtitle">Sedes autorizadas: 25+</div>
+
+        <nav class="nav-menu">
+            <a href="AdmDash.html" class="nav-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+                Dashboard
+            </a>
+            <a href="Socios.html" class="nav-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                Socios
+            </a>
+            <a href="Clases.html" class="nav-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                Clases Grupales
+            </a>
+            <!-- La clase "active" pasa a Canchas -->
+            <a href="#" class="nav-link active">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+                Canchas Deportivas
+            </a>
+            <a href="#" class="nav-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                Control de Acceso
+            </a>
+            <a href="#" class="nav-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                Reportes & Analíticas
+            </a>
+        </nav>
+
+        <div class="user-profile">
+            <div class="user-avatar"></div>
+            <div class="user-info">
+                <h4>Gerardo Ruiz</h4>
+                <p>Gerente Central</p>
+            </div>
+        </div>
+    </aside>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="main-content">
+        
+        <!-- TOPBAR -->
+        <header class="topbar">
+            <div class="header-titles">
+                <h1>Control de Canchas</h1>
+                <p>Administración de reservas, tarifas dinámicas e inventario deportivo</p>
+            </div>
+            <div class="header-controls">
+                <button class="btn-secondary" style="display:flex; align-items:center; gap:0.5rem;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-red)" stroke-width="2" style="width:14px;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                    Todas las Sedes (25) ⌄
+                </button>
+                <button class="btn-secondary" style="padding: 0.75rem 1rem;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                </button>
+                <button class="btn-secondary" style="display:flex; align-items:center; gap:0.5rem;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    Hoy, 14 de Octubre
+                </button>
+            </div>
+        </header>
+
+        <!-- LAYOUT: Grilla y Configuración -->
+        <div class="courts-layout">
+            
+            <!-- GRILLA DE TURNOS -->
+            <section class="grid-section">
+                
+                <div class="grid-header">
+                    <h2 class="config-title" style="margin: 0;">Grilla de Turnos por Cancha</h2>
+                    <div class="tabs-group">
+                        <button class="tab-btn active">Pádel</button>
+                        <button class="tab-btn">Fútbol 5</button>
+                    </div>
+                    <span class="grid-date">Miércoles, 14 de Octubre</span>
+                </div>
+
+                <div class="courts-list">
+                    
+                    <!-- Cancha 1 -->
+                    <div class="court-row">
+                        <div class="court-header">
+                            <span class="court-title">Cancha Pádel 1 (Vidrio)</span>
+                            <span class="status-badge status-active" style="background: transparent;">Libre</span>
+                        </div>
+                        <div class="time-slots">
+                            <div class="time-slot available">16:00 - Disponible</div>
+                            <div class="time-slot reserved">17:30 - Reservado</div>
+                            <div class="time-slot reserved">19:00 - Reservado</div>
+                        </div>
+                    </div>
+
+                    <!-- Cancha 2 (Mantenimiento) -->
+                    <div class="court-row">
+                        <div class="court-header">
+                            <span class="court-title">Cancha Pádel 2 (Vidrio)</span>
+                            <span class="status-badge status-inactive" style="background: transparent;">Mantenimiento</span>
+                        </div>
+                        <p class="maintenance-msg">Fuera de servicio por reparación de red</p>
+                    </div>
+
+                    <!-- Cancha 3 -->
+                    <div class="court-row">
+                        <div class="court-header">
+                            <span class="court-title">Cancha Pádel 3 (Muro)</span>
+                            <span class="status-badge status-active" style="background: transparent;">Libre</span>
+                        </div>
+                        <div class="time-slots">
+                            <div class="time-slot reserved">16:00 - Reservado</div>
+                            <div class="time-slot available">17:30 - Disponible</div>
+                            <div class="time-slot available">19:00 - Disponible</div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </section>
+
+            <!-- PANEL DE CONFIGURACIÓN -->
+            <aside class="config-section">
+                
+                <h2 class="config-title" style="margin: 0;">Configuración de Canchas</h2>
+
+                <!-- Esquema Tarifario -->
+                <div class="pricing-card">
+                    <div class="pricing-header">Esquema Tarifario Activo</div>
+                    
+                    <div class="pricing-row">
+                        <span class="pricing-label">Tarifa Base (Pádel)</span>
+                        <span class="pricing-val">$12,000 / h</span>
+                    </div>
+                    
+                    <div class="pricing-row">
+                        <span class="pricing-label">Descuento Socio (RF-11)</span>
+                        <span class="pricing-val val-green">- 15%</span>
+                    </div>
+                    
+                    <div class="pricing-row">
+                        <span class="pricing-label">Recargo Hora Pico (RF-12)</span>
+                        <span class="pricing-val val-yellow">+ 20% (19:00 - 21:00)</span>
+                    </div>
+                </div>
+
+                <!-- Mantenimiento -->
+                <div class="maintenance-block">
+                    <div class="maintenance-header">Mantenimiento Preventivo (RF-09)</div>
+                    <p class="maintenance-desc">Utiliza este módulo para bloquear temporalmente turnos de juego por reparaciones.</p>
+                    <button class="btn-outline-red">Habilitar Bloqueo de Cancha</button>
+                </div>
+
+            </aside>
+
+        </div>
+
+    </main>
+</body>
+</html>
