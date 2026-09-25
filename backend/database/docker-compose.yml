@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:18.3
+    image: postgres:18-alpine
     container_name: grupo12_ProgV_integrador
     environment:
       POSTGRES_USER: postgres
@@ -9,7 +9,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
 
 volumes:
   postgres_data:
