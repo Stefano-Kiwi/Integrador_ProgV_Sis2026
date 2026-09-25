@@ -1,11 +1,11 @@
 services:
   postgres:
     image: postgres:18.3
-    container_name: gym_db
+    container_name: grupo12_ProgV_integrador
     environment:
-      POSTGRES_USER: GymAdmin
-      POSTGRES_PASSWORD: AdminPassword
-      POSTGRES_DB: gym_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: fitzone_sports
     ports:
       - "5432:5432"
     volumes:
