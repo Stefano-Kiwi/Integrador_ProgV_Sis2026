@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>El Tremendo Gym - Clases Grupales</title>
+    <meta name="description"
+        content="Reserva tu lugar en clases grupales de Spinning, Cross Training, Yoga, Funcional y Boxeo en El Tremendo Gym. Entrena a máxima intensidad.">
+
+    <!-- Google Fonts: Bebas Neue para títulos de impacto, Plus Jakarta Sans para lectura moderna -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="../public/css/style.css">
+</head>
+
+<body>
+
+
+    <div class="profile-page-wrapper">
+        <main class="profile-container">
+
+            <!-- Encabezado de la Vista -->
+            <header class="profile-page-header">
+                <h1 class="profile-page-title">CLASES <span class="highlight">GRUPALES</span></h1>
+                <p class="profile-page-subtitle">Explora el cronograma semanal y asegura tu cupo en entrenamientos
+                    guiados por profesionales certificados.</p>
+            </header>
+
+
+
+            <!-- Barra de Días y Filtros por Disciplina -->
+            <div class="filter-controls-bar">
+                <div class="days-row">
+                    <a href="#hoy" class="day-tab active">
+                        <span class="day-tab-name">JUE</span>
+                        <span class="day-tab-num">24</span>
+                    </a>
+                    <a href="#viernes" class="day-tab">
+                        <span class="day-tab-name">VIE</span>
+                        <span class="day-tab-num">25</span>
+                    </a>
+                    <a href="#sabado" class="day-tab">
+                        <span class="day-tab-name">SÁB</span>
+                        <span class="day-tab-num">26</span>
+                    </a>
+                    <a href="#domingo" class="day-tab">
+                        <span class="day-tab-name">DOM</span>
+                        <span class="day-tab-num">27</span>
+                    </a>
+                    <a href="#lunes" class="day-tab">
+                        <span class="day-tab-name">LUN</span>
+                        <span class="day-tab-num">28</span>
+                    </a>
+                    <a href="#martes" class="day-tab">
+                        <span class="day-tab-name">MAR</span>
+                        <span class="day-tab-num">29</span>
+                    </a>
+                </div>
+
+
+            </div>
+
+            <!-- Grilla Principal Modular (2 Columnas: Listado y Panel Lateral) -->
+            <div class="profile-main-grid">
+
+                <!-- Columna Izquierda: Cronograma del Día -->
+                <div class="profile-column">
+
+                    <div class="classes-card-list">
+
+                        <!-- Clase 1: Spinning Power HIIT -->
+                        <article class="class-detailed-card">
+                            <div class="class-card-main">
+                                <div class="class-time-badge">
+                                    <span class="class-time-hour">19:00</span>
+                                    <span class="class-time-duration">45 min</span>
+                                </div>
+                                <div class="class-info-block">
+                                    <span class="class-type-badge">Cardio HIIT</span>
+                                    <h2 class="class-name-title">SPINNING POWER HIIT</h2>
+                                    <div class="class-details-sub">
+                                        <span class="class-detail-item">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                                <circle cx="12" cy="7" r="4" />
+                                            </svg>
+                                            Coach Sofía Pérez
+                                        </span>
+                                        <span class="class-detail-item">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                                            </svg>
+                                            Sala de Ciclismo 1
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="capacity-block">
+                                <span class="capacity-text">4 cupos libres (21/25)</span>
+                                <div class="capacity-bar">
+                                    <div class="capacity-fill" style="width: 84%;"></div>
+                                </div>
+                                <a href="profile.html" class="btn-reserve-class" style="margin-top: 0.5rem;">
+                                    <span>RESERVAR CUPO</span>
+                                </a>
+                            </div>
+                        </article>
+
+                        <!-- Clase 2: Cross Training Pro -->
+                        <article class="class-detailed-card">
+                            <div class="class-card-main">
+                                <div class="class-time-badge">
+                                    <span class="class-time-hour">20:00</span>
+                                    <span class="class-time-duration">60 min</span>
+                                </div>
+                                <div class="class-info-block">
+                                    <span class="class-type-badge"
+                                        style="color: var(--accent-orange); border-color: rgba(255, 94, 58, 0.3);">Fuerza
+                                        Extrema</span>
+                                    <h2 class="class-name-title">CROSS TRAINING PRO WOD</h2>
+                                    <div class="class-details-sub">
+                                        <span class="class-detail-item">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                                <circle cx="12" cy="7" r="4" />
+                                            </svg>
+                                            Coach Marcos Galván
+                                        </span>
+                                        <span class="class-detail-item">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                                            </svg>
+                                            Box Central Fit
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="capacity-block">
+                                <span class="capacity-text">2 cupos libres (18/20)</span>
+                                <div class="capacity-bar">
+                                    <div class="capacity-fill" style="width: 90%;"></div>
+                                </div>
+                                <a href="profile.html" class="btn-reserve-class" style="margin-top: 0.5rem;">
+                                    <span>RESERVAR CUPO</span>
+                                </a>
+                            </div>
+                        </article>
+
+                        <!-- Clase 3: Power Yoga & Flex -->
+                        <article class="class-detailed-card">
+                            <div class="class-card-main">
+                                <div class="class-time-badge">
+                                    <span class="class-time-hour">09:00</span>
+                                    <span class="class-time-duration">50 min</span>
+                                </div>
+                                <div class="class-info-block">
+                                    <span class="class-type-badge">Relax & Flex</span>
+                                    <h2 class="class-name-title">POWER YOGA & MOBILITY</h2>
+                                    <div class="class-details-sub">
+                                        <span class="class-detail-item">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                                <circle cx="12" cy="7" r="4" />
+                                            </svg>
+                                            Coach Camila Ramos
+                                        </span>
+                                        <span class="class-detail-item">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                                            </svg>
+                                            Sala Zen & Pilates
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="capacity-block">
+                                <span class="capacity-text">8 cupos libres (10/18)</span>
+                                <div class="capacity-bar">
+                                    <div class="capacity-fill" style="width: 55%;"></div>
+                                </div>
+                                <a href="profile.html" class="btn-reserve-class" style="margin-top: 0.5rem;">
+                                    <span>RESERVAR CUPO</span>
+                                </a>
+                            </div>
+                        </article>
+
+                        <!-- Clase 4: Boxing Conditioning -->
+                        <article class="class-detailed-card">
+                            <div class="class-card-main">
+                                <div class="class-time-badge"
+                                    style="border-color: rgba(255, 94, 58, 0.3); color: var(--accent-orange); background: rgba(255, 94, 58, 0.08);">
+                                    <span class="class-time-hour">18:00</span>
+                                    <span class="class-time-duration">55 min</span>
+                                </div>
+                                <div class="class-info-block">
+                                    <span class="class-type-badge">Combate</span>
+                                    <h2 class="class-name-title">BOXING CONDITIONING</h2>
+                                    <div class="class-details-sub">
+                                        <span class="class-detail-item">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                                <circle cx="12" cy="7" r="4" />
+                                            </svg>
+                                            Coach Diego "Toro" Rossi
+                                        </span>
+                                        <span class="class-detail-item">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                                            </svg>
+                                            Sector Ring & Sacos
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="capacity-block">
+                                <span class="capacity-text" style="color: var(--accent-orange);">Cupo Completo
+                                    (15/15)</span>
+                                <div class="capacity-bar">
+                                    <div class="capacity-fill full" style="width: 100%;"></div>
+                                </div>
+                                <a href="#espera" class="btn-reserve-class btn-waitlist" style="margin-top: 0.5rem;">
+                                    <span>LISTA DE ESPERA (2)</span>
+                                </a>
+                            </div>
+                        </article>
+
+                    </div>
+
+                </div>
+
+                <!-- Columna Derecha: Tus Reservas, Instructores y Políticas -->
+                <div class="profile-column">
+
+                    <!-- Mis Reservas Activas (Sincronizado con profile.html) -->
+                    <section class="profile-section-card" aria-labelledby="card-my-classes">
+                        <div class="card-title-group">
+                            <div class="card-title-left">
+                                <svg class="card-title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                    <line x1="16" y1="2" x2="16" y2="6" />
+                                    <line x1="8" y1="2" x2="8" y2="6" />
+                                    <line x1="3" y1="10" x2="21" y2="10" />
+                                </svg>
+                                <h2 id="card-my-classes">TUS CLASES RESERVADAS</h2>
+                            </div>
+                            <span class="card-title-badge">2 Confirmadas</span>
+                        </div>
+
+                        <div class="classes-list">
+                            <div class="class-item">
+                                <div class="class-left">
+                                    <div class="class-time-box">
+                                        <span class="class-time-day">HOY</span>
+                                        <span class="class-time-hour">19:00</span>
+                                    </div>
+                                    <div class="class-details">
+                                        <div class="class-title">Spinning Power HIIT</div>
+                                        <div class="class-meta">Sala de Ciclismo 1 • Sofía Pérez</div>
+                                    </div>
+                                </div>
+                                <span class="badge-status confirmed">Confirmada</span>
+                            </div>
+
+                            <div class="class-item">
+                                <div class="class-left">
+                                    <div class="class-time-box">
+                                        <span class="class-time-day">JUE</span>
+                                        <span class="class-time-hour">20:00</span>
+                                    </div>
+                                    <div class="class-details">
+                                        <div class="class-title">Cross Training Pro</div>
+                                        <div class="class-meta">Box Central • Marcos Galván</div>
+                                    </div>
+                                </div>
+                                <span class="badge-status confirmed">Confirmada</span>
+                            </div>
+                        </div>
+
+                        <a href="profile.html" class="slot-btn"
+                            style="justify-content: center; text-align: center; margin-top: 0.5rem; text-decoration: none;">Ver
+                            Ficha en Perfil</a>
+                    </section>
+
+
+                </div>
+
+            </div>
+
+        </main>
+    </div>
+
+</body>
+
+</html>

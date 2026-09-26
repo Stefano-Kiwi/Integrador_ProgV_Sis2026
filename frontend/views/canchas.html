@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>El Tremendo Gym - Canchas Deportivas</title>
+    <meta name="description"
+        content="Reserva de canchas de pádel, fútbol 5, tenis y básquetbol en El Tremendo Gym. Horarios en tiempo real, iluminación LED y reservas para socios.">
+
+    <!-- Google Fonts: Bebas Neue para títulos de impacto, Plus Jakarta Sans para lectura moderna -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="../public/css/style.css">
+</head>
+
+<body>
+
+
+    <div class="profile-page-wrapper">
+        <main class="profile-container">
+
+            <!-- Encabezado de la Sección -->
+            <header class="profile-page-header">
+                <h1 class="profile-page-title">CANCHAS <span class="highlight">DEPORTIVAS</span></h1>
+
+            </header>
+
+
+            <!-- Grilla Principal Modular (2 Columnas: Listado y Sidebar) -->
+            <div class="profile-main-grid">
+
+                <!-- Columna Izquierda: Listado de Canchas Disponibles -->
+                <div class="profile-column">
+
+                    <div class="courts-grid">
+
+                        <!-- Cancha 1 -->
+                        <article class="court-card" id="cancha-padel-1">
+                            <div class="court-card-header">
+                                <div>
+                                    <div class="court-meta-group">
+                                        <span class="court-badge-type">Cancha 1</span>
+                                        <span class="status-badge-active">● DISPONIBLE</span>
+                                    </div>
+
+                                </div>
+                                <div class="court-pricing">
+                                    <div class="price-val">$18.500</div>
+                                    <div class="price-unit">Por Turno (90 min)</div>
+                                </div>
+                            </div>
+
+                            <div class="court-slots-section">
+                                <span class="slots-title">Selecciona un horario disponible para hoy:</span>
+                                <div class="slots-row">
+                                    <a href="#reservar" class="slot-btn">14:00 - 15:30</a>
+                                    <a href="#reservar" class="slot-btn selected">15:30 - 17:00</a>
+                                    <span class="slot-btn disabled" title="Horario Ocupado">17:00 - 18:30</span>
+                                    <a href="#reservar" class="slot-btn">18:30 - 20:00</a>
+                                    <a href="#reservar" class="slot-btn">20:00 - 21:30</a>
+                                    <span class="slot-btn disabled" title="Horario Ocupado">21:30 - 23:00</span>
+                                </div>
+                            </div>
+
+                            <div class="court-actions-row">
+                                <a href="pagos.html" class="court-reserve-btn">
+                                    <span>CONFIRMAR RESERVA</span>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                                        width="16" height="16">
+                                        <line x1="5" y1="12" x2="19" y2="12" />
+                                        <polyline points="12 5 19 12 12 19" />
+                                    </svg>
+                                </a>
+                            </div>
+                        </article>
+
+                        <!-- Cancha 2 -->
+                        <article class="court-card" id="cancha-futbol-1">
+                            <div class="court-card-header">
+                                <div>
+                                    <div class="court-meta-group">
+                                        <span class="court-badge-type football">Cancha 2</span>
+                                        <span class="status-badge-active">● DISPONIBLE</span>
+                                    </div>
+                                    <h2 class="court-name" style="margin-top: 0.5rem;">CANCHA 2</h2>
+
+                                </div>
+                                <div class="court-pricing">
+                                    <div class="price-val">$32.000</div>
+                                    <div class="price-unit">Por Turno (60 min)</div>
+                                </div>
+                            </div>
+
+                            <div class="court-slots-section">
+                                <span class="slots-title">Selecciona un horario disponible para hoy:</span>
+                                <div class="slots-row">
+                                    <span class="slot-btn disabled">17:00 - 18:00</span>
+                                    <a href="#reservar" class="slot-btn">18:00 - 19:00</a>
+                                    <span class="slot-btn disabled">19:00 - 20:00</span>
+                                    <span class="slot-btn disabled">20:00 - 21:00</span>
+                                    <a href="#reservar" class="slot-btn">21:00 - 22:00</a>
+                                    <a href="#reservar" class="slot-btn">22:00 - 23:00</a>
+                                </div>
+                            </div>
+
+                            <div class="court-actions-row">
+                                <a href="pagos.html" class="court-reserve-btn">
+                                    <span>CONFIRMAR RESERVA</span>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                                        width="16" height="16">
+                                        <line x1="5" y1="12" x2="19" y2="12" />
+                                        <polyline points="12 5 19 12 12 19" />
+                                    </svg>
+                                </a>
+                            </div>
+                        </article>
+
+                        <!-- Cancha 3 -->
+                        <article class="court-card" id="cancha-tenis-1">
+                            <div class="court-card-header">
+                                <div>
+                                    <div class="court-meta-group">
+                                        <span class="court-badge-type">Cancha 3</span>
+                                        <span class="status-badge-active">● DISPONIBLE</span>
+                                    </div>
+                                    <h2 class="court-name" style="margin-top: 0.5rem;">CANCHA 3</h2>
+                                </div>
+                                <div class="court-pricing">
+                                    <div class="price-val">$16.000</div>
+                                    <div class="price-unit">Por Turno (60 min)</div>
+                                </div>
+                            </div>
+
+                            <div class="court-slots-section">
+                                <span class="slots-title">Selecciona un horario disponible para hoy:</span>
+                                <div class="slots-row">
+                                    <a href="#reservar" class="slot-btn">08:00 - 09:00</a>
+                                    <a href="#reservar" class="slot-btn">10:00 - 11:00</a>
+                                    <a href="#reservar" class="slot-btn">15:00 - 16:00</a>
+                                    <a href="#reservar" class="slot-btn">16:00 - 17:00</a>
+                                    <span class="slot-btn disabled">17:00 - 18:00</span>
+                                </div>
+                            </div>
+
+                            <div class="court-actions-row">
+                                <a href="pagos.html" class="court-reserve-btn">
+                                    <span>CONFIRMAR RESERVA</span>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                                        width="16" height="16">
+                                        <line x1="5" y1="12" x2="19" y2="12" />
+                                        <polyline points="12 5 19 12 12 19" />
+                                    </svg>
+                                </a>
+                            </div>
+                        </article>
+
+                    </div>
+
+                </div>
+
+                <!-- Columna Derecha: Reserva Activa del Usuario, Reglas y Accesorios -->
+                <div class="profile-column">
+
+                    <!-- Tu Reserva Confirmada -->
+                    <section class="active-reservation-card" aria-labelledby="card-my-booking">
+                        <div class="card-title-group" style="border-bottom-color: rgba(0, 255, 135, 0.2);">
+                            <div class="card-title-left">
+                                <svg class="card-title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <line x1="2" y1="12" x2="22" y2="12" />
+                                </svg>
+                                <h2 id="card-my-booking">TU PRÓXIMO TURNO</h2>
+                            </div>
+                            <span class="badge-status confirmed">PAGADO</span>
+                        </div>
+
+                        <div>
+                            <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">
+                                Cancha
+                                Asignada</div>
+                            <div
+                                style="font-family: var(--font-display); font-size: 1.45rem; color: var(--text-pure); margin-top: 0.2rem;">
+                                CANCHA 3</div>
+                            <div
+                                style="font-size: 0.95rem; color: var(--accent-neon); font-weight: 600; margin-top: 0.35rem;">
+                                Sábado 27 Sep, 17:00 hs (90 min)</div>
+                        </div>
+
+                        <div>
+                            <span class="data-label">Código QR / PIN de Apertura:</span>
+                            <div class="res-code-badge" style="margin-top: 0.4rem;">TG-PADEL-8492</div>
+                        </div>
+
+                        <div style="display: flex; gap: 0.75rem; margin-top: 0.5rem;">
+                            <a href="profile.html" class="slot-btn"
+                                style="flex: 1; justify-content: center; background: rgba(255, 255, 255, 0.05);">Ver
+                                en
+                                Perfil</a>
+                            <a href="#cancelar" class="slot-btn"
+                                style="color: var(--accent-orange); border-color: rgba(255, 94, 58, 0.3);">Cancelar</a>
+                        </div>
+                    </section>
+
+
+                </div>
+
+            </div>
+
+        </main>
+    </div>
+
+</body>
+
+</html>
