@@ -1,0 +1,96 @@
+/* Barra de Acciones (Buscador, Filtros y Botón) */
+.action-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+.action-group-left {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+/* Buscador con ícono */
+.search-box { position: relative; display: flex; align-items: center; }
+.search-icon { position: absolute; left: 12px; width: 16px; height: 16px; color: var(--text-muted); pointer-events: none; }
+.search-input {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    color: var(--text-pure);
+    padding: 0.7rem 1rem 0.7rem 2.5rem;
+    border-radius: var(--radius-md);
+    font-family: inherit;
+    font-size: 0.85rem;
+    width: 300px;
+    outline: none;
+    transition: 0.2s;
+}
+.search-input:focus { border-color: var(--accent-orange); }
+
+/* Selectores de filtro */
+.filter-select {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    color: var(--text-pure);
+    padding: 0.7rem 2.5rem 0.7rem 1rem;
+    border-radius: var(--radius-md);
+    font-family: inherit;
+    font-size: 0.85rem;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238b95a5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+}
+
+/* Tabla de Socios - Ajustes Finos */
+.table-container {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    overflow: hidden; /* Para que los bordes redondeados contengan la tabla */
+}
+.data-table th, .data-table td { padding: 1.25rem 1.5rem; }
+
+.user-name { font-weight: 700; color: var(--text-pure); }
+.date-warning { color: var(--accent-yellow); font-weight: 600; }
+
+/* Íconos de acción en la tabla */
+.action-icons { display: flex; gap: 0.75rem; align-items: center; }
+.action-icon-btn {
+    background: none; border: none; color: var(--text-muted); cursor: pointer; transition: 0.2s;
+}
+.action-icon-btn:hover { color: var(--text-pure); }
+.action-icon-delete { color: var(--accent-red); }
+.action-icon-delete:hover { filter: brightness(1.2); }
+.action-icon-btn svg { width: 18px; height: 18px; }
+
+/* Paginación (Pie de página) */
+.pagination-area {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1.5rem;
+}
+.pagination-info { font-size: 0.85rem; color: var(--text-muted); }
+
+.pagination-controls { display: flex; gap: 0.5rem; }
+.page-btn {
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-family: inherit; font-size: 0.85rem; font-weight: 600;
+    transition: 0.2s;
+}
+.page-btn:hover:not(.active) { background-color: var(--bg-card-hover); color: var(--text-pure); }
+.page-btn.active {
+    background-color: var(--accent-orange);
+    border-color: var(--accent-orange);
+    color: #fff;
+}

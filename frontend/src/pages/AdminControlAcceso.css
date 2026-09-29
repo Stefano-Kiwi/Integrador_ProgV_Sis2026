@@ -1,0 +1,132 @@
+/* Layout de la vista: Escáner (izq) y Registro (der) */
+.access-layout {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+/* --- ZONA IZQUIERDA: AFORO Y ESCÁNER --- */
+.scanner-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Tarjeta de Aforo */
+.aforo-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--bg-sidebar);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem 2rem;
+}
+.aforo-info h2 { font-size: 1.25rem; margin-bottom: 0.25rem; }
+.aforo-info p { font-size: 0.85rem; color: var(--text-muted); }
+
+.aforo-stats { display: flex; align-items: center; gap: 1rem; }
+.aforo-numbers { font-size: 2.5rem; font-weight: 800; color: var(--accent-orange); letter-spacing: -1px; }
+.badge-aforo { 
+    background-color: rgba(255, 176, 32, 0.15); 
+    color: var(--accent-yellow); 
+    padding: 0.4rem 0.85rem; 
+    border-radius: 20px; 
+    font-size: 0.85rem; 
+    font-weight: 700; 
+    border: 1px solid rgba(255, 176, 32, 0.3);
+}
+
+/* Tarjeta Central: Escáner QR */
+.qr-card {
+    background-color: var(--bg-sidebar);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 3rem 2rem 2rem 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2.5rem;
+    min-height: 500px;
+}
+
+.qr-title { font-size: 1.15rem; font-weight: 700; }
+
+/* Contenedor del QR con el Rickroll */
+.qr-container {
+    width: 220px;
+    height: 220px;
+    background-color: #fff;
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    box-shadow: 0 0 40px rgba(255, 255, 255, 0.05);
+}
+.qr-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+/* Banner de Acceso Autorizado */
+.success-banner {
+    width: 100%;
+    background-color: rgba(0, 255, 135, 0.05);
+    border: 1px solid var(--accent-green);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.banner-title { color: var(--accent-green); font-weight: 800; font-size: 1.05rem; letter-spacing: 0.5px; }
+.banner-subtitle { color: var(--text-pure); font-size: 0.9rem; }
+
+/* --- ZONA DERECHA: REGISTRO RECIENTE --- */
+.history-section {
+    background-color: var(--bg-sidebar);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.history-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; }
+
+.history-list { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.history-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background-color: var(--bg-card);
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    transition: 0.2s;
+}
+.history-item:hover { border-color: var(--border-color); }
+
+.history-avatar {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    background-color: var(--border-color);
+    flex-shrink: 0;
+    overflow: hidden;
+}
+.history-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+.history-details { flex-grow: 1; display: flex; flex-direction: column; gap: 0.2rem; }
+.history-name { font-size: 0.9rem; font-weight: 700; color: var(--text-pure); }
+.history-status { font-size: 0.75rem; }
+.status-ok { color: var(--accent-green); }
+.status-fail { color: var(--accent-red); }
+
+.history-time { font-size: 0.75rem; color: var(--text-muted); }

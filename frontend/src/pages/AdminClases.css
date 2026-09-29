@@ -1,0 +1,125 @@
+/* Layout de la vista: Calendario (izq) y Detalles (der) */
+.classes-layout {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+/* --- ZONA IZQUIERDA: CALENDARIO --- */
+.calendar-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.calendar-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+}
+
+.week-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1rem;
+}
+
+/* Columnas de los días */
+.day-column {
+    background-color: var(--bg-sidebar);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1rem;
+    min-height: 550px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.day-header {
+    text-align: center;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-pure);
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Tarjetas de Clases */
+.class-card {
+    background-color: var(--bg-card);
+    border-radius: var(--radius-sm);
+    padding: 0.85rem;
+    border-left: 3px solid transparent;
+    cursor: pointer;
+    transition: 0.2s;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.class-card:hover {
+    background-color: var(--bg-card-hover);
+    transform: translateY(-2px);
+}
+
+/* Colores por disciplina */
+.border-orange { border-left-color: var(--accent-orange); }
+.border-yellow { border-left-color: var(--accent-yellow); }
+.border-green { border-left-color: var(--accent-green); }
+.border-red { border-left-color: var(--accent-red); }
+
+.class-name { font-weight: 700; font-size: 0.9rem; }
+.class-instructor { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem; }
+
+.class-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.75rem;
+}
+.class-time { color: var(--accent-orange); font-weight: 600; }
+.class-capacity { color: var(--text-muted); }
+
+/* --- ZONA DERECHA: DETALLE DE INSCRITOS --- */
+.details-section {
+    background-color: var(--bg-sidebar);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.details-header {
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+.details-header h2 { font-size: 1.2rem; margin-bottom: 0.25rem; }
+.details-header p { font-size: 0.85rem; color: var(--text-muted); }
+
+/* Listas de Roster */
+.roster-group { display: flex; flex-direction: column; gap: 0.75rem; }
+.roster-title-orange { font-size: 0.85rem; font-weight: 700; color: var(--accent-orange); }
+.roster-title-yellow { font-size: 0.85rem; font-weight: 700; color: var(--accent-yellow); }
+
+.roster-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--bg-card);
+    padding: 0.85rem 1rem;
+    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+}
+
+.roster-name { font-weight: 600; }
+.roster-status { color: var(--text-muted); font-size: 0.75rem; }
+.roster-pos { color: var(--accent-yellow); font-weight: 700; font-size: 0.75rem; }
