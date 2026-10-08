@@ -1,14 +1,9 @@
 -- =====================================================================
 -- FitZone Sports - Esquema de base de datos (PostgreSQL)
--- Generado a partir del DER (drawio / mermaid) del integrador
--- Este script es IDEMPOTENTE respecto a la creación inicial: se ejecuta
--- una sola vez, automáticamente, la primera vez que se crea el
--- contenedor de Docker (ver docker-entrypoint-initdb.d).
 -- =====================================================================
 
 -- ---------------------------------------------------------------------
--- 0. TIPOS ENUMERADOS
--- (Cada uno representa los valores de "estado" definidos en el DER)
+-- 0. Tipos enumerados para los estados
 -- ---------------------------------------------------------------------
 CREATE TYPE estado_membresia       AS ENUM ('PENDIENTE_PAGO', 'ACTIVO', 'VENCIDO', 'SUSPENDIDO');
 CREATE TYPE estado_reserva_clase   AS ENUM ('CONFIRMADA', 'CANCELADA');
@@ -18,12 +13,7 @@ CREATE TYPE estado_reserva_cancha  AS ENUM ('PENDIENTE_PAGO', 'CONFIRMADA', 'CAN
 CREATE TYPE estado_pago            AS ENUM ('PENDIENTE', 'APROBADO', 'RECHAZADO');
 
 -- ---------------------------------------------------------------------
--- 1. ROL
--- Tabla de catálogo: tipos de usuario (Cliente, Instructor/Profesor,
--- Gerente/Administrador), según la página 1 del diagrama.
--- NOTA: en el DER esta tabla usa nombres de columna distintos al resto
--- (id_rol / clase_rol en lugar de id / nombre). Se respeta tal cual
--- está dibujada; si preferís unificar el estilo, es un ALTER fácil.
+-- 1. Rol de cada usuario
 -- ---------------------------------------------------------------------
 CREATE TABLE rol (
     id_rol      SERIAL PRIMARY KEY,
@@ -100,9 +90,7 @@ CREATE INDEX ix_membresia_plan_id    ON membresia(plan_id);
 
 -- ---------------------------------------------------------------------
 -- 7. ACCESO
--- Regla del DER: "el usuario solo puede tener 1 acceso activo al mismo
--- tiempo" -> se traduce en un índice único parcial (solo aplica a los
--- accesos que siguen abiertos, egreso_at IS NULL).
+-- Un usuario solo puede tener un acceso abierto a la vez.
 -- ---------------------------------------------------------------------
 CREATE TABLE acceso (
     id          SERIAL PRIMARY KEY,
@@ -126,17 +114,6 @@ CREATE TABLE tipo_clase (
 
 -- ---------------------------------------------------------------------
 -- 9. INSTRUCTOR
--- OJO - INCONSISTENCIA DETECTADA Y CORREGIDA:
--- en el XML esta tabla tenía una fila incompleta (tipo "ID", columna
--- "Usuario", sin marca de clave), que claramente representa la FK a
--- usuario que después usa la relación INSTRUCTOR -> CLASE ("dicta") y
--- la restricción "instructores solo acepta a usuarios del rol
--- instructor/profesor". Se completó como usuario_id INTEGER, FK y
--- UNIQUE (relación 1:1 con usuario). La restricción de que ese usuario
--- tenga rol = 'Instructor' no se puede expresar con un FK común en
--- Postgres (se valida contra una fila filtrada por rol); queda como
--- validación a nivel de aplicación (servicio de NestJS) al crear un
--- instructor, salvo que después quieran agregar un trigger.
 -- ---------------------------------------------------------------------
 CREATE TABLE instructor (
     id          SERIAL PRIMARY KEY,
@@ -164,10 +141,8 @@ CREATE INDEX ix_clase_instructor_id ON clase(instructor_id);
 
 -- ---------------------------------------------------------------------
 -- 11. RESERVA_CLASE
--- Se agrega UNIQUE(usuario_id, clase_id) parcial (solo reservas no
--- canceladas) como resguardo para que un mismo usuario no reserve dos
--- veces la misma clase. No estaba explícito en el DER: se puede quitar
--- si el equipo prefiere permitirlo.
+-- Evita reservas duplicadas de una misma clase para un usuario.
+-- Al cancelar una reserva, se puede volver a reservar.
 -- ---------------------------------------------------------------------
 CREATE TABLE reserva_clase (
     id             SERIAL PRIMARY KEY,
@@ -220,14 +195,6 @@ CREATE INDEX ix_cancha_tipo_cancha_id ON cancha(tipo_cancha_id);
 
 -- ---------------------------------------------------------------------
 -- 15. RESERVA_CANCHA
--- Regla del DER: "una cancha solo puede tener una clase al mismo
--- tiempo" NO se pudo aplicar tal cual: el DER no tiene ninguna relación
--- CANCHA<->CLASE (CLASE no tiene columna cancha_id). Es una
--- inconsistencia entre la nota de restricción y el modelo dibujado;
--- avisale al equipo. Lo que SÍ está bien modelado y se implementa acá
--- es la concurrencia de RESERVA_CANCHA, vía índice único parcial sobre
--- (cancha_id, fecha, hora_inicio) - coincide con la estrategia de
--- ADR-002 (UNIQUE + 409 en vez de locking en la aplicación).
 -- ---------------------------------------------------------------------
 CREATE TABLE reserva_cancha (
     id              SERIAL PRIMARY KEY,
@@ -249,8 +216,6 @@ CREATE UNIQUE INDEX ux_reserva_cancha_slot
 
 -- ---------------------------------------------------------------------
 -- 16. PAGO
--- Regla del DER: "XOR con reserva_cancha_id" -> un pago corresponde a
--- UNA membresía O a UNA reserva de cancha, nunca ambas ni ninguna.
 -- ---------------------------------------------------------------------
 CREATE TABLE pago (
     id                  SERIAL PRIMARY KEY,
