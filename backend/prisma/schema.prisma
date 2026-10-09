@@ -1,0 +1,272 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model acceso {
+  id         Int       @id @default(autoincrement())
+  socio_id   Int
+  sede_id    Int
+  ingreso_at DateTime  @default(now()) @db.Timestamptz(6)
+  egreso_at  DateTime? @db.Timestamptz(6)
+  sede       sede      @relation(fields: [sede_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  socio      socio     @relation(fields: [socio_id], references: [usuario_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([sede_id], map: "ix_acceso_sede")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model cancha {
+  id             Int              @id @default(autoincrement())
+  tipo_cancha_id Int
+  sede_id        Int
+  nombre         String           @db.VarChar(100)
+  costo_hora     Decimal          @db.Decimal(10, 2)
+  estado         estado_cancha    @default(HABILITADA)
+  sede           sede             @relation(fields: [sede_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tipo_cancha    tipo_cancha      @relation(fields: [tipo_cancha_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reserva_cancha reserva_cancha[]
+
+  @@unique([sede_id, nombre])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model clase {
+  id                 Int                  @id @default(autoincrement())
+  tipo_clase_id      Int
+  instructor_id      Int
+  sede_id            Int
+  capacidad_max      Int                  @db.SmallInt
+  inicio_at          DateTime             @db.Timestamptz(6)
+  fin_at             DateTime             @db.Timestamptz(6)
+  cupo_disponible    Int                  @db.SmallInt
+  instructor         instructor           @relation(fields: [instructor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  sede               sede                 @relation(fields: [sede_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tipo_clase         tipo_clase           @relation(fields: [tipo_clase_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  lista_espera_clase lista_espera_clase[]
+  reserva_clase      reserva_clase[]
+
+  @@index([instructor_id], map: "ix_clase_instructor")
+  @@index([sede_id], map: "ix_clase_sede")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model cliente_externo {
+  usuario_id Int          @id
+  tipo       tipo_usuario @default(CLIENTE_EXTERNO)
+  usuario    usuario      @relation(fields: [usuario_id, tipo], references: [id, tipo], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([usuario_id, tipo])
+}
+
+model comprobante {
+  id          Int      @id @default(autoincrement())
+  pago_id     Int      @unique
+  emitido_at  DateTime @default(now()) @db.Timestamptz(6)
+  archivo_url String?
+  pago        pago     @relation(fields: [pago_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model credencial_qr {
+  socio_id  Int       @id
+  secreto   String    @db.VarChar(255)
+  creada_at DateTime  @default(now()) @db.Timestamptz(6)
+  rotada_at DateTime? @db.Timestamptz(6)
+  socio     socio     @relation(fields: [socio_id], references: [usuario_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model instructor {
+  id          Int     @id @default(autoincrement())
+  nombre      String  @db.VarChar(100)
+  apellido    String  @db.VarChar(100)
+  descripcion String?
+  clase       clase[]
+}
+
+model lista_espera_clase {
+  id        Int                 @id @default(autoincrement())
+  socio_id  Int
+  clase_id  Int
+  estado    estado_lista_espera @default(EN_ESPERA)
+  creada_at DateTime            @default(now()) @db.Timestamptz(6)
+  clase     clase               @relation(fields: [clase_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  socio     socio               @relation(fields: [socio_id], references: [usuario_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([clase_id, creada_at], map: "ix_lista_espera_clase")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model membresia {
+  id                    Int              @id @default(autoincrement())
+  socio_id              Int
+  plan_id               Int
+  fecha_inicio          DateTime         @db.Date
+  fecha_fin             DateTime         @db.Date
+  estado                estado_membresia @default(ACTIVA)
+  renovacion_automatica Boolean          @default(false)
+  plan_membresia        plan_membresia   @relation(fields: [plan_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  socio                 socio            @relation(fields: [socio_id], references: [usuario_id], onDelete: NoAction, onUpdate: NoAction)
+  pago                  pago[]
+
+  @@index([socio_id], map: "ix_membresia_socio")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model pago {
+  id                Int             @id @default(autoincrement())
+  membresia_id      Int?
+  reserva_cancha_id Int?
+  monto             Decimal         @db.Decimal(10, 2)
+  estado            estado_pago     @default(PENDIENTE)
+  token             String?         @db.VarChar(255)
+  creado_at         DateTime        @default(now()) @db.Timestamptz(6)
+  comprobante       comprobante?
+  membresia         membresia?      @relation(fields: [membresia_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reserva_cancha    reserva_cancha? @relation(fields: [reserva_cancha_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([membresia_id], map: "ix_pago_membresia")
+  @@index([reserva_cancha_id], map: "ix_pago_reserva_cancha")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model plan_membresia {
+  id             Int         @id @default(autoincrement())
+  nombre         String      @unique @db.VarChar(100)
+  descripcion    String?
+  duracion_meses Int         @db.SmallInt
+  precio         Decimal     @db.Decimal(10, 2)
+  membresia      membresia[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model reserva_cancha {
+  id                Int                   @id @default(autoincrement())
+  cancha_id         Int
+  usuario_id        Int
+  fecha             DateTime              @db.Date
+  hora_inicio       Int                   @db.SmallInt
+  estado            estado_reserva_cancha @default(PENDIENTE_PAGO)
+  precio_base       Decimal               @db.Decimal(10, 2)
+  descuento         Decimal               @default(0) @db.Decimal(10, 2)
+  recargo_hora_pico Decimal               @default(0) @db.Decimal(10, 2)
+  monto_total       Decimal               @db.Decimal(10, 2)
+  pago              pago[]
+  cancha            cancha                @relation(fields: [cancha_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuario           usuario               @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([usuario_id], map: "ix_reserva_cancha_usuario")
+}
+
+model reserva_clase {
+  id           Int                  @id @default(autoincrement())
+  clase_id     Int
+  socio_id     Int
+  estado       estado_reserva_clase @default(CONFIRMADA)
+  reservada_at DateTime             @default(now()) @db.Timestamptz(6)
+  cancelada_at DateTime?            @db.Timestamptz(6)
+  clase        clase                @relation(fields: [clase_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  socio        socio                @relation(fields: [socio_id], references: [usuario_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([clase_id], map: "ix_reserva_clase_clase")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model sede {
+  id               Int      @id @default(autoincrement())
+  nombre           String   @unique @db.VarChar(150)
+  aforo_maximo     Int
+  ubicacion_simple String   @db.VarChar(150)
+  ubicacion_exacta String   @db.VarChar(255)
+  aforo_actual     Int      @default(0)
+  acceso           acceso[]
+  cancha           cancha[]
+  clase            clase[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model socio {
+  usuario_id         Int                  @id
+  tipo               tipo_usuario         @default(SOCIO)
+  acceso             acceso[]
+  credencial_qr      credencial_qr?
+  lista_espera_clase lista_espera_clase[]
+  membresia          membresia[]
+  reserva_clase      reserva_clase[]
+  usuario            usuario              @relation(fields: [usuario_id, tipo], references: [id, tipo], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([usuario_id, tipo])
+}
+
+model tipo_cancha {
+  id     Int      @id @default(autoincrement())
+  nombre String   @unique @db.VarChar(100)
+  cancha cancha[]
+}
+
+model tipo_clase {
+  id     Int     @id @default(autoincrement())
+  nombre String  @unique @db.VarChar(100)
+  clase  clase[]
+}
+
+model usuario {
+  id              Int              @id @default(autoincrement())
+  tipo            tipo_usuario
+  dni             String           @unique @db.VarChar(20)
+  nombre          String           @db.VarChar(100)
+  apellido        String           @db.VarChar(100)
+  email           String           @unique @db.VarChar(150)
+  telefono        String?          @db.VarChar(30)
+  foto_url        String?
+  password_hash   String           @db.VarChar(255)
+  fecha_alta      DateTime         @default(now()) @db.Timestamptz(6)
+  cliente_externo cliente_externo?
+  reserva_cancha  reserva_cancha[]
+  socio           socio?
+
+  @@unique([id, tipo])
+}
+
+enum estado_cancha {
+  HABILITADA
+  MANTENIMIENTO
+}
+
+enum estado_lista_espera {
+  EN_ESPERA
+  PROMOVIDA
+  CANCELADA
+}
+
+enum estado_membresia {
+  ACTIVA
+  VENCIDA
+  SUSPENDIDA
+}
+
+enum estado_pago {
+  PENDIENTE
+  APROBADO
+  RECHAZADO
+}
+
+enum estado_reserva_cancha {
+  PENDIENTE_PAGO
+  CONFIRMADA
+  CANCELADA
+}
+
+enum estado_reserva_clase {
+  CONFIRMADA
+  CANCELADA
+}
+
+enum tipo_usuario {
+  SOCIO
+  CLIENTE_EXTERNO
+}
