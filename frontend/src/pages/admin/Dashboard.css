@@ -1,15 +1,4 @@
-/* Perfil del usuario en el sidebar */
-.user-profile {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--border-color);
-    margin-top: auto;
-}
-.user-avatar { width: 40px; height: 40px; border-radius: 50%; background-color: var(--bg-card); }
-.user-info h4 { font-size: 0.9rem; margin-bottom: 0.1rem; }
-.user-info p { font-size: 0.75rem; color: var(--accent-orange); }
+
 
 /* Grilla Principal del Dashboard */
 .dashboard-grid {
@@ -25,6 +14,28 @@
 .trend-up { color: var(--accent-green); }
 .trend-down { color: var(--accent-red); }
 .trend-text { color: var(--text-muted); font-weight: 400; }
+
+.kpi-card-interactive {
+    cursor: pointer;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    display: flex;
+    flex-direction: column;
+}
+.kpi-card-interactive:hover {
+    transform: translateY(-3px);
+    border-color: var(--accent-orange);
+    box-shadow: 0 8px 24px rgba(255, 94, 58, 0.12);
+}
+.card-explore-hint {
+    margin-top: auto;
+    padding-top: 0.75rem;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    transition: color 0.2s;
+}
+.kpi-card-interactive:hover .card-explore-hint {
+    color: var(--accent-orange);
+}
 
 /* Zonas de la grilla */
 .charts-area { grid-column: span 3; display: flex; flex-direction: column; gap: 1.5rem; }

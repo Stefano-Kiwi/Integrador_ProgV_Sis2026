@@ -4,6 +4,7 @@
     grid-template-columns: 1fr 380px;
     gap: 1.5rem;
     align-items: start;
+    min-width: 0;
 }
 
 /* --- ZONA IZQUIERDA: CALENDARIO --- */
@@ -11,6 +12,7 @@
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
+    min-width: 0;
 }
 
 .calendar-header {
@@ -26,8 +28,16 @@
 
 .week-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(5, minmax(150px, 1fr));
     gap: 1rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+}
+
+@media (max-width: 1240px) {
+    .classes-layout {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* Columnas de los días */
@@ -123,3 +133,69 @@
 .roster-name { font-weight: 600; }
 .roster-status { color: var(--text-muted); font-size: 0.75rem; }
 .roster-pos { color: var(--accent-yellow); font-weight: 700; font-size: 0.75rem; }
+
+/* Barra de Filtros */
+.classes-filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    padding: 0.85rem 1.25rem;
+    border-radius: var(--radius-lg);
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.filter-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+/* Tarjeta Seleccionada */
+.class-card.selected-class {
+    border: 1.5px solid var(--accent-orange) !important;
+    background-color: var(--bg-card-hover);
+    box-shadow: 0 4px 16px rgba(255, 94, 58, 0.2);
+}
+
+/* Botones de Asistencia Dinámica */
+.attendance-toggle-btn {
+    border-radius: 20px;
+    padding: 0.35rem 0.85rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    outline: none;
+}
+
+.att-presente {
+    background-color: rgba(0, 255, 135, 0.15);
+    color: var(--accent-green);
+    border: 1px solid rgba(0, 255, 135, 0.3);
+}
+
+.att-ausente {
+    background-color: rgba(255, 75, 114, 0.15);
+    color: var(--accent-red);
+    border: 1px solid rgba(255, 75, 114, 0.3);
+}
+
+.att-pendiente {
+    background-color: rgba(255, 176, 32, 0.15);
+    color: var(--accent-yellow);
+    border: 1px solid rgba(255, 176, 32, 0.3);
+}
+
+.attendance-toggle-btn:hover {
+    filter: brightness(1.2);
+    transform: scale(1.03);
+}

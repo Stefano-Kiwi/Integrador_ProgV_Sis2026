@@ -1,9 +1,82 @@
+/* Barra de Leyenda de Estados */
+.grid-legend-bar {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    padding: 0.85rem 1.25rem;
+    border-radius: var(--radius-lg);
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.legend-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-pure);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.legend-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.legend-badge {
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.legend-sub {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+}
+
+.badge-libre {
+    background-color: rgba(0, 255, 135, 0.12);
+    color: var(--accent-green);
+    border: 1px solid rgba(0, 255, 135, 0.3);
+}
+
+.badge-pico {
+    background-color: rgba(255, 176, 32, 0.15);
+    color: var(--accent-yellow);
+    border: 1px solid rgba(255, 176, 32, 0.4);
+}
+
+.badge-ocupado {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+}
+
+.badge-mantenimiento {
+    background-color: rgba(255, 75, 114, 0.12);
+    color: var(--accent-red);
+    border: 1px solid rgba(255, 75, 114, 0.3);
+}
+
 /* Layout de la vista: Grilla (izq) y Configuración (der) */
 .courts-layout {
     display: grid;
     grid-template-columns: 1fr 380px;
     gap: 1.5rem;
     align-items: start;
+    min-width: 0;
+}
+
+@media (max-width: 1240px) {
+    .courts-layout {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* --- ZONA IZQUIERDA: GRILLA DE TURNOS --- */
@@ -13,6 +86,7 @@
     border-radius: var(--radius-lg);
     display: flex;
     flex-direction: column;
+    min-width: 0;
 }
 
 /* Cabecera con Tabs y Fecha */
@@ -80,7 +154,7 @@
     font-size: 1rem;
 }
 
-/* Botones de Horarios */
+/* Botones de Horarios y Estados */
 .time-slots {
     display: flex;
     gap: 0.75rem;
@@ -90,31 +164,99 @@
 .time-slot {
     background-color: var(--bg-body);
     border: 1px solid var(--border-color);
+    color: var(--text-pure);
+    padding: 0.65rem 0.95rem;
+    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    cursor: pointer;
+    min-width: 105px;
+    transition: all 0.2s ease;
+    outline: none;
+}
+
+.time-slot:hover {
+    transform: translateY(-2px);
+}
+
+.slot-hour {
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.slot-info {
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
+/* Estado: Libre */
+.slot-libre {
+    border-color: rgba(0, 255, 135, 0.4);
+    background-color: rgba(0, 255, 135, 0.04);
+}
+.slot-libre .slot-info {
+    color: var(--accent-green);
+}
+.slot-libre:hover {
+    border-color: var(--accent-green);
+    box-shadow: 0 4px 12px rgba(0, 255, 135, 0.15);
+}
+
+/* Estado: Horario Pico (+20%) */
+.slot-horario_pico {
+    border-color: rgba(255, 176, 32, 0.5);
+    background-color: rgba(255, 176, 32, 0.06);
+}
+.slot-horario_pico .slot-info {
+    color: var(--accent-yellow);
+}
+.slot-horario_pico:hover {
+    border-color: var(--accent-yellow);
+    box-shadow: 0 4px 12px rgba(255, 176, 32, 0.2);
+}
+
+/* Estado: Ocupado */
+.slot-ocupado {
+    background-color: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.08);
+    opacity: 0.75;
+}
+.slot-ocupado .slot-info {
     color: var(--text-muted);
-    padding: 0.5rem 0.85rem;
-    border-radius: var(--radius-sm);
-    font-size: 0.8rem;
+}
+
+/* Estado: Mantenimiento */
+.slot-mantenimiento {
+    background-color: rgba(255, 75, 114, 0.05);
+    border: 1px dashed var(--accent-red);
+    opacity: 0.7;
+}
+.slot-mantenimiento .slot-info {
+    color: var(--accent-red);
+}
+
+/* Caja de Cancha en Mantenimiento */
+.maintenance-box {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    cursor: pointer;
+    gap: 1rem;
+    background-color: rgba(255, 75, 114, 0.06);
+    border: 1px dashed var(--accent-red);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
 }
 
-.time-slot.available {
-    border-color: rgba(255, 94, 58, 0.4);
-    color: var(--text-pure);
-}
-
-.time-slot.reserved {
-    background-color: rgba(255, 255, 255, 0.03);
-    cursor: not-allowed;
-    opacity: 0.7;
+.maintenance-icon {
+    font-size: 1.5rem;
 }
 
 .maintenance-msg {
     font-size: 0.85rem;
     color: var(--text-muted);
-    padding: 0.5rem 0;
+    padding: 0.25rem 0;
 }
 
 /* --- ZONA DERECHA: CONFIGURACIÓN --- */

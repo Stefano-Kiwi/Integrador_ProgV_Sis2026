@@ -1,20 +1,20 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import MainLayout from "./layouts/MainLayout";
-import Home from "./pages/Home";
-import Login from "./pages/Login";
-import Profile from "./pages/Profile";
-import Pagos from "./pages/Pagos";
-import Clases from "./pages/Clases";
-import Canchas from "./pages/Canchas";
+import Home from "./pages/portal/Home";
+import Login from "./pages/portal/Login";
+import Profile from "./pages/portal/Profile";
+import Pagos from "./pages/portal/Pagos";
+import Clases from "./pages/portal/Clases";
+import Canchas from "./pages/portal/Canchas";
 
 import AdminLayout from "./layouts/AdminLayout";
-import Dashboard from "./pages/Dashboard";
-import AdminSocio from "./pages/AdminSocio";
-import AdminClases from "./pages/AdminClases";
-import AdminCanchas from "./pages/AdminCanchas";
-import AdminControlAcceso from "./pages/AdminControlAcceso";
-import AdminPagos from "./pages/AdminPagos";
-import AdminLogin from "./pages/AdminLogin";
+import Dashboard from "./pages/admin/Dashboard";
+import AdminSocio from "./pages/admin/AdminSocio";
+import AdminClases from "./pages/admin/AdminClases";
+import AdminCanchas from "./pages/admin/AdminCanchas";
+import AdminControlAcceso from "./pages/admin/AdminControlAcceso";
+import AdminPagos from "./pages/admin/AdminPagos";
+import AdminLogin from "./pages/admin/AdminLogin";
 
 export default function App() {
   return (

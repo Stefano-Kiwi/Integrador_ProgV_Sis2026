@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import "../admin.css";
 
@@ -6,10 +6,57 @@ interface AdminLayoutProps {
   children?: ReactNode;
 }
 
+type UserRole = "admin" | "gerente" | "recepcion" | "instructor";
+
+interface RoleConfig {
+  name: string;
+  badge: string;
+  avatar: string;
+  allowedPaths: string[];
+}
+
+const ROLES_CONFIG: Record<UserRole, RoleConfig> = {
+  admin: {
+    name: "Gerardo Ruiz",
+    badge: "Admin General",
+    avatar: "/src/assets/gerardo.jpg",
+    allowedPaths: ["/admin", "/admin/socios", "/admin/clases", "/admin/canchas", "/admin/controlacceso", "/admin/pagos"],
+  },
+  gerente: {
+    name: "Valeria Morales",
+    badge: "Gerente de Sede",
+    avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
+    allowedPaths: ["/admin", "/admin/socios", "/admin/clases", "/admin/canchas", "/admin/pagos"],
+  },
+  recepcion: {
+    name: "Lucas Benítez",
+    badge: "Recepcionista",
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+    allowedPaths: ["/admin/socios", "/admin/canchas", "/admin/controlacceso", "/admin/pagos"],
+  },
+  instructor: {
+    name: "Martín Palermo",
+    badge: "Instructor Fitness",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+    allowedPaths: ["/admin/clases", "/admin/controlacceso"],
+  },
+};
+
+const SEDES = [
+  { id: "palermo", name: "Sede Palermo (Central)", ciudad: "Buenos Aires", aforo: "82% Aforo" },
+  { id: "lascondes", name: "Sede Las Condes", ciudad: "Santiago", aforo: "78% Aforo" },
+  { id: "vitacura", name: "Sede Vitacura", ciudad: "Santiago", aforo: "65% Aforo" },
+  { id: "providencia", name: "Sede Providencia", ciudad: "Santiago", aforo: "90% Aforo" },
+  { id: "belgrano", name: "Sede Belgrano", ciudad: "Buenos Aires", aforo: "54% Aforo" },
+];
+
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const location = useLocation();
+  const [currentRole, setCurrentRole] = useState<UserRole>("admin");
+  const [currentSede, setCurrentSede] = useState<string>("lascondes");
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const navItems = [
+  const allNavItems = [
     {
       path: "/admin",
       label: "Dashboard",
@@ -67,7 +114,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     },
     {
       path: "/admin/pagos",
-      label: "Reportes & Analíticas",
+      label: "Reportes & Pagos",
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "18px" }}>
           <line x1="18" y1="20" x2="18" y2="10"></line>
@@ -78,41 +125,145 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     },
   ];
 
+  const activeRoleData = ROLES_CONFIG[currentRole];
+  const activeSedeData = SEDES.find((s) => s.id === currentSede) || SEDES[0];
+  const visibleNavItems = allNavItems.filter((item) => activeRoleData.allowedPaths.includes(item.path));
+
   return (
     <div className="admin-body-wrapper">
-      {/* SIDEBAR */}
-      <aside className="sidebar">
-        <div className="brand">
-          <svg viewBox="0 0 24 24" fill="var(--accent-orange)" style={{ width: "24px" }}>
-            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-          </svg>
-          <div className="brand-title">
-            FITZONE <span>PANEL</span>
+      {/* SIDEBAR COLAPSABLE */}
+      <aside className={`sidebar ${isCollapsed ? "sidebar-collapsed" : ""}`}>
+        {/* CABECERA BRAND & BOTÓN TOGGLE */}
+        <div className="brand-header">
+          <div className="brand" title="FitZone Panel">
+            <svg viewBox="0 0 24 24" fill="var(--accent-orange)" style={{ width: "24px", minWidth: "24px", flexShrink: 0 }}>
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
+            {!isCollapsed && (
+              <div className="brand-title">
+                FITZONE <span>PANEL</span>
+              </div>
+            )}
           </div>
+          <button
+            type="button"
+            className="sidebar-toggle-btn"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            title={isCollapsed ? "Abrir menú (expandir)" : "Cerrar menú (colapsar)"}
+            aria-label={isCollapsed ? "Abrir menú lateral" : "Cerrar menú lateral"}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              {isCollapsed ? (
+                <polyline points="9 18 15 12 9 6"></polyline>
+              ) : (
+                <polyline points="15 18 9 12 15 6"></polyline>
+              )}
+            </svg>
+          </button>
         </div>
-        <div className="brand-subtitle">Sedes autorizadas: 25+</div>
 
-        <nav className="nav-menu">
-          {navItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`nav-link ${location.pathname === item.path || (item.path !== '/admin' && location.pathname.startsWith(item.path)) ? "active" : ""
-                }`}
+        {/* SELECTOR DE SEDE (OCULTO EN MODO COLAPSADO) */}
+        {!isCollapsed && (
+          <div className="sede-selector-box">
+            <label className="sede-selector-label" htmlFor="sede-select">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "13px", height: "13px" }}>
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+              </svg>
+              Sede Operativa Activa:
+            </label>
+            <select
+              id="sede-select"
+              className="sede-select-dropdown"
+              value={currentSede}
+              onChange={(e) => setCurrentSede(e.target.value)}
             >
-              {item.icon}
-              {item.label}
-            </Link>
-          ))}
+              {SEDES.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+            <div className="sede-status-indicator">
+              <span className="live-dot"></span>
+              <span>{activeSedeData.ciudad} • {activeSedeData.aforo}</span>
+            </div>
+          </div>
+        )}
+
+        {/* SIMULADOR DE ROL (OCULTO EN MODO COLAPSADO) */}
+        {!isCollapsed && (
+          <div className="role-switcher-box">
+            <label className="role-switcher-label" htmlFor="role-select">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "13px", height: "13px" }}>
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              Rol de Usuario:
+            </label>
+            <select
+              id="role-select"
+              className="role-select-dropdown"
+              value={currentRole}
+              onChange={(e) => setCurrentRole(e.target.value as UserRole)}
+            >
+              <option value="admin">Administrador General</option>
+              <option value="gerente">Gerente de Sede</option>
+              <option value="recepcion">Recepcionista</option>
+              <option value="instructor">Instructor Fitness</option>
+            </select>
+          </div>
+        )}
+
+        {/* MENÚ DE NAVEGACIÓN DINÁMICO POR ROL */}
+        {!isCollapsed && (
+          <div className="nav-menu-header">Módulos Disponibles ({visibleNavItems.length}):</div>
+        )}
+        <nav className="nav-menu">
+          {visibleNavItems.map((item) => {
+            const isActive = location.pathname === item.path || (item.path !== "/admin" && location.pathname.startsWith(item.path));
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`nav-link ${isActive ? "active" : ""}`}
+                title={item.label}
+              >
+                <span className="nav-icon">{item.icon}</span>
+                {!isCollapsed && <span>{item.label}</span>}
+              </Link>
+            );
+          })}
         </nav>
 
-        <div className="user-profile">
-          <div className="user-avatar" style={{ backgroundImage: "url('/src/assets/gerardo.jpg')" }}></div>
-          <div className="user-info">
-            <h4>Gerardo Ruiz</h4>
-            <p>Gerente Central</p>
-          </div>
-        </div>
+        {/* PERFIL DEL USUARIO (CLICKABLE) */}
+        <Link
+          to="/profile"
+          className="user-profile"
+          title={isCollapsed ? `Perfil: ${activeRoleData.name} (${activeRoleData.badge})` : "Ver Perfil de Usuario"}
+        >
+          <div
+            className="user-avatar"
+            style={{
+              backgroundImage: `url('${activeRoleData.avatar}')`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          ></div>
+          {!isCollapsed && (
+            <>
+              <div className="user-info">
+                <h4>{activeRoleData.name}</h4>
+                <span className="user-role-badge">{activeRoleData.badge}</span>
+              </div>
+              <div className="user-profile-arrow">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "16px", height: "16px" }}>
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </div>
+            </>
+          )}
+        </Link>
       </aside>
 
       {/* CONTENIDO PRINCIPAL */}
@@ -122,3 +273,4 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     </div>
   );
 }
+
