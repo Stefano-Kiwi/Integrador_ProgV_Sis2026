@@ -20,16 +20,17 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public / User Routes */}
-        <Route element={<MainLayout><Outlet /></MainLayout>}>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/usuarios" element={<Navigate to="/profile" replace />} />
-          <Route path="/pagos" element={<Pagos />} />
-          <Route path="/clases" element={<Clases />} />
-          <Route path="/canchas" element={<Canchas />} />
-        </Route>
+          {/* Public / User Routes */}
+          <Route element={<MainLayout><Outlet /></MainLayout>}>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/perfil" element={<Profile />} />
+            <Route path="/usuarios" element={<Navigate to="/profile" replace />} />
+            <Route path="/pagos" element={<Pagos />} />
+            <Route path="/clases" element={<Clases />} />
+            <Route path="/canchas" element={<Canchas />} />
+          </Route>
 
         {/* Admin Login (No sidebar) */}
         <Route path="/admin/login" element={<AdminLogin />} />

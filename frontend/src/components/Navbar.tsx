@@ -1,8 +1,19 @@
-import { useState, useEffect } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { Link, NavLink, useNavigate } from "react-router-dom";
+
+const LOCALIDADES = ["Concordia", "Federación", "Chajarí"] as const;
+type Localidad = (typeof LOCALIDADES)[number];
 
 export default function Navbar() {
+    const navigate = useNavigate();
+    const [locality, setLocality] = useState<Localidad>("Concordia");
+
     const [isScrolled, setIsScrolled] = useState(false);
+    const [isLocalityOpen, setIsLocalityOpen] = useState(false);
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+    const localityRef = useRef<HTMLDivElement>(null);
+    const profileRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -12,6 +23,50 @@ export default function Navbar() {
         window.addEventListener("scroll", handleScroll);
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
+
+    // Manejo de Click-Away (cerrar al hacer clic fuera) y Escape
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (localityRef.current && !localityRef.current.contains(event.target as Node)) {
+                setIsLocalityOpen(false);
+            }
+            if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+                setIsProfileOpen(false);
+            }
+        };
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === "Escape") {
+                setIsLocalityOpen(false);
+                setIsProfileOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        document.addEventListener("keydown", handleKeyDown);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+            document.removeEventListener("keydown", handleKeyDown);
+        };
+    }, []);
+
+    const handleSelectLocality = (city: Localidad) => {
+        setLocality(city);
+        setIsLocalityOpen(false);
+    };
+
+    const handleGoToProfile = () => {
+        setIsProfileOpen(false);
+        navigate("/perfil");
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        sessionStorage.clear();
+        setIsProfileOpen(false);
+        navigate("/login");
+    };
 
     return (
         <header
@@ -137,62 +192,207 @@ export default function Navbar() {
                                 <span>Pagos y Facturación</span>
                             </NavLink>
                         </li>
-
-                        {/* Enlace: USUARIOS */}
-                        <li className="nav-item">
-                            <NavLink
-                                to="/profile"
-                                className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
-                                id="nav-usuarios"
-                            >
-                                <svg
-                                    className="nav-icon"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                >
-                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                                    <circle cx="9" cy="7" r="4" />
-                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                                </svg>
-                                <span>Usuarios</span>
-                            </NavLink>
-                        </li>
                     </ul>
                 </nav>
 
-                {/* Menú Desplegable: PERFIL */}
-                <div className="profile-menu" id="profile-menu">
-                    <Link
-                        to="/profile"
-                        className="profile-trigger"
-                        id="profile-trigger"
-                        aria-label="Abrir menú de usuario y perfil"
-                        style={{ textDecoration: "none" }}
-                    >
-                        <div className="profile-avatar-wrap">
-                            <div className="profile-avatar">Gym</div>
-                            <span className="online-indicator" title="Conectado" />
-                        </div>
-                        <div className="profile-meta">
-                            <span className="profile-name">Totalmente no soy el Mati</span>
-                            <span className="profile-role">El Tremendo Plan</span>
-                        </div>
-                        <svg
-                            className="profile-chevron"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
+                {/* 3. Acciones de Usuario: Menús Desplegables de Localidad y Perfil */}
+                <div className="nav-user-controls" id="nav-user-controls">
+                    {/* Menú Desplegable: Localidad */}
+                    <div className="localidad-menu" id="localidad-menu-wrapper" ref={localityRef}>
+                        <button
+                            type="button"
+                            className={`localidad-trigger ${isLocalityOpen ? "active" : ""}`}
+                            id="localidad-trigger"
+                            aria-label="Abrir menú de localidad"
+                            aria-haspopup="true"
+                            aria-expanded={isLocalityOpen}
+                            onClick={() => {
+                                setIsLocalityOpen((prev) => !prev);
+                                setIsProfileOpen(false);
+                            }}
                         >
-                            <polyline points="6 9 12 15 18 9" />
-                        </svg>
-                    </Link>
+                            <div className="localidad-icon-wrap">
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2.2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                >
+                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                    <circle cx="12" cy="10" r="3" />
+                                </svg>
+                            </div>
+                            <div className="localidad-meta">
+                                <span className="localidad-label">Localidad</span>
+                                <span className="localidad-name">{locality}</span>
+                            </div>
+                            <svg
+                                className={`profile-chevron ${isLocalityOpen ? "open" : ""}`}
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            >
+                                <polyline points="6 9 12 15 18 9" />
+                            </svg>
+                        </button>
+
+                        {/* Lista desplegable con opciones: Concordia, Federación, Chajarí */}
+                        {isLocalityOpen && (
+                            <div
+                                className="nav-dropdown-menu localidad-dropdown"
+                                role="menu"
+                                aria-label="Seleccionar localidad activa"
+                            >
+                                <div className="dropdown-header">
+                                    <span className="dropdown-header-title">SELECCIONAR LOCALIDAD</span>
+                                </div>
+                                {LOCALIDADES.map((city) => {
+                                    const isSelected = locality === city;
+                                    return (
+                                        <button
+                                            key={city}
+                                            type="button"
+                                            role="menuitem"
+                                            className={`dropdown-item ${isSelected ? "active" : ""}`}
+                                            onClick={() => handleSelectLocality(city)}
+                                        >
+                                            <div className="dropdown-item-left">
+                                                <svg
+                                                    className="dropdown-item-icon"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="2"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                >
+                                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                                    <circle cx="12" cy="10" r="3" />
+                                                </svg>
+                                                <span>{city}</span>
+                                            </div>
+                                            {isSelected && (
+                                                <svg
+                                                    className="dropdown-item-check"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="2.5"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                >
+                                                    <polyline points="20 6 9 17 4 12" />
+                                                </svg>
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Menú Desplegable: PERFIL */}
+                    <div className="profile-menu" id="profile-menu-wrapper" ref={profileRef}>
+                        <button
+                            type="button"
+                            className={`profile-trigger ${isProfileOpen ? "active" : ""}`}
+                            id="profile-trigger"
+                            aria-label="Abrir menú de usuario y perfil"
+                            aria-haspopup="true"
+                            aria-expanded={isProfileOpen}
+                            onClick={() => {
+                                setIsProfileOpen((prev) => !prev);
+                                setIsLocalityOpen(false);
+                            }}
+                        >
+                            <div className="profile-avatar-wrap">
+                                <div className="profile-avatar">Gym</div>
+                                <span className="online-indicator" title="Conectado" />
+                            </div>
+                            <div className="profile-meta">
+                                <span className="profile-name">Lucas Benítez</span>
+                                <span className="profile-role">El Tremendo Plan</span>
+                            </div>
+                            <svg
+                                className={`profile-chevron ${isProfileOpen ? "open" : ""}`}
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            >
+                                <polyline points="6 9 12 15 18 9" />
+                            </svg>
+                        </button>
+
+                        {/* Desplegable de Perfil: Ir a perfil y Cerrar sesión */}
+                        {isProfileOpen && (
+                            <div
+                                className="nav-dropdown-menu profile-dropdown"
+                                role="menu"
+                                aria-label="Opciones de perfil de usuario"
+                            >
+
+
+                                <button
+                                    type="button"
+                                    role="menuitem"
+                                    className="dropdown-item"
+                                    id="btn-nav-ir-perfil"
+                                    onClick={handleGoToProfile}
+                                >
+                                    <div className="dropdown-item-left">
+                                        <svg
+                                            className="dropdown-item-icon"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        >
+                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                            <circle cx="12" cy="7" r="4" />
+                                        </svg>
+                                        <span>Ir a perfil</span>
+                                    </div>
+                                </button>
+
+                                <div className="dropdown-divider" />
+
+                                <button
+                                    type="button"
+                                    role="menuitem"
+                                    className="dropdown-item dropdown-item-danger"
+                                    id="btn-nav-cerrar-sesion"
+                                    onClick={handleLogout}
+                                >
+                                    <div className="dropdown-item-left">
+                                        <svg
+                                            className="dropdown-item-icon"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        >
+                                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                                            <polyline points="16 17 21 12 16 7" />
+                                            <line x1="21" y1="12" x2="9" y2="12" />
+                                        </svg>
+                                        <span>Cerrar sesión</span>
+                                    </div>
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </header>
