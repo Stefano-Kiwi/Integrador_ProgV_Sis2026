@@ -3,9 +3,16 @@ import MainLayout from "./layouts/MainLayout";
 import Home from "./pages/portal/Home";
 import Login from "./pages/portal/Login";
 import Profile from "./pages/portal/Profile";
+import EditProfile from "./pages/portal/EditProfile";
 import Pagos from "./pages/portal/Pagos";
 import Clases from "./pages/portal/Clases";
 import Canchas from "./pages/portal/Canchas";
+
+// Vistas de Estados Globales
+import Forbidden from "./pages/portal/errors/Forbidden";
+import NotFound from "./pages/portal/errors/NotFound";
+import GeneralError from "./pages/portal/errors/GeneralError";
+import SessionExpired from "./pages/portal/errors/SessionExpired";
 
 import AdminLayout from "./layouts/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
@@ -20,17 +27,29 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-          {/* Public / User Routes */}
-          <Route element={<MainLayout><Outlet /></MainLayout>}>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/perfil" element={<Profile />} />
-            <Route path="/usuarios" element={<Navigate to="/profile" replace />} />
-            <Route path="/pagos" element={<Pagos />} />
-            <Route path="/clases" element={<Clases />} />
-            <Route path="/canchas" element={<Canchas />} />
-          </Route>
+        {/* Public / User Routes */}
+        <Route element={<MainLayout><Outlet /></MainLayout>}>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/perfil" element={<Profile />} />
+          <Route path="/perfil/editar" element={<EditProfile />} />
+          <Route path="/editar-perfil" element={<EditProfile />} />
+          <Route path="/usuarios" element={<Navigate to="/profile" replace />} />
+          <Route path="/pagos" element={<Pagos />} />
+          <Route path="/clases" element={<Clases />} />
+          <Route path="/canchas" element={<Canchas />} />
+
+          {/* Rutas de Estados Globales de Error / Seguridad */}
+          <Route path="/403" element={<Forbidden />} />
+          <Route path="/404" element={<NotFound />} />
+          <Route path="/500" element={<GeneralError />} />
+          <Route path="/expirada" element={<SessionExpired />} />
+          x
+
+          {/* Fallback de ruta no encontrada */}
+          <Route path="*" element={<NotFound />} />
+        </Route>
 
         {/* Admin Login (No sidebar) */}
         <Route path="/admin/login" element={<AdminLogin />} />
@@ -44,8 +63,6 @@ export default function App() {
           <Route path="controlacceso" element={<AdminControlAcceso />} />
           <Route path="pagos" element={<AdminPagos />} />
         </Route>
-
-        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );
