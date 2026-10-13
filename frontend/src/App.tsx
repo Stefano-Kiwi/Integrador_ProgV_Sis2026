@@ -14,6 +14,13 @@ import AdminClases from "./pages/admin/AdminClases";
 import AdminCanchas from "./pages/admin/AdminCanchas";
 import AdminControlAcceso from "./pages/admin/AdminControlAcceso";
 import AdminPagos from "./pages/admin/AdminPagos";
+import AdminSedes from "./pages/admin/AdminSedes";
+import AdminSedeDetalle from "./pages/admin/AdminSedeDetalle";
+import AdminSedeForm from "./pages/admin/AdminSedeForm";
+import AdminInstructores from "./pages/admin/AdminInstructores";
+import AdminTiposClase from "./pages/admin/AdminTiposClase";
+import AdminTiposCancha from "./pages/admin/AdminTiposCancha";
+import AdminPlanes from "./pages/admin/AdminPlanes";
 import AdminLogin from "./pages/admin/AdminLogin";
 
 export default function App() {
@@ -38,6 +45,14 @@ export default function App() {
         {/* Admin Routes with Sidebar */}
         <Route path="/admin" element={<AdminLayout><Outlet /></AdminLayout>}>
           <Route index element={<Dashboard />} />
+          <Route path="sedes" element={<AdminSedes />} />
+          <Route path="sedes/nueva" element={<AdminSedeForm />} />
+          <Route path="sedes/:id" element={<AdminSedeDetalle />} />
+          <Route path="sedes/:id/editar" element={<AdminSedeForm />} />
+          <Route path="instructores" element={<AdminInstructores />} />
+          <Route path="tipos-clase" element={<AdminTiposClase />} />
+          <Route path="tipos-cancha" element={<AdminTiposCancha />} />
+          <Route path="planes" element={<AdminPlanes />} />
           <Route path="socios" element={<AdminSocio />} />
           <Route path="clases" element={<AdminClases />} />
           <Route path="canchas" element={<AdminCanchas />} />
