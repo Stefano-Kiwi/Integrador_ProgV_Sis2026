@@ -29,6 +29,9 @@ import AdminTiposClase from "./pages/admin/AdminTiposClase";
 import AdminTiposCancha from "./pages/admin/AdminTiposCancha";
 import AdminPlanes from "./pages/admin/AdminPlanes";
 import AdminLogin from "./pages/admin/AdminLogin";
+import AdminPersonal from "./pages/admin/AdminPersonal";
+import AdminUsuarioForm from "./pages/admin/AdminUsuarioForm";
+import AdminUsuarioDetalle from "./pages/admin/AdminUsuarioDetalle";
 
 export default function App() {
   return (
@@ -68,6 +71,14 @@ export default function App() {
           <Route path="sedes/nueva" element={<AdminSedeForm />} />
           <Route path="sedes/:id" element={<AdminSedeDetalle />} />
           <Route path="sedes/:id/editar" element={<AdminSedeForm />} />
+          <Route path="personal" element={<AdminPersonal />} />
+          <Route path="personal/nuevo" element={<AdminUsuarioForm />} />
+          <Route path="personal/:id" element={<AdminUsuarioForm />} />
+          <Route path="personal/:id" element={<AdminUsuarioDetalle />} />
+          <Route path="usuarios" element={<Navigate to="/admin/personal" replace />} />
+          <Route path="usuarios/nuevo" element={<AdminUsuarioForm />} />
+          <Route path="usuarios/:id" element={<AdminUsuarioDetalle />} />
+          <Route path="usuarios/:id/editar" element={<AdminUsuarioForm />} />
           <Route path="instructores" element={<AdminInstructores />} />
           <Route path="tipos-clase" element={<AdminTiposClase />} />
           <Route path="tipos-cancha" element={<AdminTiposCancha />} />
