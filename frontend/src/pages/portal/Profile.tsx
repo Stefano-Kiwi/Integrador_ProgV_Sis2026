@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 export default function Profile() {
   return (
     <div className="profile-page-wrapper">
@@ -11,6 +13,92 @@ export default function Profile() {
             Ficha general del socio, pase digital y registro de actividades.
           </p>
         </header>
+
+        {/* Cuadro Estático con los Datos del Usuario */}
+        <section className="user-account-summary-card" aria-label="Cuadro de datos del usuario">
+          <div className="summary-card-header">
+            <div className="summary-card-left">
+              <svg
+                className="summary-card-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+              <div>
+                <h2 className="summary-card-title">CUADRO DE DATOS DEL USUARIO</h2>
+              </div>
+            </div>
+            <div className="summary-card-actions">
+              <span className="summary-badge-id">ID: TG-8492</span>
+              <Link to="/perfil/editar" className="summary-edit-link" id="btn-perfil-editar-datos">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+                <span>Editar datos personales</span>
+              </Link>
+            </div>
+          </div>
+
+          <div className="summary-fields-grid">
+            {/* Nombre y Apellido */}
+            <div className="summary-field-cell">
+              <span className="summary-label">Nombre y Apellido</span>
+              <span className="summary-value">Lucas Benítez</span>
+            </div>
+
+            {/* Nombre de Usuario */}
+            <div className="summary-field-cell">
+              <span className="summary-label">Nombre de Usuario</span>
+              <span className="summary-value" style={{ color: "var(--accent-neon)" }}>@lucas.benitez</span>
+            </div>
+
+            {/* Correo Electrónico */}
+            <div className="summary-field-cell">
+              <span className="summary-label">Correo Electrónico</span>
+              <span className="summary-value">lucas.benitez@eltremendo.com</span>
+            </div>
+
+            {/* Rol Dentro del Sistema */}
+            <div className="summary-field-cell">
+              <span className="summary-label">Rol en el Sistema</span>
+              <span className="summary-value">
+                <span className="role-tag">Socio Activo (VIP)</span>
+              </span>
+            </div>
+
+            {/* Estado de la Cuenta */}
+            <div className="summary-field-cell">
+              <span className="summary-label">Estado de Cuenta</span>
+              <span className="summary-value">
+                <span className="status-tag">● Al Día / Activa</span>
+              </span>
+            </div>
+
+            {/* Identificador del Usuario */}
+            <div className="summary-field-cell">
+              <span className="summary-label">Identificador (ID)</span>
+              <span className="summary-value" style={{ fontFamily: "monospace", letterSpacing: "1px" }}>
+                TG-8492
+              </span>
+            </div>
+          </div>
+        </section>
 
         {/* Contenedor Modular en Dos Columnas Reorganizadas */}
         <div className="profile-main-grid">
@@ -301,6 +389,47 @@ export default function Profile() {
                     </span>
                     <span className="pass-holder">LUCAS BENÍTEZ</span>
                   </div>
+                </div>
+
+                {/* Credencial QR Estática para Molinetes */}
+                <div className="pass-qr-strip">
+                  <div className="pass-qr-left">
+                    <div className="pass-qr-thumbnail" title="Código QR de Acceso">
+                      <svg viewBox="0 0 100 100" fill="none">
+                        <rect width="100" height="100" fill="white" />
+                        <rect x="10" y="10" width="24" height="24" fill="#090c10" />
+                        <rect x="14" y="14" width="16" height="16" fill="white" />
+                        <rect x="18" y="18" width="8" height="8" fill="#090c10" />
+
+                        <rect x="66" y="10" width="24" height="24" fill="#090c10" />
+                        <rect x="70" y="14" width="16" height="16" fill="white" />
+                        <rect x="74" y="18" width="8" height="8" fill="#090c10" />
+
+                        <rect x="10" y="66" width="24" height="24" fill="#090c10" />
+                        <rect x="14" y="70" width="16" height="16" fill="white" />
+                        <rect x="18" y="74" width="8" height="8" fill="#090c10" />
+
+                        <rect x="42" y="12" width="6" height="6" fill="#090c10" />
+                        <rect x="52" y="18" width="6" height="6" fill="#090c10" />
+                        <rect x="42" y="28" width="6" height="6" fill="#090c10" />
+                        <rect x="52" y="38" width="6" height="6" fill="#090c10" />
+                        <rect x="12" y="42" width="6" height="6" fill="#090c10" />
+                        <rect x="24" y="52" width="6" height="6" fill="#090c10" />
+                        <rect x="40" y="52" width="8" height="8" fill="#090c10" />
+                        <rect x="68" y="42" width="6" height="6" fill="#090c10" />
+                        <rect x="80" y="52" width="8" height="6" fill="#090c10" />
+                        <rect x="44" y="70" width="6" height="6" fill="#090c10" />
+                        <rect x="56" y="66" width="8" height="6" fill="#090c10" />
+                        <rect x="74" y="74" width="10" height="8" fill="#090c10" />
+                        <rect x="62" y="82" width="6" height="8" fill="#090c10" />
+                      </svg>
+                    </div>
+                    <div className="pass-qr-meta">
+                      <span className="pass-qr-title">Credencial QR de Acceso</span>
+                      <span className="pass-qr-desc">Escanea en el molinete para ingresar</span>
+                    </div>
+                  </div>
+                  <span className="pass-qr-badge">● QR HABILITADO</span>
                 </div>
               </div>
 

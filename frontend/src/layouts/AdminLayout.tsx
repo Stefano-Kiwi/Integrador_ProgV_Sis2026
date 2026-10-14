@@ -20,13 +20,38 @@ const ROLES_CONFIG: Record<UserRole, RoleConfig> = {
     name: "Gerardo Ruiz",
     badge: "Admin General",
     avatar: "/src/assets/gerardo.jpg",
-    allowedPaths: ["/admin", "/admin/socios", "/admin/clases", "/admin/canchas", "/admin/controlacceso", "/admin/pagos"],
+    allowedPaths: [
+      "/admin",
+      "/admin/sedes",
+      "/admin/personal",
+      "/admin/instructores",
+      "/admin/tipos-clase",
+      "/admin/tipos-cancha",
+      "/admin/planes",
+      "/admin/socios",
+      "/admin/clases",
+      "/admin/canchas",
+      "/admin/controlacceso",
+      "/admin/pagos",
+    ],
   },
   gerente: {
     name: "Valeria Morales",
     badge: "Gerente de Sede",
     avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
-    allowedPaths: ["/admin", "/admin/socios", "/admin/clases", "/admin/canchas", "/admin/pagos"],
+    allowedPaths: [
+      "/admin",
+      "/admin/sedes",
+      "/admin/personal",
+      "/admin/instructores",
+      "/admin/tipos-clase",
+      "/admin/tipos-cancha",
+      "/admin/planes",
+      "/admin/socios",
+      "/admin/clases",
+      "/admin/canchas",
+      "/admin/pagos",
+    ],
   },
   recepcion: {
     name: "Lucas Benítez",
@@ -38,22 +63,22 @@ const ROLES_CONFIG: Record<UserRole, RoleConfig> = {
     name: "Martín Palermo",
     badge: "Instructor Fitness",
     avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
-    allowedPaths: ["/admin/clases", "/admin/controlacceso"],
+    allowedPaths: ["/admin/clases", "/admin/instructores", "/admin/tipos-clase", "/admin/controlacceso"],
   },
 };
 
 const SEDES = [
-  { id: "palermo", name: "Sede Palermo (Central)", ciudad: "Buenos Aires", aforo: "82% Aforo" },
-  { id: "lascondes", name: "Sede Las Condes", ciudad: "Santiago", aforo: "78% Aforo" },
-  { id: "vitacura", name: "Sede Vitacura", ciudad: "Santiago", aforo: "65% Aforo" },
-  { id: "providencia", name: "Sede Providencia", ciudad: "Santiago", aforo: "90% Aforo" },
-  { id: "belgrano", name: "Sede Belgrano", ciudad: "Buenos Aires", aforo: "54% Aforo" },
+  { id: "parana-centro", name: "Sede Paraná Centro (Central)", ciudad: "Paraná", aforo: "77% Aforo" },
+  { id: "concordia-costanera", name: "Sede Concordia Costanera", ciudad: "Concordia", aforo: "75% Aforo" },
+  { id: "gualeguaychu-parque", name: "Sede Gualeguaychú Parque", ciudad: "Gualeguaychú", aforo: "60% Aforo" },
+  { id: "concepcion-uruguay", name: "Sede Concepción del Uruguay", ciudad: "C. del Uruguay", aforo: "78% Aforo" },
+  { id: "colon-costa", name: "Sede Colón Río", ciudad: "Colón", aforo: "49% Aforo" },
 ];
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const location = useLocation();
   const [currentRole, setCurrentRole] = useState<UserRole>("admin");
-  const [currentSede, setCurrentSede] = useState<string>("lascondes");
+  const [currentSede, setCurrentSede] = useState<string>("parana-centro");
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const allNavItems = [
@@ -66,6 +91,72 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <rect x="14" y="3" width="7" height="5"></rect>
           <rect x="14" y="12" width="7" height="9"></rect>
           <rect x="3" y="16" width="7" height="5"></rect>
+        </svg>
+      ),
+    },
+    {
+      path: "/admin/sedes",
+      label: "Sedes",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "18px" }}>
+          <path d="M3 21h18"></path>
+          <path d="M5 21V7l8-4v18"></path>
+          <path d="M19 21V11l-6-4"></path>
+          <path d="M9 9h1"></path>
+          <path d="M9 13h1"></path>
+          <path d="M9 17h1"></path>
+        </svg>
+      ),
+    },
+    {
+      path: "/admin/personal",
+      label: "Personal",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "18px" }}>
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+      ),
+    },
+    {
+      path: "/admin/instructores",
+      label: "Instructores",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "18px" }}>
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+      ),
+    },
+    {
+      path: "/admin/tipos-clase",
+      label: "Tipos de Clase",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "18px" }}>
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+        </svg>
+      ),
+    },
+    {
+      path: "/admin/tipos-cancha",
+      label: "Tipos de Cancha",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "18px" }}>
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
+          <path d="M2 12h20"></path>
+        </svg>
+      ),
+    },
+    {
+      path: "/admin/planes",
+      label: "Planes de Membresía",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "18px" }}>
+          <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+          <line x1="1" y1="10" x2="23" y2="10"></line>
         </svg>
       ),
     },
@@ -95,7 +186,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     },
     {
       path: "/admin/canchas",
-      label: "Canchas Deportivas",
+      label: "Canchas",
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "18px" }}>
           <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
