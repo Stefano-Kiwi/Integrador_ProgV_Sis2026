@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import "./AdminControlAcceso.css";
+import "../../admin.css";
 
 type ValidationScenario = "autorizado" | "denegado_mora" | "denegado_sede" | "denegado_aforo";
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import "./AdminSocio.css";
+import "../../admin.css";
 
 interface Socio {
   id: string;

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import "./AdminPagos.css";
+import "../../admin.css";
 
 interface Transaction {
   id: string;

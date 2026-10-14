@@ -1,5 +1,5 @@
 import { useState } from "react";
-import "./AdminClases.css";
+import "../../admin.css";
 
 interface Attendee {
   id: string;

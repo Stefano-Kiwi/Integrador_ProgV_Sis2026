@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import "./AdminLogin.css";
 import "../../admin.css";
 
 type ErrorScenario = "none" | "invalid_credentials" | "user_locked" | "empty_fields" | "session_expired";

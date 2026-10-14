@@ -1,5 +1,5 @@
 import { useState } from "react";
-import "./AdminCanchas.css";
+import "../../admin.css";
 
 type SportType = "padel" | "futbol5" | "tenis";
 
