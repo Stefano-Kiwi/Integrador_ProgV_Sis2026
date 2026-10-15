@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
+import { getPagos, savePago } from "../../data/pagosData";
+import type { Transaction } from "../../data/pagosData";
 import "../../admin.css";
 
 interface Transaction {
@@ -127,8 +130,7 @@ const INITIAL_TRANSACTIONS: Transaction[] = [
 ];
 
 export default function AdminPagos() {
-  const [transactions, setTransactions] = useState<Transaction[]>(INITIAL_TRANSACTIONS);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [transactions, setTransactions] = useState<Transaction[]>(getPagos);  const [searchTerm, setSearchTerm] = useState("");
   const [filterEstado, setFilterEstado] = useState("Todos");
   const [filterConcepto, setFilterConcepto] = useState("Todos");
   const [filterMedio, setFilterMedio] = useState("Todos");
@@ -181,7 +183,8 @@ export default function AdminPagos() {
       comprobanteNro: `0004-000${transactions.length + 18925}`,
     };
 
-    setTransactions([newTx, ...transactions]);
+    savePago(newTx);
+    setTransactions(getPagos());
     setShowManualModal(false);
     setManualSocio("");
     setManualDni("");
@@ -288,7 +291,7 @@ export default function AdminPagos() {
               <th>Medio de Pago</th>
               <th>Monto</th>
               <th>Estado</th>
-              <th style={{ textAlign: "right" }}>Comprobante Fiscal</th>
+              <th style={{ textAlign: "right" }}>Detalle y comprobante</th>
             </tr>
           </thead>
           <tbody>
@@ -318,6 +321,18 @@ export default function AdminPagos() {
                 </td>
                 <td>
                   <div className="action-icons">
+                    <Link
+                      to={`/admin/pagos/${encodeURIComponent(tx.id)}`}
+                      className="btn-secondary"
+                      aria-label={`Ver detalle del pago ${tx.id}`}
+                      style={{
+                        textDecoration: "none",
+                        whiteSpace: "nowrap",
+                        padding: "0.5rem 0.8rem",
+                      }}
+                    >
+                      Ver detalle
+                    </Link>
                     <button
                       className="action-icon-btn"
                       title="Ver Factura Electrónica B"

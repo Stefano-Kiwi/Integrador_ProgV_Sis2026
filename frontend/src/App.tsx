@@ -21,6 +21,7 @@ import AdminClases from "./pages/admin/AdminClases";
 import AdminCanchas from "./pages/admin/AdminCanchas";
 import AdminControlAcceso from "./pages/admin/AdminControlAcceso";
 import AdminPagos from "./pages/admin/AdminPagos";
+import AdminPagoDetalle from "./pages/admin/AdminPagoDetalle";
 import AdminSedes from "./pages/admin/AdminSedes";
 import AdminSedeDetalle from "./pages/admin/AdminSedeDetalle";
 import AdminSedeForm from "./pages/admin/AdminSedeForm";
@@ -32,6 +33,11 @@ import AdminLogin from "./pages/admin/AdminLogin";
 import AdminPersonal from "./pages/admin/AdminPersonal";
 import AdminUsuarioForm from "./pages/admin/AdminUsuarioForm";
 import AdminUsuarioDetalle from "./pages/admin/AdminUsuarioDetalle";
+import AdminMembresias from "./pages/admin/AdminMembresias";
+import AdminMembresiaDetalle from "./pages/admin/AdminMembresiaDetalle";
+import AdminMembresiaForm from "./pages/admin/AdminMembresiaForm";
+import AdminMembresiaCheckout from "./pages/admin/AdminMembresiaCheckout";
+
 
 // Fase 4: Gestión de Clases y Canchas
 import AdminClaseForm from "./pages/admin/AdminClaseForm";
@@ -97,6 +103,11 @@ export default function App() {
           <Route path="tipos-cancha" element={<AdminTiposCancha />} />
           <Route path="planes" element={<AdminPlanes />} />
           <Route path="socios" element={<AdminSocio />} />
+          <Route path="membresias" element={<AdminMembresias />} />
+          <Route path="membresias/nueva" element={<AdminMembresiaForm />} />
+          <Route path="membresias/checkout" element={<AdminMembresiaCheckout />} />
+          <Route path="membresias/:id/renovar" element={<AdminMembresiaForm />} />
+          <Route path="membresias/:id" element={<AdminMembresiaDetalle />} />
 
           {/* Fase 4: Clases */}
           <Route path="clases" element={<AdminClases />} />
@@ -119,6 +130,7 @@ export default function App() {
 
           <Route path="controlacceso" element={<AdminControlAcceso />} />
           <Route path="pagos" element={<AdminPagos />} />
+          <Route path="pagos/:id" element={<AdminPagoDetalle />} />
 
           {/* Fase 5: Configuración y Reportes */}
           <Route path="reportes" element={<AdminReportes />} />
