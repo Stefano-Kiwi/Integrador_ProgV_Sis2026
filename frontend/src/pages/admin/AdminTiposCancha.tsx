@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { INITIAL_TIPOS_CANCHA, type TipoCanchaItem } from "../../data/catalogosData";
-import "./AdminCatalogos.css";
+import "../../admin.css";
 
 export default function AdminTiposCancha() {
   const [tiposCancha, setTiposCancha] = useState<TipoCanchaItem[]>(INITIAL_TIPOS_CANCHA);

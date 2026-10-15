@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { getCanchaById, saveCancha, type CanchaItem } from "../../data/clasesCanchasData";
 import { getSedes } from "../../data/sedesData";
-import "./AdminFase4.css";
 import "../../admin.css";
 
 const PRESET_CANCHA_IMAGES = [

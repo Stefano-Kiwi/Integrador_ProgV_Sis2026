@@ -1388,6 +1388,51 @@ body {
     transform: scale(1.03);
 }
 
+/* --- TABLA CONSOLIDADA LISTA DE ESPERA (C-06) --- */
+.waitlist-table-container {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.waitlist-pos-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+.waitlist-pos-1 {
+  background: rgba(255, 94, 58, 0.2);
+  color: var(--accent-orange);
+  border: 1px solid var(--accent-orange);
+}
+
+.waitlist-pos-other {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+}
+
+.socio-user-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.socio-avatar-sm {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--border-color);
+}
+
 /* //////////////////////////////////////////////////////////////////////////
    ///// 7. CANCHAS /////
    ////////////////////////////////////////////////////////////////////////// */
@@ -1721,6 +1766,549 @@ body {
 
 .btn-outline-red:hover {
     background-color: rgba(255, 75, 114, 0.1);
+}
+
+/* --- SUB-NAVEGACIÓN POR PESTAÑAS (FASE 4) --- */
+.fase4-nav-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.75rem;
+  overflow-x: auto;
+}
+
+.fase4-tab-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.1rem;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.fase4-tab-link:hover {
+  background-color: var(--bg-card-hover);
+  color: var(--text-pure);
+  border-color: rgba(255, 94, 58, 0.4);
+}
+
+.fase4-tab-link.active {
+  background-color: rgba(255, 94, 58, 0.12);
+  color: var(--accent-orange);
+  border-color: var(--accent-orange);
+}
+
+.fase4-tab-badge {
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+}
+
+/* --- BADGES Y TAGS DE DEPORTE --- */
+.sport-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.sport-tag-padel {
+  background: rgba(0, 255, 135, 0.15);
+  color: var(--accent-green);
+  border: 1px solid rgba(0, 255, 135, 0.3);
+}
+
+.sport-tag-futbol {
+  background: rgba(255, 94, 58, 0.15);
+  color: var(--accent-orange);
+  border: 1px solid rgba(255, 94, 58, 0.3);
+}
+
+.sport-tag-tenis {
+  background: rgba(255, 176, 32, 0.15);
+  color: var(--accent-yellow);
+  border: 1px solid rgba(255, 176, 32, 0.3);
+}
+
+/* --- BADGES DE ESTADO DE CANCHA Y RESERVA --- */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.status-pill-operativa {
+  background: rgba(0, 255, 135, 0.12);
+  color: var(--accent-green);
+  border: 1px solid rgba(0, 255, 135, 0.3);
+}
+
+.status-pill-mantenimiento {
+  background: rgba(255, 75, 114, 0.12);
+  color: var(--accent-red);
+  border: 1px solid rgba(255, 75, 114, 0.3);
+}
+
+.status-pill-pico {
+  background: rgba(255, 176, 32, 0.15);
+  color: var(--accent-yellow);
+  border: 1px solid rgba(255, 176, 32, 0.35);
+}
+
+.status-pill-pagado {
+  background: rgba(0, 255, 135, 0.15);
+  color: var(--accent-green);
+  border: 1px solid rgba(0, 255, 135, 0.3);
+}
+
+.status-pill-senia {
+  background: rgba(255, 176, 32, 0.15);
+  color: var(--accent-yellow);
+  border: 1px solid rgba(255, 176, 32, 0.3);
+}
+
+.status-pill-pendiente {
+  background: rgba(255, 75, 114, 0.15);
+  color: var(--accent-red);
+  border: 1px solid rgba(255, 75, 114, 0.3);
+}
+
+/* --- KPI METRIC CARDS --- */
+.fase4-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.fase4-metric-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.fase4-metric-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 94, 58, 0.4);
+}
+
+.fase4-metric-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.fase4-metric-val {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--text-pure);
+}
+
+.fase4-metric-sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* --- CANCHAS INVENTORY CARDS (CA-01) --- */
+.canchas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.cancha-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.25s ease;
+  position: relative;
+}
+
+.cancha-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255, 94, 58, 0.45);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+}
+
+.cancha-card-img-wrap {
+  width: 100%;
+  height: 180px;
+  position: relative;
+  overflow: hidden;
+  background-color: #1a2235;
+}
+
+.cancha-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.35s ease;
+}
+
+.cancha-card:hover .cancha-card-img {
+  transform: scale(1.05);
+}
+
+.cancha-card-badges {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cancha-card-body {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  gap: 0.85rem;
+}
+
+.cancha-card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.cancha-card-code {
+  font-size: 0.72rem;
+  color: var(--accent-orange);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.cancha-card-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-pure);
+  line-height: 1.3;
+}
+
+.cancha-card-sede {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.cancha-specs-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background-color: rgba(11, 15, 25, 0.6);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.cancha-spec-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.cancha-spec-label {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.cancha-spec-val {
+  font-size: 0.8rem;
+  color: var(--text-pure);
+  font-weight: 600;
+}
+
+.cancha-pricing-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.cancha-price-main {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--accent-green);
+}
+
+.cancha-price-socio {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.cancha-card-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 0.5rem;
+}
+
+/* --- CANCHA DETALLE LAYOUT (CA-04) --- */
+.cancha-detail-header-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem;
+  display: flex;
+  gap: 1.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.cancha-detail-img-large {
+  width: 320px;
+  height: 220px;
+  border-radius: var(--radius-md);
+  object-fit: cover;
+  border: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.cancha-detail-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  flex-grow: 1;
+}
+
+.cancha-detail-stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.cancha-detail-tabs-bar {
+  display: flex;
+  gap: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 1.5rem;
+}
+
+.cancha-detail-tab-btn {
+  background: none;
+  border: none;
+  padding: 0.75rem 0.25rem;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s;
+}
+
+.cancha-detail-tab-btn.active {
+  color: var(--accent-orange);
+}
+
+.cancha-detail-tab-btn.active::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--accent-orange);
+}
+
+/* --- WIZARD Y FORMULARIO DE RESERVA (R-03) --- */
+.reserva-flow-container {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1.5rem;
+}
+
+.reserva-step-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.reserva-step-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-pure);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.step-num-badge {
+  background-color: var(--accent-orange);
+  color: #fff;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.time-slot-grid-selectable {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 0.75rem;
+}
+
+.selectable-slot-btn {
+  background-color: #0b0f19;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-pure);
+}
+
+.selectable-slot-btn:hover:not(:disabled) {
+  border-color: var(--accent-orange);
+  background-color: rgba(255, 94, 58, 0.08);
+}
+
+.selectable-slot-btn.selected {
+  border-color: var(--accent-orange);
+  background-color: rgba(255, 94, 58, 0.18);
+  box-shadow: 0 0 10px rgba(255, 94, 58, 0.3);
+}
+
+.selectable-slot-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+.reserva-summary-sticky {
+  position: sticky;
+  top: 1.5rem;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.reserva-breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.reserva-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-color);
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+/* --- DETALLE DE RESERVA (R-04) --- */
+.reserva-detail-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 1.5rem;
+}
+
+.receipt-card {
+  background: linear-gradient(145deg, #182033 0%, #111726 100%);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+}
+
+.timeline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  position: relative;
+  padding-left: 1.25rem;
+  border-left: 2px solid var(--border-color);
+  margin-top: 1rem;
+}
+
+.timeline-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.timeline-dot {
+  position: absolute;
+  left: -1.7rem;
+  top: 4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--accent-orange);
+  box-shadow: 0 0 8px var(--accent-orange);
+}
+
+@media (max-width: 992px) {
+  .cancha-detail-header-card {
+    flex-direction: column;
+  }
+  .cancha-detail-img-large {
+    width: 100%;
+    height: 200px;
+  }
+  .cancha-detail-stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .reserva-flow-container,
+  .reserva-detail-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* //////////////////////////////////////////////////////////////////////////
@@ -2394,3 +2982,769 @@ body {
     from { opacity: 0; transform: translateY(-4px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+/* //////////////////////////////////////////////////////////////////////////
+   ///// 11. SEDES /////
+   ////////////////////////////////////////////////////////////////////////// */
+
+/* --- S-01: LISTADO DE SEDES Y MÉTRICAS --- */
+.sedes-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.sede-metric-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.sede-metric-card:hover {
+  border-color: rgba(255, 94, 58, 0.4);
+  transform: translateY(-2px);
+}
+
+.sede-metric-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sede-metric-val {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--text-pure);
+  letter-spacing: -0.5px;
+}
+
+.sede-metric-sub {
+  font-size: 0.8rem;
+  color: var(--accent-green);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* Grilla de Sedes */
+.sedes-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.sede-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.sede-card:hover {
+  border-color: rgba(255, 94, 58, 0.5);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+  transform: translateY(-3px);
+}
+
+/* Header con imagen o banner */
+.sede-card-banner {
+  height: 140px;
+  position: relative;
+  background-size: cover;
+  background-position: center;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.sede-card-banner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(11, 15, 25, 0.2) 0%, rgba(21, 27, 43, 0.95) 100%);
+}
+
+.sede-banner-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.sede-banner-badge.badge-operativa,
+.badge-operativa {
+  background: rgba(0, 255, 135, 0.15);
+  color: var(--accent-green);
+  border: 1px solid rgba(0, 255, 135, 0.3);
+}
+
+.sede-banner-badge.badge-mantenimiento {
+  background: rgba(255, 176, 32, 0.15);
+  color: var(--accent-yellow);
+  border: 1px solid rgba(255, 176, 32, 0.3);
+}
+
+.sede-banner-city {
+  position: absolute;
+  bottom: 12px;
+  left: 16px;
+  z-index: 2;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--accent-orange);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Contenido de la tarjeta */
+.sede-card-body {
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  flex: 1;
+}
+
+.sede-card-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-pure);
+  margin-bottom: 0.25rem;
+}
+
+.sede-card-address {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* Barra de aforo */
+.sede-aforo-box {
+  background: rgba(11, 15, 25, 0.5);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.sede-aforo-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.sede-aforo-bar-track {
+  width: 100%;
+  height: 6px;
+  background-color: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.sede-aforo-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+/* Lista de detalles clave */
+.sede-specs-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem 1rem;
+  font-size: 0.8rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.sede-spec-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.sede-spec-label {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.sede-spec-val {
+  color: var(--text-pure);
+  font-weight: 600;
+}
+
+/* Chips de servicios */
+.sede-services-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.sede-service-chip {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+}
+
+/* Footer de acciones */
+.sede-card-actions {
+  display: flex;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+}
+
+.sede-btn-view {
+  flex: 1;
+  text-align: center;
+  background-color: var(--accent-orange);
+  color: #fff;
+  border: none;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.65rem 1rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  transition: 0.2s;
+}
+
+.sede-btn-view:hover {
+  filter: brightness(1.15);
+  box-shadow: 0 4px 14px rgba(255, 94, 58, 0.35);
+}
+
+.sede-btn-edit {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  color: var(--text-pure);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.65rem 0.9rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.2s;
+}
+
+.sede-btn-edit:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Modales para Sedes */
+.sede-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1.5rem;
+}
+
+.sede-modal-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 580px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.sede-modal-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sede-modal-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-pure);
+}
+
+.sede-modal-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1.25rem;
+}
+
+.sede-modal-close:hover {
+  color: var(--text-pure);
+}
+
+.sede-modal-body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.sede-modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  background: rgba(11, 15, 25, 0.3);
+}
+
+/* --- S-03: DETALLE DE SEDE (DETALLE, AFORO INTERACTIVO Y SUBMÓDULOS) --- */
+.sede-detail-banner-header {
+  position: relative;
+  height: 220px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid var(--border-color);
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 1.5rem 2rem;
+}
+
+.sede-detail-banner-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(11, 15, 25, 0.3) 0%, rgba(15, 21, 35, 0.95) 100%);
+  z-index: 1;
+}
+
+.sede-detail-banner-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.sede-detail-title-box h1 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--text-pure);
+  margin-bottom: 0.25rem;
+}
+
+.sede-detail-title-box p {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sede-detail-header-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.sede-detail-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 992px) {
+  .sede-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sede-aforo-interactive-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.aforo-counter-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 1rem 0;
+}
+
+.aforo-number-huge {
+  font-size: 2.5rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.aforo-simulator-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-aforo-sim {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-color);
+  color: var(--text-pure);
+  padding: 0.5rem 0.9rem;
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-aforo-sim:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--accent-orange);
+}
+
+.sede-submodule-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.submodule-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.submodule-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.canchas-status-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.cancha-status-item {
+  background: rgba(11, 15, 25, 0.5);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cancha-status-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.cancha-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-pure);
+}
+
+.cancha-type {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.cancha-price-tag {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent-orange);
+}
+
+.clases-simple-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.clases-simple-table th,
+.clases-simple-table td {
+  padding: 0.75rem 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+.clases-simple-table th {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.sede-info-sidebar-box {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.info-item-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.info-item-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-item-value {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-pure);
+}
+
+.staff-member-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.staff-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-pure);
+}
+
+.staff-role-badge {
+  font-size: 0.7rem;
+  background: rgba(255, 94, 58, 0.15);
+  color: var(--accent-orange);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+
+/* //////////////////////////////////////////////////////////////////////////
+   ///// 12. CATÁLOGOS (PLANES, INSTRUCTORES, TIPOS) /////
+   ////////////////////////////////////////////////////////////////////////// */
+
+.catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.catalog-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1.2rem;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.catalog-card:hover {
+  border-color: rgba(255, 94, 58, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.catalog-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.catalog-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-pure);
+  margin-bottom: 0.25rem;
+}
+
+.catalog-subtitle {
+  font-size: 0.8rem;
+  color: var(--accent-orange);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Instructor Avatar y Perfil */
+.instructor-header-box {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.instructor-avatar-img {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--accent-orange);
+  background-color: var(--bg-sidebar);
+}
+
+.rating-badge {
+  background: rgba(255, 176, 32, 0.15);
+  color: var(--accent-yellow);
+  border: 1px solid rgba(255, 176, 32, 0.3);
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* Precios y métricas destacadas */
+.price-highlight-box {
+  background: rgba(11, 15, 25, 0.6);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.price-big-number {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--text-pure);
+}
+
+.price-period-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* Lista de beneficios / items */
+.catalog-feature-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.catalog-feature-item {
+  font-size: 0.82rem;
+  color: var(--text-pure);
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.catalog-feature-bullet {
+  color: var(--accent-green);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* Card Destacada / Popular (para Planes) */
+.card-popular-border {
+  border-color: var(--accent-orange);
+  box-shadow: 0 0 15px rgba(255, 94, 58, 0.15);
+}
+
+.popular-ribbon {
+  position: absolute;
+  top: 12px;
+  right: -32px;
+  transform: rotate(45deg);
+  background: var(--accent-orange);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 0.25rem 2.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Acciones en la tarjeta */
+.catalog-card-footer {
+  display: flex;
+  gap: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}

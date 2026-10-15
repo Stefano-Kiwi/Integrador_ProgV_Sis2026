@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import "./AdminFase4.css";
 import "../../admin.css";
 
 interface Attendee {

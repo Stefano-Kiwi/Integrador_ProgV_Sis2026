@@ -8,7 +8,6 @@ import {
   saveReserva,
   type ReservaItem,
 } from "../../data/clasesCanchasData";
-import "./AdminFase4.css";
 import "../../admin.css";
 
 export default function AdminReservaDetalle() {

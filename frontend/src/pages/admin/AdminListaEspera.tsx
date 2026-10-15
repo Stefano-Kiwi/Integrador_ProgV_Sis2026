@@ -8,7 +8,6 @@ import {
   type WaitlistEntry,
 } from "../../data/clasesCanchasData";
 import { getSedes } from "../../data/sedesData";
-import "./AdminFase4.css";
 import "../../admin.css";
 
 export default function AdminListaEspera() {

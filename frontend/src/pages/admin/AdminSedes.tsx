@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { getSedes, type SedeItem } from "../../data/sedesData";
-import "./AdminSedes.css";
+import "../../admin.css";
 
 export default function AdminSedes() {
   const [sedes] = useState<SedeItem[]>(() => getSedes());

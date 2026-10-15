@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { getCanchas, type CanchaItem } from "../../data/clasesCanchasData";
 import { getSedes } from "../../data/sedesData";
-import "./AdminFase4.css";
 import "../../admin.css";
 
 export default function AdminCanchasListado() {

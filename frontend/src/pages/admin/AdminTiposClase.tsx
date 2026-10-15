@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { INITIAL_TIPOS_CLASE, type TipoClaseItem } from "../../data/catalogosData";
-import "./AdminCatalogos.css";
+import "../../admin.css";
 
 export default function AdminTiposClase() {
   const [tiposClase, setTiposClase] = useState<TipoClaseItem[]>(INITIAL_TIPOS_CLASE);

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { INITIAL_INSTRUCTORES, type InstructorItem } from "../../data/catalogosData";
-import "./AdminCatalogos.css";
+import "../../admin.css";
 
 export default function AdminInstructores() {
   const [instructores, setInstructores] = useState<InstructorItem[]>(INITIAL_INSTRUCTORES);

@@ -7,7 +7,6 @@ import {
   type ReservaItem,
 } from "../../data/clasesCanchasData";
 import { getSedes } from "../../data/sedesData";
-import "./AdminFase4.css";
 import "../../admin.css";
 
 export default function AdminReservasCancha() {

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { INITIAL_PLANES, type PlanMembresiaItem } from "../../data/catalogosData";
-import "./AdminCatalogos.css";
+import "../../admin.css";
 
 export default function AdminPlanes() {
   const [planes, setPlanes] = useState<PlanMembresiaItem[]>(INITIAL_PLANES);

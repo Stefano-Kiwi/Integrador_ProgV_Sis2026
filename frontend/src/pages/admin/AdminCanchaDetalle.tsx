@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { getCanchaById, getReservas, saveCancha, type CanchaItem } from "../../data/clasesCanchasData";
-import "./AdminFase4.css";
 import "../../admin.css";
 
 export default function AdminCanchaDetalle() {

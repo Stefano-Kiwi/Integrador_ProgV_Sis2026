@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { getSedeById, getSedes } from "../../data/sedesData";
-import "./AdminSedeDetalle.css";
+import "../../admin.css";
 
 export default function AdminSedeDetalle() {
   const { id } = useParams<{ id: string }>();

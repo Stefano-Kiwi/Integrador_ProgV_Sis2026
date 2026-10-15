@@ -3,7 +3,6 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { getClaseById, saveClase, type ClaseItem } from "../../data/clasesCanchasData";
 import { INITIAL_INSTRUCTORES, INITIAL_TIPOS_CLASE } from "../../data/catalogosData";
 import { getSedes } from "../../data/sedesData";
-import "./AdminFase4.css";
 import "../../admin.css";
 
 const PRESET_EQUIPAMIENTOS = [
