@@ -33,6 +33,16 @@ import AdminPersonal from "./pages/admin/AdminPersonal";
 import AdminUsuarioForm from "./pages/admin/AdminUsuarioForm";
 import AdminUsuarioDetalle from "./pages/admin/AdminUsuarioDetalle";
 
+// Fase 4: Gestión de Clases y Canchas
+import AdminClaseForm from "./pages/admin/AdminClaseForm";
+import AdminListaEspera from "./pages/admin/AdminListaEspera";
+import AdminCanchasListado from "./pages/admin/AdminCanchasListado";
+import AdminCanchaForm from "./pages/admin/AdminCanchaForm";
+import AdminCanchaDetalle from "./pages/admin/AdminCanchaDetalle";
+import AdminReservasCancha from "./pages/admin/AdminReservasCancha";
+import AdminReservaForm from "./pages/admin/AdminReservaForm";
+import AdminReservaDetalle from "./pages/admin/AdminReservaDetalle";
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -55,7 +65,6 @@ export default function App() {
           <Route path="/404" element={<NotFound />} />
           <Route path="/500" element={<GeneralError />} />
           <Route path="/expirada" element={<SessionExpired />} />
-          x
 
           {/* Fallback de ruta no encontrada */}
           <Route path="*" element={<NotFound />} />
@@ -84,8 +93,26 @@ export default function App() {
           <Route path="tipos-cancha" element={<AdminTiposCancha />} />
           <Route path="planes" element={<AdminPlanes />} />
           <Route path="socios" element={<AdminSocio />} />
+
+          {/* Fase 4: Clases */}
           <Route path="clases" element={<AdminClases />} />
+          <Route path="clases/nueva" element={<AdminClaseForm />} />
+          <Route path="clases/:id/editar" element={<AdminClaseForm />} />
+          <Route path="clases/lista-espera" element={<AdminListaEspera />} />
+
+          {/* Fase 4: Canchas */}
           <Route path="canchas" element={<AdminCanchas />} />
+          <Route path="canchas/listado" element={<AdminCanchasListado />} />
+          <Route path="canchas/inventario" element={<AdminCanchasListado />} />
+          <Route path="canchas/nueva" element={<AdminCanchaForm />} />
+          <Route path="canchas/:id" element={<AdminCanchaDetalle />} />
+          <Route path="canchas/:id/editar" element={<AdminCanchaForm />} />
+
+          {/* Fase 4: Reservas de Cancha */}
+          <Route path="reservas" element={<AdminReservasCancha />} />
+          <Route path="reservas/nueva" element={<AdminReservaForm />} />
+          <Route path="reservas/:id" element={<AdminReservaDetalle />} />
+
           <Route path="controlacceso" element={<AdminControlAcceso />} />
           <Route path="pagos" element={<AdminPagos />} />
         </Route>

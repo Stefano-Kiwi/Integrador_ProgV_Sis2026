@@ -31,6 +31,7 @@ const ROLES_CONFIG: Record<UserRole, RoleConfig> = {
       "/admin/socios",
       "/admin/clases",
       "/admin/canchas",
+      "/admin/reservas",
       "/admin/controlacceso",
       "/admin/pagos",
     ],
@@ -50,6 +51,7 @@ const ROLES_CONFIG: Record<UserRole, RoleConfig> = {
       "/admin/socios",
       "/admin/clases",
       "/admin/canchas",
+      "/admin/reservas",
       "/admin/pagos",
     ],
   },
@@ -57,7 +59,7 @@ const ROLES_CONFIG: Record<UserRole, RoleConfig> = {
     name: "Lucas Benítez",
     badge: "Recepcionista",
     avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-    allowedPaths: ["/admin/socios", "/admin/canchas", "/admin/controlacceso", "/admin/pagos"],
+    allowedPaths: ["/admin/socios", "/admin/canchas", "/admin/reservas", "/admin/controlacceso", "/admin/pagos"],
   },
   instructor: {
     name: "Martín Palermo",
@@ -81,144 +83,203 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const [currentSede, setCurrentSede] = useState<string>("parana-centro");
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const allNavItems = [
+  interface NavItem {
+    path: string;
+    label: string;
+    icon: ReactNode;
+  }
+
+  interface NavCategory {
+    id: string;
+    title: string;
+    items: NavItem[];
+  }
+
+  const NAV_CATEGORIES: NavCategory[] = [
     {
-      path: "/admin",
-      label: "Dashboard",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "18px" }}>
-          <rect x="3" y="3" width="7" height="9"></rect>
-          <rect x="14" y="3" width="7" height="5"></rect>
-          <rect x="14" y="12" width="7" height="9"></rect>
-          <rect x="3" y="16" width="7" height="5"></rect>
-        </svg>
-      ),
+      id: "general",
+      title: "General",
+      items: [
+        {
+          path: "/admin",
+          label: "Dashboard",
+          icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "18px" }}>
+              <rect x="3" y="3" width="7" height="9"></rect>
+              <rect x="14" y="3" width="7" height="5"></rect>
+              <rect x="14" y="12" width="7" height="9"></rect>
+              <rect x="3" y="16" width="7" height="5"></rect>
+            </svg>
+          ),
+        },
+      ],
     },
     {
-      path: "/admin/sedes",
-      label: "Sedes",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "18px" }}>
-          <path d="M3 21h18"></path>
-          <path d="M5 21V7l8-4v18"></path>
-          <path d="M19 21V11l-6-4"></path>
-          <path d="M9 9h1"></path>
-          <path d="M9 13h1"></path>
-          <path d="M9 17h1"></path>
-        </svg>
-      ),
+      id: "operaciones",
+      title: "Operaciones Deportivas",
+      items: [
+        {
+          path: "/admin/clases",
+          label: "Clases Grupales",
+          icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "18px" }}>
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+          ),
+        },
+        {
+          path: "/admin/canchas",
+          label: "Canchas",
+          icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "18px" }}>
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+            </svg>
+          ),
+        },
+        {
+          path: "/admin/reservas",
+          label: "Reservas Canchas",
+          icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "18px" }}>
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+          ),
+        },
+        {
+          path: "/admin/controlacceso",
+          label: "Control de Acceso",
+          icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "18px" }}>
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+              <polyline points="22,6 12,13 2,6"></polyline>
+            </svg>
+          ),
+        },
+      ],
     },
     {
-      path: "/admin/personal",
-      label: "Personal",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "18px" }}>
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-          <circle cx="9" cy="7" r="4"></circle>
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-        </svg>
-      ),
+      id: "socios",
+      title: "Socios & Membresías",
+      items: [
+        {
+          path: "/admin/socios",
+          label: "Socios",
+          icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "18px" }}>
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+          ),
+        },
+        {
+          path: "/admin/planes",
+          label: "Planes de Membresía",
+          icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "18px" }}>
+              <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+              <line x1="1" y1="10" x2="23" y2="10"></line>
+            </svg>
+          ),
+        },
+        {
+          path: "/admin/pagos",
+          label: "Reportes & Pagos",
+          icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "18px" }}>
+              <line x1="18" y1="20" x2="18" y2="10"></line>
+              <line x1="12" y1="20" x2="12" y2="4"></line>
+              <line x1="6" y1="20" x2="6" y2="14"></line>
+            </svg>
+          ),
+        },
+      ],
     },
     {
-      path: "/admin/instructores",
-      label: "Instructores",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "18px" }}>
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-          <circle cx="12" cy="7" r="4"></circle>
-        </svg>
-      ),
+      id: "estructura",
+      title: "Estructura & Equipo",
+      items: [
+        {
+          path: "/admin/sedes",
+          label: "Sedes",
+          icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "18px" }}>
+              <path d="M3 21h18"></path>
+              <path d="M5 21V7l8-4v18"></path>
+              <path d="M19 21V11l-6-4"></path>
+              <path d="M9 9h1"></path>
+              <path d="M9 13h1"></path>
+              <path d="M9 17h1"></path>
+            </svg>
+          ),
+        },
+        {
+          path: "/admin/personal",
+          label: "Personal",
+          icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "18px" }}>
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+          ),
+        },
+        {
+          path: "/admin/instructores",
+          label: "Instructores",
+          icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "18px" }}>
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+          ),
+        },
+      ],
     },
     {
-      path: "/admin/tipos-clase",
-      label: "Tipos de Clase",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "18px" }}>
-          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-        </svg>
-      ),
-    },
-    {
-      path: "/admin/tipos-cancha",
-      label: "Tipos de Cancha",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "18px" }}>
-          <circle cx="12" cy="12" r="10"></circle>
-          <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
-          <path d="M2 12h20"></path>
-        </svg>
-      ),
-    },
-    {
-      path: "/admin/planes",
-      label: "Planes de Membresía",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "18px" }}>
-          <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
-          <line x1="1" y1="10" x2="23" y2="10"></line>
-        </svg>
-      ),
-    },
-    {
-      path: "/admin/socios",
-      label: "Socios",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "18px" }}>
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-          <circle cx="9" cy="7" r="4"></circle>
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-        </svg>
-      ),
-    },
-    {
-      path: "/admin/clases",
-      label: "Clases Grupales",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "18px" }}>
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-          <line x1="16" y1="2" x2="16" y2="6"></line>
-          <line x1="8" y1="2" x2="8" y2="6"></line>
-          <line x1="3" y1="10" x2="21" y2="10"></line>
-        </svg>
-      ),
-    },
-    {
-      path: "/admin/canchas",
-      label: "Canchas",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "18px" }}>
-          <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
-        </svg>
-      ),
-    },
-    {
-      path: "/admin/controlacceso",
-      label: "Control de Acceso",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "18px" }}>
-          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-          <polyline points="22,6 12,13 2,6"></polyline>
-        </svg>
-      ),
-    },
-    {
-      path: "/admin/pagos",
-      label: "Reportes & Pagos",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "18px" }}>
-          <line x1="18" y1="20" x2="18" y2="10"></line>
-          <line x1="12" y1="20" x2="12" y2="4"></line>
-          <line x1="6" y1="20" x2="6" y2="14"></line>
-        </svg>
-      ),
+      id: "catalogos",
+      title: "Catálogos & Config.",
+      items: [
+        {
+          path: "/admin/tipos-clase",
+          label: "Tipos de Clase",
+          icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "18px" }}>
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
+          ),
+        },
+        {
+          path: "/admin/tipos-cancha",
+          label: "Tipos de Cancha",
+          icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "18px" }}>
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
+              <path d="M2 12h20"></path>
+            </svg>
+          ),
+        },
+      ],
     },
   ];
 
   const activeRoleData = ROLES_CONFIG[currentRole];
   const activeSedeData = SEDES.find((s) => s.id === currentSede) || SEDES[0];
-  const visibleNavItems = allNavItems.filter((item) => activeRoleData.allowedPaths.includes(item.path));
+
+  // Filtrado de categorías e ítems autorizados por el rol activo
+  const visibleCategories = NAV_CATEGORIES.map((category) => ({
+    ...category,
+    items: category.items.filter((item) => activeRoleData.allowedPaths.includes(item.path)),
+  })).filter((category) => category.items.length > 0);
 
   return (
     <div className="admin-body-wrapper">
@@ -306,25 +367,36 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           </div>
         )}
 
-        {/* MENÚ DE NAVEGACIÓN DINÁMICO POR ROL */}
-        {!isCollapsed && (
-          <div className="nav-menu-header">Módulos Disponibles ({visibleNavItems.length}):</div>
-        )}
+        {/* MENÚ DE NAVEGACIÓN AGRUPADO POR CATEGORÍAS */}
         <nav className="nav-menu">
-          {visibleNavItems.map((item) => {
-            const isActive = location.pathname === item.path || (item.path !== "/admin" && location.pathname.startsWith(item.path));
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`nav-link ${isActive ? "active" : ""}`}
-                title={item.label}
-              >
-                <span className="nav-icon">{item.icon}</span>
-                {!isCollapsed && <span>{item.label}</span>}
-              </Link>
-            );
-          })}
+          {visibleCategories.map((category, catIndex) => (
+            <div key={category.id} className="nav-group">
+              {catIndex > 0 && <div className="nav-group-divider" />}
+              {!isCollapsed && (
+                <div className="nav-group-title">
+                  <span>{category.title}</span>
+                </div>
+              )}
+              <div className="nav-group-items">
+                {category.items.map((item) => {
+                  const isActive =
+                    location.pathname === item.path ||
+                    (item.path !== "/admin" && location.pathname.startsWith(item.path));
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      className={`nav-link ${isActive ? "active" : ""}`}
+                      title={item.label}
+                    >
+                      <span className="nav-icon">{item.icon}</span>
+                      {!isCollapsed && <span>{item.label}</span>}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         {/* PERFIL DEL USUARIO (CLICKABLE) */}

@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
+import "./AdminFase4.css";
 import "../../admin.css";
 
 type SportType = "padel" | "futbol5" | "tenis";
@@ -151,17 +153,29 @@ export default function AdminCanchas() {
       {/* TOPBAR */}
       <header className="topbar">
         <div className="header-titles">
-          <h1>Control de Canchas Deportivas</h1>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <span style={{ fontSize: "0.8rem", color: "var(--accent-orange)", fontWeight: 700, textTransform: "uppercase" }}>
+              Módulos R-01 & CA-03
+            </span>
+          </div>
+          <h1>Control de Canchas Deportivas en Tiempo Real</h1>
           <p>Grilla de disponibilidad con estados dinámicos, tarifas pico y mantenimiento preventivo</p>
         </div>
-        <div className="header-controls">
-          <button className="btn-secondary" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-red)" strokeWidth="2" style={{ width: "14px" }}>
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-              <circle cx="12" cy="10" r="3"></circle>
-            </svg>
-            Sede Las Condes
-          </button>
+        <div className="header-controls" style={{ display: "flex", gap: "0.75rem" }}>
+          <Link
+            to="/admin/canchas/listado"
+            className="btn-secondary"
+            style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "0.4rem", whiteSpace: "nowrap" }}
+          >
+            <span>🏟️</span> Inventario de Canchas (CA-01)
+          </Link>
+          <Link
+            to="/admin/reservas/nueva"
+            className="btn-primary"
+            style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "0.4rem", whiteSpace: "nowrap" }}
+          >
+            <span>⚡</span> Crear Reserva (R-03)
+          </Link>
         </div>
       </header>
 

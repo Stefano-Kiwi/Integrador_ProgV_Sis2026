@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
+import "./AdminFase4.css";
 import "../../admin.css";
 
 interface Attendee {
@@ -321,17 +323,29 @@ export default function AdminClases() {
       {/* TOPBAR */}
       <header className="topbar">
         <div className="header-titles">
-          <h1>Planificación de Clases</h1>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <span style={{ fontSize: "0.8rem", color: "var(--accent-orange)", fontWeight: 700, textTransform: "uppercase" }}>
+              Módulos C-01 & C-03
+            </span>
+          </div>
+          <h1>Planificación de Clases y Asistencia</h1>
           <p>Agenda semanal de disciplinas, listas de espera y toma de asistencia en tiempo real</p>
         </div>
-        <div className="header-controls">
-          <button className="btn-secondary" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-red)" strokeWidth="2" style={{ width: "14px" }}>
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-              <circle cx="12" cy="10" r="3"></circle>
-            </svg>
-            Sede Las Condes
-          </button>
+        <div className="header-controls" style={{ display: "flex", gap: "0.75rem" }}>
+          <Link
+            to="/admin/clases/lista-espera"
+            className="btn-secondary"
+            style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "0.4rem", whiteSpace: "nowrap" }}
+          >
+            <span>⏳</span> Lista de Espera (C-06)
+          </Link>
+          <Link
+            to="/admin/clases/nueva"
+            className="btn-primary"
+            style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "0.4rem", whiteSpace: "nowrap" }}
+          >
+            <span>+</span> Programar Clase (C-02)
+          </Link>
         </div>
       </header>
 
@@ -381,18 +395,6 @@ export default function AdminClases() {
             <option value="Completas">Completas / Lista de Espera</option>
           </select>
         </div>
-
-        <button
-          className="btn-primary"
-          style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.5rem" }}
-          onClick={() => setShowProgramarModal(true)}
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ width: "16px" }}>
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-          Programar Nueva Clase
-        </button>
       </div>
 
       {/* LAYOUT: Calendario Semanal y Detalles de Clase */}
@@ -452,7 +454,16 @@ export default function AdminClases() {
                       {selectedClass.dia} • {selectedClass.horario} • {selectedClass.sala}
                     </p>
                   </div>
-                  <span className="status-badge status-active">{selectedClass.disciplina}</span>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.4rem" }}>
+                    <span className="status-badge status-active">{selectedClass.disciplina}</span>
+                    <Link
+                      to={`/admin/clases/${selectedClass.id}/editar`}
+                      className="btn-secondary"
+                      style={{ fontSize: "0.72rem", padding: "0.25rem 0.55rem", textDecoration: "none" }}
+                    >
+                      ✏️ Editar Clase (C-02)
+                    </Link>
+                  </div>
                 </div>
                 <div style={{ marginTop: "0.85rem", fontSize: "0.85rem", display: "flex", justifyContent: "space-between" }}>
                   <span>Instructor: <strong>{selectedClass.instructor}</strong></span>
@@ -489,9 +500,17 @@ export default function AdminClases() {
 
               {/* Lista de Espera */}
               <div className="roster-group" style={{ marginTop: "0.5rem" }}>
-                <span className="roster-title-yellow">
-                  Lista de Espera ({selectedClass.listaEspera.length})
-                </span>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span className="roster-title-yellow">
+                    Lista de Espera ({selectedClass.listaEspera.length})
+                  </span>
+                  <Link
+                    to="/admin/clases/lista-espera"
+                    style={{ fontSize: "0.72rem", color: "var(--accent-orange)", textDecoration: "none", fontWeight: 700 }}
+                  >
+                    Ver Cola Global (C-06) →
+                  </Link>
+                </div>
                 {selectedClass.listaEspera.length === 0 ? (
                   <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", fontStyle: "italic" }}>
                     No hay socios en espera para este turno.
