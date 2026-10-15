@@ -43,6 +43,10 @@ import AdminReservasCancha from "./pages/admin/AdminReservasCancha";
 import AdminReservaForm from "./pages/admin/AdminReservaForm";
 import AdminReservaDetalle from "./pages/admin/AdminReservaDetalle";
 
+// Fase 5: Configuración y Reportes
+import AdminReportes from "./pages/admin/AdminReportes";
+import AdminConfiguracion from "./pages/admin/AdminConfiguracion";
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -115,6 +119,10 @@ export default function App() {
 
           <Route path="controlacceso" element={<AdminControlAcceso />} />
           <Route path="pagos" element={<AdminPagos />} />
+
+          {/* Fase 5: Configuración y Reportes */}
+          <Route path="reportes" element={<AdminReportes />} />
+          <Route path="configuracion" element={<AdminConfiguracion />} />
         </Route>
       </Routes>
     </BrowserRouter>
