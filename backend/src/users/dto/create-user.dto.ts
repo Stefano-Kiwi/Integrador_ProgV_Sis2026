@@ -1,38 +1,26 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsIn, IsNotEmpty, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsEmail, IsInt, IsNotEmpty, IsOptional, IsPositive, IsString, MaxLength, MinLength } from 'class-validator';
 
-/** Tipos de cuenta que existen hoy en el modelo (no hay cuentas de personal). */
-export const TIPOS_USUARIO = ['SOCIO', 'CLIENTE_EXTERNO'] as const;
-export type TipoUsuario = (typeof TIPOS_USUARIO)[number];
-
-/**
- * Datos para crear un usuario. Por ahora solo lo usa el servicio internamente
- * (no hay endpoint de alta: el CRUD de usuarios está fuera de alcance).
- */
 export class CreateUserDto {
-  @ApiProperty({ enum: TIPOS_USUARIO })
-  @IsIn(TIPOS_USUARIO)
-  tipo: TipoUsuario;
-
   @ApiProperty({ example: '30123456' })
   @IsString()
   @IsNotEmpty()
   @MaxLength(20)
   dni: string;
 
-  @ApiProperty({ example: 'Ana' })
+  @ApiProperty({ example: 'Carlos' })
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
   nombre: string;
 
-  @ApiProperty({ example: 'Pérez' })
+  @ApiProperty({ example: 'Gómez' })
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
   apellido: string;
 
-  @ApiProperty({ example: 'ana@fitzone.com' })
+  @ApiProperty({ example: 'carlos@fitzone.com' })
   @IsEmail()
   @MaxLength(150)
   email: string;
@@ -43,10 +31,25 @@ export class CreateUserDto {
   @MaxLength(30)
   telefono?: string;
 
-  /** Contraseña en texto plano: se hashea en el servicio y nunca se guarda así. */
+  @ApiPropertyOptional({ example: 'https://fitzone.com/fotos/perfil-1.jpg' })
+  @IsOptional()
+  @IsString()
+  foto_url?: string;
+
+  @ApiProperty({ example: 1, description: 'ID de rol (1: Cliente, 2: Instructor, 3: Gerente)' })
+  @IsInt()
+  @IsPositive()
+  id_rol: number;
+
+  @ApiPropertyOptional({ example: 1, description: 'ID de la sede asignada como sede base' })
+  @IsOptional()
+  @IsInt()
+  @IsPositive()
+  sede_base_id?: number;
+
   @ApiProperty({ minLength: 8, example: 'MiClaveSegura1' })
   @IsString()
   @MinLength(8)
-  @MaxLength(72) // bcrypt solo usa los primeros 72 bytes
+  @MaxLength(72)
   password: string;
 }
