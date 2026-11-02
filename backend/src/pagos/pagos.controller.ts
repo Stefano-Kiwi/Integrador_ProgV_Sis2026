@@ -3,12 +3,14 @@ import { ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, A
 import { SimularPagoDto } from './dto/simular-pago.dto.js';
 import { PagosService } from './pagos.service.js';
 import { APP_ROUTES } from '../routes/index.js';
+import { Roles } from '../auth/decorators/roles.decorator.js';
 
 @ApiTags('pagos')
 @Controller(APP_ROUTES.PAGOS.ROOT)
 export class PagosController {
-  constructor(private readonly pagosService: PagosService) {}
+  constructor(private readonly pagosService: PagosService) { }
 
+  @Roles('Administrador')
   @Get()
   @ApiOperation({ summary: 'Listar todos los pagos registrados' })
   @ApiOkResponse({ description: 'Listado de pagos y sus comprobantes' })
@@ -23,6 +25,7 @@ export class PagosController {
   findById(@Param('id', ParseIntPipe) id: number) {
     return this.pagosService.findById(id);
   }
+
 
   @Post(APP_ROUTES.PAGOS.SIMULAR)
   @ApiOperation({ summary: 'Simular y registrar procesamiento de pago', description: 'Procesa el pago de una cancha o membresía y genera el comprobante' })

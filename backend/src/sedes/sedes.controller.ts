@@ -4,6 +4,7 @@ import { CreateSedeDto } from './dto/create-sede.dto.js';
 import { SedesService } from './sedes.service.js';
 import { APP_ROUTES } from '../routes/index.js';
 import { Public } from '../auth/decorators/public.decorator.js';
+import { Roles } from '../auth/decorators/roles.decorator.js';
 
 @ApiTags('sedes')
 @Controller(APP_ROUTES.SEDES.ROOT)
@@ -27,6 +28,7 @@ export class SedesController {
     return this.sedesService.findById(id);
   }
 
+  @Roles('Gerente', 'Administrador')
   @Post()
   @ApiOperation({ summary: 'Crear una nueva sede' })
   @ApiCreatedResponse({ description: 'Sede creada exitosamente' })

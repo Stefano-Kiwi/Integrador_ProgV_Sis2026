@@ -6,7 +6,11 @@ export function setupSwagger(app: INestApplication): void {
     .setTitle('FitZone Sports API')
     .setDescription('Documentación de la API de FitZone Sports')
     .setVersion('1.0')
-    .addBearerAuth()
+    .addBearerAuth(
+      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+      'access-token',
+    )
+    .addSecurityRequirements('access-token') // Sends token on ALL endpoints by default
     .build();
 
   const customOptions: SwaggerCustomOptions = {

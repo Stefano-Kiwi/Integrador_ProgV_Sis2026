@@ -35,17 +35,6 @@ export const APP_ROUTES = {
     BY_ID: ':id',
     SIMULAR: 'simular',
   },
-  MOCK: {
-    ROOT: 'mock',
-    USUARIOS: 'usuarios',
-    SEDES: 'sedes',
-    PLANES: 'planes',
-    CLASES: 'clases',
-    CLASES_RESERVA: 'clases/reserva',
-    CANCHAS: 'canchas',
-    CANCHAS_RESERVA: 'canchas/reserva',
-    PAGOS_SIMULAR: 'pagos/simular',
-  },
 } as const;
 
 /**
@@ -65,11 +54,10 @@ export const API_PATHS = {
 } as const;
 
 /**
- * Rutas públicas por defecto que no requieren token JWT.
+ * Rutas públicas por defecto que no requieren token JWT.|
  */
 export const DEFAULT_PUBLIC_PATHS: readonly string[] = [
   API_PATHS.AUTH_LOGIN,
   API_PATHS.SEDES,
   API_PATHS.PLANES,
-  `/${APP_ROUTES.MOCK.ROOT}`,
 ] as const;
