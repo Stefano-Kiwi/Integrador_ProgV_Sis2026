@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { cerrarSesion } from "../services/authService";
 import "../admin.css";
 
 interface AdminLayoutProps {
@@ -85,6 +86,12 @@ const SEDES = [
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const location = useLocation();
+  const navigate = useNavigate();
+
+function handleCerrarSesion() {
+  cerrarSesion();
+  navigate("/admin/login", { replace: true });
+}
   const [currentRole, setCurrentRole] = useState<UserRole>("admin");
   const [currentSede, setCurrentSede] = useState<string>("parana-centro");
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -480,7 +487,22 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               </div>
             </>
           )}
-        </Link>
+          </Link>
+
+        <button
+          type="button"
+          className="btn-secondary"
+          onClick={handleCerrarSesion}
+          title="Cerrar sesión"
+          aria-label="Cerrar sesión"
+          style={{
+            margin: "0.75rem",
+            padding: "0.75rem",
+            flexShrink: 0,
+          }}
+        >
+          {isCollapsed ? "Salir" : "Cerrar sesión"}
+        </button>
       </aside>
 
       {/* CONTENIDO PRINCIPAL */}

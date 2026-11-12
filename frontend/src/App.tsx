@@ -7,6 +7,7 @@ import EditProfile from "./pages/portal/EditProfile";
 import Pagos from "./pages/portal/Pagos";
 import Clases from "./pages/portal/Clases";
 import Canchas from "./pages/portal/Canchas";
+import RequireAuth from "./components/RequireAuth";
 
 // Vistas de Estados Globales
 import Forbidden from "./pages/portal/errors/Forbidden";
@@ -84,6 +85,7 @@ export default function App() {
         <Route path="/admin/login" element={<AdminLogin />} />
 
         {/* Admin Routes with Sidebar */}
+        <Route element={<RequireAuth />}>
         <Route path="/admin" element={<AdminLayout><Outlet /></AdminLayout>}>
           <Route index element={<Dashboard />} />
           <Route path="sedes" element={<AdminSedes />} />
@@ -135,6 +137,7 @@ export default function App() {
           {/* Fase 5: Configuración y Reportes */}
           <Route path="reportes" element={<AdminReportes />} />
           <Route path="configuracion" element={<AdminConfiguracion />} />
+        </Route>
         </Route>
       </Routes>
     </BrowserRouter>
