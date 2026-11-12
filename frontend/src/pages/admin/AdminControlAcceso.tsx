@@ -1,8 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import "../../admin.css";
-
-type ValidationScenario = "autorizado" | "denegado_mora" | "denegado_sede" | "denegado_aforo";
 
 interface AccessLog {
   id: string;
@@ -91,7 +88,6 @@ const INITIAL_LOGS: AccessLog[] = [
 export default function AdminControlAcceso() {
   const [aforoActual, setAforoActual] = useState(195);
   const aforoMaximo = 250;
-  const [scenario, setScenario] = useState<ValidationScenario>("autorizado");
 
   // Filtros Historial
   const [searchQuery, setSearchQuery] = useState("");
@@ -132,38 +128,9 @@ export default function AdminControlAcceso() {
         </div>
       </header>
 
-      {/* SELECTOR DE VALIDACIÓN VISUAL */}
-      <div className="scenario-selector-bar">
-        <span className="scenario-label">Simular Escaneo en Molinete:</span>
-        <button
-          className={`scenario-btn ${scenario === "autorizado" ? "active-green" : ""}`}
-          onClick={() => setScenario("autorizado")}
-        >
-          ✓ 1. Acceso Autorizado (Al Día)
-        </button>
-        <button
-          className={`scenario-btn ${scenario === "denegado_mora" ? "active-red" : ""}`}
-          onClick={() => setScenario("denegado_mora")}
-        >
-          ✕ 2. Denegado por Cuota Vencida
-        </button>
-        <button
-          className={`scenario-btn ${scenario === "denegado_sede" ? "active-yellow" : ""}`}
-          onClick={() => setScenario("denegado_sede")}
-        >
-          ✕ 3. Denegado Sede No Autorizada
-        </button>
-        <button
-          className={`scenario-btn ${scenario === "denegado_aforo" ? "active-orange" : ""}`}
-          onClick={() => setScenario("denegado_aforo")}
-        >
-          ✕ 4. Denegado por Aforo Lleno
-        </button>
-      </div>
-
-      {/* LAYOUT: Escáner (izq) y Aforo/Validación (der) */}
+      {/* LAYOUT: Aforo (izq) e Historial/Auditoría (der) */}
       <div className="access-layout">
-        {/* ESCÁNER Y VALIDACIÓN VISUAL */}
+        {/* CONTROL DE AFORO */}
         <section className="scanner-section">
           {/* Aforo en Tiempo Real */}
           <div className="aforo-card">
@@ -225,76 +192,6 @@ export default function AdminControlAcceso() {
                 </button>
               </div>
             </div>
-          </div>
-
-          {/* Tarjeta del Lector QR & Molinete */}
-          <div className="qr-card">
-            <div className="qr-title">Lector Óptico de Molinete Principal</div>
-
-            <div className="qr-container">
-              <div className="scan-laser"></div>
-              <img
-                src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=FITZONE-MEMBER-34981203"
-                alt="QR Escáner Simulado"
-              />
-            </div>
-
-            {/* BANNERS VISUALES DE VALIDACIÓN */}
-            {scenario === "autorizado" && (
-              <div className="validation-banner banner-ok">
-                <div className="banner-icon">✓</div>
-                <div className="banner-text">
-                  <div className="banner-title">● MOLINETE LIBERADO — ACCESO AUTORIZADO</div>
-                  <div className="banner-subtitle">
-                    Mateo Silva • DNI 34.981.203 • Socio Activo (Plan Anual Black al día)
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {scenario === "denegado_mora" && (
-              <div className="validation-banner banner-fail">
-                <div className="banner-icon">✕</div>
-                <div className="banner-text">
-                  <div className="banner-title">✕ ACCESO DENEGADO — CUOTA MENSUAL VENCIDA</div>
-                  <div className="banner-subtitle">
-                    Juan Pablo Bravo • DNI 31.849.502 • Vencimiento: 08 Oct 2026 (-6 días)
-                  </div>
-                  <div style={{ marginTop: "0.5rem" }}>
-                    <Link to="/admin/pagos" className="btn-primary" style={{ display: "inline-block", fontSize: "0.8rem", padding: "0.4rem 0.8rem", textDecoration: "none" }}>
-                      Cobrar Cuota en Caja →
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {scenario === "denegado_sede" && (
-              <div className="validation-banner banner-warn">
-                <div className="banner-icon">⚠️</div>
-                <div className="banner-text">
-                  <div className="banner-title">✕ ACCESO RESTRINGIDO — SEDE NO AUTORIZADA</div>
-                  <div className="banner-subtitle">
-                    Francisca Soto • DNI 35.109.832 • Plan Single-Sede asignado a "Sede Providencia".
-                  </div>
-                  <div style={{ marginTop: "0.25rem", fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                    Para ingresar a Las Condes requiere actualizar al Plan Anual Black Multisede.
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {scenario === "denegado_aforo" && (
-              <div className="validation-banner banner-orange">
-                <div className="banner-icon">🛑</div>
-                <div className="banner-text">
-                  <div className="banner-title">✕ MOLINETE BLOQUEADO — CAPACIDAD MÁXIMA ALCANZADA</div>
-                  <div className="banner-subtitle">
-                    Aforo al 100% ({aforoMaximo}/{aforoMaximo}). Por ordenanza de seguridad no se permiten ingresos hasta nuevo egreso.
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </section>
 
