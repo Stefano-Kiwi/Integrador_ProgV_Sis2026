@@ -39,4 +39,8 @@ export class UsersService {
   findAll(): Promise<PublicUser[]> {
     return this.usersRepository.findAll();
   }
+
+  findById(id: number): Promise<PublicUser | null> {
+    return this.usersRepository.findById(id);
+  }
 }

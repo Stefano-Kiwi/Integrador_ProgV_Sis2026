@@ -7,6 +7,8 @@ export const APP_ROUTES = {
   AUTH: {
     ROOT: 'auth',
     LOGIN: 'login',
+    ME: 'me',
+    VERIFY: 'verify',
   },
   USUARIOS: {
     ROOT: 'usuarios',
