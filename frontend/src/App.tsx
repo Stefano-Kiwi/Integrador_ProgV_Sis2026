@@ -94,8 +94,8 @@ export default function App() {
           <Route path="sedes/:id/editar" element={<AdminSedeForm />} />
           <Route path="personal" element={<AdminPersonal />} />
           <Route path="personal/nuevo" element={<AdminUsuarioForm />} />
-          <Route path="personal/:id" element={<AdminUsuarioForm />} />
           <Route path="personal/:id" element={<AdminUsuarioDetalle />} />
+          <Route path="personal/:id/editar" element={<AdminUsuarioForm />} />
           <Route path="usuarios" element={<Navigate to="/admin/personal" replace />} />
           <Route path="usuarios/nuevo" element={<AdminUsuarioForm />} />
           <Route path="usuarios/:id" element={<AdminUsuarioDetalle />} />
