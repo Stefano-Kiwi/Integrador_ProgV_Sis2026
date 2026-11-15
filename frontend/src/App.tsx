@@ -7,6 +7,7 @@ import EditProfile from "./pages/portal/EditProfile";
 import Pagos from "./pages/portal/Pagos";
 import Clases from "./pages/portal/Clases";
 import Canchas from "./pages/portal/Canchas";
+import MiPaseQR from "./pages/portal/MiPaseQR";
 import RequireAuth from "./components/RequireAuth";
 
 // Vistas de Estados Globales
@@ -70,6 +71,8 @@ export default function App() {
           <Route path="/pagos" element={<Pagos />} />
           <Route path="/clases" element={<Clases />} />
           <Route path="/canchas" element={<Canchas />} />
+          <Route path="/mi-pase-qr" element={<MiPaseQR />} />
+          <Route path="/pase-qr" element={<MiPaseQR />} />
 
           {/* Rutas de Estados Globales de Error / Seguridad */}
           <Route path="/403" element={<Forbidden />} />

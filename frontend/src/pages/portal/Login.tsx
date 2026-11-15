@@ -1,12 +1,41 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { iniciarSesion } from "../../services/authService";
 
 export default function Login() {
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    navigate("/profile");
+    if (cargando) return;
+    setError(null);
+
+    if (!email.trim() || !password) {
+      setError("Por favor completa tu correo y contraseña.");
+      return;
+    }
+
+    setCargando(true);
+
+    try {
+      await iniciarSesion(email, password);
+      navigate("/profile");
+    } catch (err) {
+      setError(
+        err instanceof TypeError
+          ? "No se pudo conectar con el backend (localhost:3000). Asegúrate de que el servidor esté activo."
+          : err instanceof Error
+            ? err.message
+            : "No se pudo iniciar sesión.",
+      );
+    } finally {
+      setCargando(false);
+    }
   };
 
   return (
@@ -74,6 +103,8 @@ export default function Login() {
                   className="form-input"
                   placeholder="nombre@correo.com"
                   required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   autoComplete="username"
                   enterKeyHint="next"
                   aria-describedby="email-validation-tip"
@@ -116,6 +147,8 @@ export default function Login() {
                   className="form-input"
                   placeholder="••••••••••••"
                   required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   minLength={6}
                   autoComplete="current-password"
                   enterKeyHint="done"
@@ -144,9 +177,38 @@ export default function Login() {
               </label>
             </div>
 
+            {/* Mensaje de Error si la autenticación falla */}
+            {error && (
+              <div
+                style={{
+                  background: "rgba(255, 75, 114, 0.15)",
+                  border: "1px solid var(--accent-red, #ff4b72)",
+                  borderRadius: "8px",
+                  padding: "0.75rem 1rem",
+                  marginBottom: "1rem",
+                  color: "#fff",
+                  fontSize: "0.85rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                }}
+              >
+                <span>⚠️</span>
+                <span>{error}</span>
+              </div>
+            )}
+
             {/* Botón de Envío Principal */}
-            <button type="submit" className="submit-btn" id="submit-login">
-              <span className="btn-text">INGRESAR AL GIMNASIO</span>
+            <button
+              type="submit"
+              className="submit-btn"
+              id="submit-login"
+              disabled={cargando}
+              style={{ opacity: cargando ? 0.7 : 1, cursor: cargando ? "not-allowed" : "pointer" }}
+            >
+              <span className="btn-text">
+                {cargando ? "CONECTANDO CON EL SERVIDOR..." : "INGRESAR AL GIMNASIO"}
+              </span>
               <svg
                 className="btn-arrow"
                 viewBox="0 0 24 24"

@@ -427,6 +427,21 @@ export default function Profile() {
                     <div className="pass-qr-meta">
                       <span className="pass-qr-title">Credencial QR de Acceso</span>
                       <span className="pass-qr-desc">Escanea en el molinete para ingresar</span>
+                      <Link
+                        to="/mi-pase-qr"
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.35rem",
+                          marginTop: "0.35rem",
+                          color: "var(--accent-neon, #00ff87)",
+                          fontSize: "0.78rem",
+                          fontWeight: "700",
+                          textDecoration: "underline"
+                        }}
+                      >
+                        Abrir Pase Dinámico Anti-Captura →
+                      </Link>
                     </div>
                   </div>
                   <span className="pass-qr-badge">● QR HABILITADO</span>
