@@ -1,6 +1,10 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { cerrarSesion } from "../services/authService";
+import {cerrarSesion, obtenerMiPerfil, obtenerToken,} from "../services/authService";
+import { obtenerSedes } from "../services/sedesService";
+import type { SedeApi } from "../services/sedesService";
+import type { UsuarioSesion } from "../services/authService";
+
 import "../admin.css";
 
 interface AdminLayoutProps {
@@ -76,24 +80,104 @@ const ROLES_CONFIG: Record<UserRole, RoleConfig> = {
   },
 };
 
-const SEDES = [
-  { id: "parana-centro", name: "Sede Paraná Centro (Central)", ciudad: "Paraná", aforo: "77% Aforo" },
-  { id: "concordia-costanera", name: "Sede Concordia Costanera", ciudad: "Concordia", aforo: "75% Aforo" },
-  { id: "gualeguaychu-parque", name: "Sede Gualeguaychú Parque", ciudad: "Gualeguaychú", aforo: "60% Aforo" },
-  { id: "concepcion-uruguay", name: "Sede Concepción del Uruguay", ciudad: "C. del Uruguay", aforo: "78% Aforo" },
-  { id: "colon-costa", name: "Sede Colón Río", ciudad: "Colón", aforo: "49% Aforo" },
-];
-
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
+  const [usuario, setUsuario] = useState<UsuarioSesion | null>(null);
+  const [errorPerfil, setErrorPerfil] = useState<string | null>(null);
+  const [intentoPerfil, setIntentoPerfil] = useState(0);
+
+useEffect(() => {
+  let activo = true;
+
+  async function cargarPerfil() {
+    setErrorPerfil(null);
+    setUsuario(null);
+
+    try {
+      const perfil = await obtenerMiPerfil();
+
+      if (activo) {
+        setUsuario(perfil);
+      }
+    } catch (error) {
+      if (!activo) return;
+
+      if (!obtenerToken()) {
+        navigate("/admin/login", { replace: true });
+        return;
+      }
+
+      setErrorPerfil(
+        error instanceof TypeError
+          ? "No se pudo conectar con el servidor."
+          : error instanceof Error
+            ? error.message
+            : "No se pudo cargar el perfil.",
+      );
+    }
+  }
+
+  void cargarPerfil();
+
+  return () => {
+    activo = false;
+  };
+}, [navigate, intentoPerfil]);
 
 function handleCerrarSesion() {
   cerrarSesion();
   navigate("/admin/login", { replace: true });
 }
-  const [currentRole, setCurrentRole] = useState<UserRole>("admin");
-  const [currentSede, setCurrentSede] = useState<string>("parana-centro");
+  const [currentSede, setCurrentSede] = useState("");
+const [sedes, setSedes] = useState<SedeApi[]>([]);
+const [cargandoSedes, setCargandoSedes] = useState(true);
+const [errorSedes, setErrorSedes] = useState<string | null>(null);
+const [intentoSedes, setIntentoSedes] = useState(0);
+
+useEffect(() => {
+  let activo = true;
+
+  async function cargarSedes() {
+    setCargandoSedes(true);
+    setErrorSedes(null);
+
+    try {
+      const datos = await obtenerSedes();
+
+      if (activo) {
+        setSedes(datos);
+
+        setCurrentSede((anterior) =>
+          datos.some((sede) => String(sede.id) === anterior)
+            ? anterior
+            : "",
+        );
+      }
+    } catch (error) {
+      if (activo) {
+        setErrorSedes(
+          error instanceof TypeError
+            ? "No se pudo conectar con el servidor."
+            : error instanceof Error
+              ? error.message
+              : "No se pudieron cargar las sedes.",
+        );
+      }
+    } finally {
+      if (activo) {
+        setCargandoSedes(false);
+      }
+    }
+  }
+
+  void cargarSedes();
+
+  return () => {
+    activo = false;
+  };
+}, [intentoSedes]);
+
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   interface NavItem {
@@ -333,14 +417,16 @@ function handleCerrarSesion() {
     },
   ];
 
-  const activeRoleData = ROLES_CONFIG[currentRole];
-  const activeSedeData = SEDES.find((s) => s.id === currentSede) || SEDES[0];
+  const rolReal = usuario?.rol.clase_rol;
+
+  const rutasPermitidas = rolReal === "Administrador" ? ROLES_CONFIG.admin.allowedPaths : rolReal === "Gerente" 
+  ? ROLES_CONFIG.gerente.allowedPaths: rolReal === "Instructor"
+          ? ROLES_CONFIG.instructor.allowedPaths: [];
+  const activeSedeData = sedes.find((sede) => String(sede.id) === currentSede,);
 
   // Filtrado de categorías e ítems autorizados por el rol activo
-  const visibleCategories = NAV_CATEGORIES.map((category) => ({
-    ...category,
-    items: category.items.filter((item) => activeRoleData.allowedPaths.includes(item.path)),
-  })).filter((category) => category.items.length > 0);
+  const visibleCategories = NAV_CATEGORIES.map((category) => ({...category, 
+  items: category.items.filter((item) => rutasPermitidas.includes(item.path), ),})).filter((category) => category.items.length > 0);
 
   return (
     <div className="admin-body-wrapper">
@@ -375,59 +461,82 @@ function handleCerrarSesion() {
           </button>
         </div>
 
-        {/* SELECTOR DE SEDE (OCULTO EN MODO COLAPSADO) */}
-        {!isCollapsed && (
-          <div className="sede-selector-box">
-            <label className="sede-selector-label" htmlFor="sede-select">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "13px", height: "13px" }}>
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                <circle cx="12" cy="10" r="3"></circle>
-              </svg>
-              Sede Operativa Activa:
-            </label>
-            <select
-              id="sede-select"
-              className="sede-select-dropdown"
-              value={currentSede}
-              onChange={(e) => setCurrentSede(e.target.value)}
-            >
-              {SEDES.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-            <div className="sede-status-indicator">
-              <span className="live-dot"></span>
-              <span>{activeSedeData.ciudad} • {activeSedeData.aforo}</span>
+      {/* CONSULTA DE SEDES */}
+      {!isCollapsed && (
+        <div className="sede-selector-box">
+          <label className="sede-selector-label" htmlFor="sede-select">
+            Consultar sede:
+          </label>
+
+          {cargandoSedes ? (
+            <p role="status">Cargando sedes...</p>
+          ) : errorSedes ? (
+            <div>
+              <p role="alert">{errorSedes}</p>
+
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setIntentoSedes((actual) => actual + 1)}
+              >
+                Reintentar
+              </button>
             </div>
-          </div>
-        )}
+          ) : (
+            <>
+              <select
+                id="sede-select"
+                className="sede-select-dropdown"
+                value={currentSede}
+                disabled={sedes.length === 0}
+                onChange={(event) => setCurrentSede(event.target.value)}
+              >
+                <option value="">
+                  {sedes.length === 0
+                    ? "No hay sedes registradas"
+                    : "Seleccioná una sede"}
+                </option>
 
-        {/* SIMULADOR DE ROL (OCULTO EN MODO COLAPSADO) */}
-        {!isCollapsed && (
-          <div className="role-switcher-box">
-            <label className="role-switcher-label" htmlFor="role-select">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "13px", height: "13px" }}>
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
-              Rol de Usuario:
-            </label>
-            <select
-              id="role-select"
-              className="role-select-dropdown"
-              value={currentRole}
-              onChange={(e) => setCurrentRole(e.target.value as UserRole)}
-            >
-              <option value="admin">Administrador General</option>
-              <option value="gerente">Gerente de Sede</option>
-              <option value="recepcion">Recepcionista</option>
-              <option value="instructor">Instructor Fitness</option>
-            </select>
-          </div>
-        )}
+                {sedes.map((sede) => (
+                  <option key={sede.id} value={String(sede.id)}>
+                    {sede.nombre}
+                  </option>
+                ))}
+              </select>
 
+              {activeSedeData && (
+                <div style={{ marginTop: "0.75rem" }}>
+                  <p style={{ color: "var(--text-muted)" }}>
+                    {activeSedeData.localidad}
+                  </p>
+
+                  <Link
+                    to={`/admin/sedes/${activeSedeData.id}`}
+                    className="btn-secondary"
+                    style={{
+                      display: "inline-block",
+                      textDecoration: "none",
+                      marginTop: "0.5rem",
+                    }}
+                  >
+                    Ver detalle
+                  </Link>
+                </div>
+              )}
+
+              <button
+                type="button"
+                className="btn-secondary"
+                style={{ marginTop: "0.75rem" }}
+                onClick={() => setIntentoSedes((actual) => actual + 1)}
+              >
+                Actualizar sedes
+              </button>
+            </>
+          )}
+        </div>
+      )}
+      
         {/* MENÚ DE NAVEGACIÓN AGRUPADO POR CATEGORÍAS */}
         <nav className="nav-menu">
           {visibleCategories.map((category, catIndex) => (
@@ -460,34 +569,61 @@ function handleCerrarSesion() {
           ))}
         </nav>
 
-        {/* PERFIL DEL USUARIO (CLICKABLE) */}
-        <Link
-          to="/profile"
-          className="user-profile"
-          title={isCollapsed ? `Perfil: ${activeRoleData.name} (${activeRoleData.badge})` : "Ver Perfil de Usuario"}
-        >
-          <div
-            className="user-avatar"
-            style={{
-              backgroundImage: `url('${activeRoleData.avatar}')`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-            }}
-          ></div>
-          {!isCollapsed && (
-            <>
-              <div className="user-info">
-                <h4>{activeRoleData.name}</h4>
-                <span className="user-role-badge">{activeRoleData.badge}</span>
-              </div>
-              <div className="user-profile-arrow">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "16px", height: "16px" }}>
-                  <polyline points="9 18 15 12 9 6"></polyline>
-                </svg>
-              </div>
-            </>
-          )}
-          </Link>
+        
+        <div
+  className="user-profile"
+  title={
+    usuario
+      ? `${usuario.nombre} ${usuario.apellido} · ${usuario.rol.clase_rol}`
+      : "Perfil de la sesión"
+  }
+>
+  <div
+    className="user-avatar"
+    aria-hidden="true"
+    style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      background: "var(--accent-orange)",
+      color: "#fff",
+      fontWeight: 700,
+      flexShrink: 0,
+    }}
+  >
+    {usuario
+      ? `${usuario.nombre.charAt(0)}${usuario.apellido.charAt(0)}`
+      : "…"}
+  </div>
+
+  {!isCollapsed && (
+    <div className="user-info">
+      {usuario ? (
+        <>
+          <h4>
+            {usuario.nombre} {usuario.apellido}
+          </h4>
+          <span className="user-role-badge">
+            {usuario.rol.clase_rol}
+          </span>
+        </>
+      ) : errorPerfil ? (
+        <>
+          <p role="alert">{errorPerfil}</p>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => setIntentoPerfil((actual) => actual + 1)}
+          >
+            Reintentar
+          </button>
+        </>
+      ) : (
+        <span role="status">Cargando perfil...</span>
+      )}
+    </div>
+  )}
+</div>
 
         <button
           type="button"
