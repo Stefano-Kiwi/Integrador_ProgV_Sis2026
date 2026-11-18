@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitZone Panel - Login Administrativo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Enlace a tu CSS global de Admin -->
+    <link rel="stylesheet" href="../public/css/admin.css">
+
+    <!-- CSS específico solo para centrar el Login -->
+    <style>
+        /* Contenedor que ocupa toda la pantalla y centra la tarjeta */
+        .login-wrapper {
+            min-height: 100vh;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* Un resplandor naranja sutil en el fondo usando la variable del admin.css */
+            background: radial-gradient(circle at 50% -20%, rgba(255, 94, 58, 0.12) 0%, var(--bg-body) 60%);
+            padding: 1rem;
+        }
+
+        /* Modificamos un poco el panel-card para el Login */
+        .login-card {
+            width: 100%;
+            max-width: 420px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 2.5rem 2rem;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .login-header {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .login-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .forgot-password {
+            font-size: 0.8rem;
+            color: var(--accent-orange);
+            text-decoration: none;
+            align-self: flex-end;
+            margin-top: -0.5rem;
+            transition: 0.2s;
+        }
+
+        .forgot-password:hover {
+            text-decoration: underline;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-wrapper">
+        <div class="login-card">
+            
+            <header class="login-header">
+                <!-- Logo -->
+                <div class="brand" style="justify-content: center; margin: 0;">
+                    <svg viewBox="0 0 24 24" fill="var(--accent-orange)" style="width: 32px;">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                    </svg>
+                    <div class="brand-title" style="font-size: 1.6rem;">FITZONE <span>PANEL</span></div>
+                </div>
+                <p class="login-subtitle">Acceso exclusivo para personal administrativo y recepcionistas</p>
+            </header>
+
+            <!-- Formulario apuntando al Dashboard para simular la navegación -->
+            <form action="AdmDash.html" method="GET" style="display: flex; flex-direction: column; gap: 1.25rem;">
+                
+                <!-- Reutilizando form-group y form-control de admin.css -->
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="email">Usuario o Correo Electrónico</label>
+                    <input type="email" id="email" class="form-control" placeholder="ej. gruiz@fitzone.com" required>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="password">Contraseña</label>
+                    <input type="password" id="password" class="form-control" placeholder="••••••••" required>
+                </div>
+
+                <a href="#" class="forgot-password">¿Olvidaste tu contraseña?</a>
+
+                <!-- Reutilizando btn-primary de admin.css -->
+                <button type="submit" class="btn-primary" style="width: 100%; margin-top: 0.5rem; font-size: 1rem; padding: 0.85rem;">
+                    Ingresar al Sistema
+                </button>
+            </form>
+
+        </div>
+    </div>
+
+</body>
+</html>

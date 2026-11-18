@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitZone Panel - Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Enlace al CSS global que armamos -->
+<link rel="stylesheet" href="../public/css/admin.css">
+    <!-- CSS específico solo para la vista del Dashboard -->
+    <style>
+        /* Perfil del usuario en el sidebar */
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+            margin-top: auto;
+        }
+        .user-avatar { width: 40px; height: 40px; border-radius: 50%; background-color: var(--bg-card); }
+        .user-info h4 { font-size: 0.9rem; margin-bottom: 0.1rem; }
+        .user-info p { font-size: 0.75rem; color: var(--accent-orange); }
+
+        /* Grilla Principal del Dashboard */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+        }
+
+        /* Estructura interna de los KPIs */
+        .kpi-header { display: flex; justify-content: space-between; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;}
+        .kpi-value { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .kpi-trend { font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 0.25rem; }
+        .trend-up { color: var(--accent-green); }
+        .trend-down { color: var(--accent-red); }
+        .trend-text { color: var(--text-muted); font-weight: 400; }
+
+        /* Zonas de la grilla */
+        .charts-area { grid-column: span 3; display: flex; flex-direction: column; gap: 1.5rem; }
+        .alerts-area { grid-column: span 1; display: flex; flex-direction: column; gap: 1rem; }
+
+        /* Simulación de Gráfico de Barras */
+        .bar-chart-mock { display: flex; align-items: flex-end; justify-content: space-around; height: 180px; padding-top: 2rem; }
+        .bar-col { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; width: 40px; }
+        .bar { width: 100%; background-color: var(--border-color); border-radius: 4px 4px 0 0; position: relative; }
+        .bar.active { background-color: var(--accent-orange); }
+        .bar-val { position: absolute; top: -25px; left: 50%; transform: translateX(-50%); font-size: 0.75rem; color: var(--text-muted); }
+        .bar.active .bar-val { color: var(--accent-orange); font-weight: bold; }
+        .bar-label { font-size: 0.8rem; color: var(--text-muted); }
+
+        /* Simulación Ranking Horizontal */
+        .ranking-list { display: flex; flex-direction: column; gap: 1.25rem; }
+        .ranking-item { display: flex; flex-direction: column; gap: 0.5rem; }
+        .ranking-info { display: flex; justify-content: space-between; font-size: 0.9rem; }
+        .ranking-bar-bg { width: 100%; height: 6px; background-color: var(--bg-body); border-radius: 3px; }
+        .ranking-bar-fill { height: 100%; border-radius: 3px; }
+
+        /* Alertas Específicas */
+        .alert-card {
+            background-color: var(--bg-sidebar);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.25rem;
+        }
+        .alert-title { display: flex; align-items: center; gap: 0.5rem; font-weight: 600; font-size: 0.95rem; margin-bottom: 0.5rem; }
+        .alert-desc { font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; }
+
+        /* Simulación de Gráfico de Barras Verticales */
+        .bar-chart-mock { 
+            display: flex; 
+            align-items: flex-end; 
+            justify-content: space-around; 
+            height: 200px; /* Altura forzada obligatoria */
+            margin-top: 1rem; 
+        }
+        .bar-col { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            height: 100%; 
+            width: 45px; 
+            gap: 0.5rem; 
+        }
+        .bar-fill-area {
+            width: 100%;
+            flex-grow: 1; /* Obliga a tomar todo el alto disponible */
+            display: flex;
+            align-items: flex-end;
+        }
+        .bar { 
+            width: 100%; 
+            background-color: var(--border-color); 
+            border-radius: 4px 4px 0 0; 
+            position: relative; 
+        }
+        .bar.active { 
+            background-color: var(--accent-orange); 
+        }
+        .bar-val { 
+            position: absolute; 
+            top: -24px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            font-size: 0.75rem; 
+            color: var(--text-muted); 
+        }
+        .bar.active .bar-val { 
+            color: var(--accent-orange); 
+            font-weight: 700; 
+        }
+        .bar-label { 
+            font-size: 0.8rem; 
+            color: var(--text-muted); 
+        }
+
+        /* Simulación Ranking Horizontal */
+        .ranking-list { display: flex; flex-direction: column; gap: 1.25rem; margin-top: 1rem; }
+        .ranking-item { display: flex; flex-direction: column; gap: 0.6rem; }
+        .ranking-info { display: flex; justify-content: space-between; font-size: 0.9rem; }
+        .ranking-bar-bg { width: 100%; height: 8px; background-color: var(--bg-body); border-radius: 4px; overflow: hidden; }
+        .ranking-bar-fill { height: 100%; border-radius: 4px; }
+        
+    </style>
+</head>
+<body>
+
+    <!-- SIDEBAR (Usa las clases de admin.css) -->
+    <aside class="sidebar">
+        <div class="brand">
+            <svg viewBox="0 0 24 24" fill="var(--accent-orange)" style="width: 24px;">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
+            <div class="brand-title">FITZONE <span>PANEL</span></div>
+        </div>
+        <div class="brand-subtitle">Sedes autorizadas: 25+</div>
+
+        <nav class="nav-menu">
+            <a href="#" class="nav-link active">Dashboard</a>
+            <a href="Socios.html" class="nav-link">Socios</a>
+            <a href="#" class="nav-link">Clases Grupales</a>
+            <a href="#" class="nav-link">Canchas Deportivas</a>
+            <a href="#" class="nav-link">Control de Acceso</a>
+            <a href="#" class="nav-link">Reportes & Analíticas</a>
+        </nav>
+
+        <div class="user-profile">
+            <div class="user-avatar"></div>
+            <div class="user-info">
+                <h4>Gerardo Ruiz</h4>
+                <p>Gerente Central</p>
+            </div>
+        </div>
+    </aside>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="main-content">
+        
+        <!-- TOPBAR (Usa las clases de admin.css) -->
+        <header class="topbar">
+            <div class="header-titles">
+                <h1>Dashboard Overview</h1>
+                <p>Panel de administración global para todas las sedes FitZone Sports</p>
+            </div>
+            <div class="header-controls">
+                <button class="btn-secondary">◎ Todas las Sedes (25)</button>
+                <button class="btn-secondary">🔔</button>
+                <button class="btn-secondary">📅 Hoy, 14 de Octubre</button>
+            </div>
+        </header>
+
+        <div class="dashboard-grid">
+            
+            <!-- KPIs (Reutilizan la clase panel-card de admin.css) -->
+            <div class="panel-card">
+                <div class="kpi-header">Socios Activos <span>👥</span></div>
+                <div class="kpi-value">14,204</div>
+                <div class="kpi-trend trend-up">↗ +8.4% <span class="trend-text">este mes</span></div>
+            </div>
+            <div class="panel-card">
+                <div class="kpi-header">Ingresos Mensuales <span>💳</span></div>
+                <div class="kpi-value">$162,450 USD</div>
+                <div class="kpi-trend trend-up">↗ +12.1% <span class="trend-text">este mes</span></div>
+            </div>
+            <div class="panel-card">
+                <div class="kpi-header">Ocupación Promedio <span>📊</span></div>
+                <div class="kpi-value">78.2%</div>
+                <div class="kpi-trend trend-up">↗ +3.4% <span class="trend-text">este mes</span></div>
+            </div>
+            <div class="panel-card">
+                <div class="kpi-header">Clases de Hoy <span>📅</span></div>
+                <div class="kpi-value">148</div>
+                <div class="kpi-trend trend-down">↘ -1.2% <span class="trend-text">este mes</span></div>
+            </div>
+
+            <!-- Columna Izquierda: Gráficos -->
+            <div class="charts-area">
+                
+                <div class="panel-card">
+                    <div class="panel-header">
+                        <div class="panel-title">Tendencia de Crecimiento de Socios</div>
+                        <span style="font-size:0.8rem; color:var(--text-muted)">Últimos 6 meses</span>
+                    </div>
+                    <div class="bar-chart-mock">
+                        <div class="bar-col"><div class="bar" style="height: 40%;"><span class="bar-val">10.2k</span></div><span class="bar-label">Mayo</span></div>
+                        <div class="bar-col"><div class="bar" style="height: 50%;"><span class="bar-val">11.1k</span></div><span class="bar-label">Junio</span></div>
+                        <div class="bar-col"><div class="bar" style="height: 55%;"><span class="bar-val">11.8k</span></div><span class="bar-label">Julio</span></div>
+                        <div class="bar-col"><div class="bar" style="height: 65%;"><span class="bar-val">12.4k</span></div><span class="bar-label">Agosto</span></div>
+                        <div class="bar-col"><div class="bar" style="height: 75%;"><span class="bar-val">13.2k</span></div><span class="bar-label">Sept</span></div>
+                        <div class="bar-col"><div class="bar active" style="height: 90%;"><span class="bar-val">14.2k</span></div><span class="bar-label">Oct</span></div>
+                    </div>
+                </div>
+
+                <div class="panel-card">
+                    <div class="panel-header">
+                        <div class="panel-title">Ingresos por Sede Principal (Top 4)</div>
+                        <a href="#" style="color: var(--accent-orange); font-size: 0.85rem; text-decoration: none;">Ver ranking</a>
+                    </div>
+                    <div class="ranking-list">
+                        <div class="ranking-item">
+                            <div class="ranking-info"><span>Sede Las Condes</span><strong>$45,200</strong></div>
+                            <div class="ranking-bar-bg"><div class="ranking-bar-fill" style="width: 85%; background: var(--accent-orange);"></div></div>
+                        </div>
+                        <div class="ranking-item">
+                            <div class="ranking-info"><span>Sede Vitacura</span><strong>$38,400</strong></div>
+                            <div class="ranking-bar-bg"><div class="ranking-bar-fill" style="width: 70%; background: var(--accent-green);"></div></div>
+                        </div>
+                        <div class="ranking-item">
+                            <div class="ranking-info"><span>Sede Providencia</span><strong>$31,900</strong></div>
+                            <div class="ranking-bar-bg"><div class="ranking-bar-fill" style="width: 60%; background: var(--accent-yellow);"></div></div>
+                        </div>
+                        <div class="ranking-item">
+                            <div class="ranking-info"><span>Sede Lo Barnechea</span><strong>$24,150</strong></div>
+                            <div class="ranking-bar-bg"><div class="ranking-bar-fill" style="width: 45%; background: var(--text-muted);"></div></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Columna Derecha: Alertas -->
+            <div class="alerts-area">
+                <div class="panel-title" style="margin-bottom: 0.5rem;">Alertas de Operaciones</div>
+
+                <div class="alert-card" style="border-color: rgba(255, 75, 114, 0.4); background-color: rgba(255, 75, 114, 0.05);">
+                    <div class="alert-title"><span style="color: var(--accent-red)">⚠️</span> Saturación de Capacidad</div>
+                    <div class="alert-desc">Las Condes se encuentra al 94% de su límite máximo permitido.</div>
+                </div>
+
+                <div class="alert-card" style="border-color: rgba(255, 176, 32, 0.4); background-color: rgba(255, 176, 32, 0.05);">
+                    <div class="alert-title"><span style="color: var(--accent-yellow)">🔧</span> Mantenimiento Cancha 2</div>
+                    <div class="alert-desc">Sede Vitacura reporta daño en el vidrio perimetral de Pádel.</div>
+                </div>
+
+                <div class="alert-card">
+                    <div class="alert-title">📄 Suscripciones por Vencer</div>
+                    <div class="alert-desc">42 socios activos ingresan al periodo de renovación esta semana.</div>
+                </div>
+
+                <!-- Usa btn-primary de admin.css -->
+                <button class="btn-primary" style="margin-top: auto;">Atender Incidencias</button>
+            </div>
+
+        </div>
+    </main>
+</body>
+</html>
