@@ -1,0 +1,63 @@
+Bitácora - Caraballo, Ian - Rol
+
+Proyecto FitZone Sports - Programación V - Equipo 12
+SEMANA 1 - Unidad I (Arquitectura)
+
+Actividad:
+
+Revisamos entre los cuatro el alcance, los requisitos, las tecnologías y cómo cortar los módulos. Fue más que nada charla y decidir el rumbo de la arquitectura.
+SEMANA 2 - Unidad I (Arquitectura)
+
+Actividad:
+
+Con el equipo armamos el C4 hasta nivel 2 y los primeros ADR. También hicimos el diagrama relacional de la base y los prototipos de las pantallas en Figma. Mi parte estuvo enfocada en el modelado de las páginas del frontend web, armando los prototipos no funcionales para definir cómo se iban a ver y comportar las vistas.
+SEMANA 3 - Unidad II (Frameworks)
+
+Actividad:
+
+Con Denis y Lautaro continuamos completando y extendiendo el modelado de las pantallas del frontend web en Figma, terminando de definir los prototipos no funcionales y los comportamientos esperados antes de pasar a código.
+SEMANA 4 - Unidad II (Frameworks)
+
+Actividad:
+
+Hice el setup inicial del proyecto en React configurando React Router y levantando un mock de la API a partir del documento OpenAPI para poder avanzar sin depender del backend. Además, junto con Denis y Lautaro hicimos el maquetado estático del Login y las vistas básicas, traduciendo las pantallas de Figma a componentes visuales en React (HTML/CSS).
+SEMANA 5 - Unidad III (Patrones de diseño)
+
+Actividad:
+
+Fui líder técnico de esta semana. Del lado del frontend trabajé en el consumo de la API y la gestión de estado global, reemplazando el mock inicial por la API real de NestJS una vez que estuvo publicada, dejando el login funcional pegándole directamente a la base de datos.
+SEMANA 6 - Unidad III (Patrones de diseño)
+
+Actividad:
+
+Fui líder técnico de esta semana. Entre todos trabajamos en la justificación de los patrones de diseño aplicados (qué problema resuelve cada uno, por qué se aplicó ahí y qué implicaría modificarlo) y cargamos las entradas correspondientes en el LOG.md.
+SEMANA 7 - Unidad III
+
+Actividad:
+
+Integré el frontend en React con la API real de autenticación de NestJS: conecté el formulario de login y gestioné las respuestas, los errores de credenciales, el manejo de sesión y la redirección según el resultado de la autenticación. Además, actualizamos entre todos el LOG.md con los avances, decisiones técnicas y problemas de la semana.
+SEMANA 8 - Unidad III
+
+Actividad:
+
+Con Denis y Lautaro trabajamos en la integración de las vistas administrativas de React con los endpoints reales del backend, conectando las pantallas para consultar, registrar, modificar y visualizar los datos de las entidades principales.
+SEMANA 9 - Unidad IV (Componentes)
+
+Actividad:
+
+Implementé la gestión de sesión en el frontend, centralizando los datos del usuario autenticado y el token, y resolviendo el cierre de sesión junto con la navegación protegida entre las vistas.
+SEMANA 10 - Unidad IV (Componentes)
+
+Actividad:
+
+Realicé la integración de los módulos de usuarios y sedes en el frontend, conectando las consultas y altas con la API real y contemplando estados de carga, datos vacíos y manejo de errores.
+SEMANA 11 - Unidad V (Pruebas)
+
+Actividad:
+
+Ejecuté las pruebas de autenticación y sesión en el frontend (credenciales incorrectas, acceso sin sesión, token vencido y cierre de sesión) corrigiendo las incidencias detectadas. También participamos entre todos en la revisión general de pendientes, actualización de instrucciones de ejecución y registro de actividades reales en el LOG.md.
+CIERRE - 18/11 al 19/11 (Congelamiento)
+
+Actividad:
+
+Realicé fixes y ajustes finales en el frontend y en la integración para dejar todo estable y listo para la entrega.
