@@ -194,11 +194,11 @@ export class ClasesService {
       throw new NotFoundException(`Clase con ID ${claseId} no encontrada`);
     }
 
-    const esPersonal = ID_ROLES_PERSONAL.includes(user.id_rol);
-    const esInstructorDeClase = clase.instructor?.usuario_id === user.sub;
+    const esAdministrador = user.id_rol === 4;
+    const esInstructorDeClase = user.id_rol === 2 && clase.instructor?.usuario_id === user.sub;
 
-    if (!esInstructorDeClase && !esPersonal) {
-      throw new ForbiddenException('Solo el instructor de la clase o administradores pueden cancelarla.');
+    if (!esInstructorDeClase && !esAdministrador) {
+      throw new ForbiddenException('Solo el instructor de la clase o un administrador pueden cancelarla.');
     }
 
     await this.clasesRepository.cancelarClase(claseId);

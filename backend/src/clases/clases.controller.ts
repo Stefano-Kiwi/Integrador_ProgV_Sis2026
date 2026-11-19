@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Put } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -109,9 +109,9 @@ export class ClasesController {
     return this.clasesService.cancelarReserva(id, user);
   }
 
-  @Delete(APP_ROUTES.CLASES.BY_ID)
+  @Patch(APP_ROUTES.CLASES.CANCELAR)
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Cancelar/Eliminar una clase dictada por el instructor' })
+  @ApiOperation({ summary: 'Cancelar una clase dictada por el instructor' })
   @ApiOkResponse({ description: 'Clase cancelada exitosamente' })
   cancelarClase(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: JwtPayload) {
     return this.clasesService.cancelarClase(id, user);
