@@ -243,6 +243,8 @@ model reserva_cancha {
   pago    pago[]
 
   @@index([usuario_id], map: "ix_reserva_cancha_usuario_id")
+  // RNF-03: consulta de disponibilidad por cancha/fecha/hora
+  @@index([cancha_id, fecha, hora_inicio], map: "ix_reserva_cancha_disponibilidad")
 }
 
 model pago {

@@ -1,6 +1,26 @@
 // Seed de base de datos con datos completos para probar todos los endpoints del backend.
 // Uso: npm run seed  (o node prisma/seed.mjs)
 // Es idempotente: puede ejecutarse múltiples veces sin duplicar registros ni romper foreign keys.
+//
+// Carga: 26 sedes, cada una con canchas de Paddle, Fútbol 5 y Tenis + 3 clases con horarios.
+//
+// ─────────────────────────────────────────────────────────────────────────────
+// USUARIOS DE PRUEBA (copiar al README)
+//
+// Perfil                                  | Rol (BD)      | Email                          | Contraseña
+// ----------------------------------------|---------------|--------------------------------|----------------
+// Gerente central                         | Gerente       | admin@fitzone.com              | Admin123!
+// Recepcionista / admin de sede (Centro)  | Administrador | recepcion.centro@fitzone.com   | Recepcion123!
+// Socio activo (membresía ACTIVO)         | Cliente       | carlos.cliente@fitzone.com     | Cliente123!
+// Cliente externo (sin membresía)         | Cliente       | externo@fitzone.com            | Externo123!
+// Socio en mora (membresía VENCIDO, RN-03)| Cliente       | mora@fitzone.com               | Mora123!
+// Socio con pago pendiente (PENDIENTE_PAGO)| Cliente      | ana@fitzone.com                | MiClaveSegura1
+// Instructor                              | Instructor    | laura.instructor@fitzone.com   | Instructor123!
+//
+// Nota: el modelo no tiene tipo "socio"/"cliente externo". Ambos usan el rol
+// "Cliente"; es SOCIO quien tiene una membresía (activa o vencida) y es CLIENTE
+// EXTERNO quien no tiene ninguna.
+// ─────────────────────────────────────────────────────────────────────────────
 
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
@@ -65,6 +85,45 @@ async function main() {
       aforo_maximo: 120,
     },
   });
+
+  // Sedes adicionales hasta superar las 25 requeridas (24 extra + las 2 anteriores = 26)
+  const sedesExtra = [
+    ['FitZone Buenos Aires Palermo', 'Av. Santa Fe 3200', 'Buenos Aires', 150],
+    ['FitZone Buenos Aires Belgrano', 'Av. Cabildo 2100', 'Buenos Aires', 140],
+    ['FitZone Buenos Aires Caballito', 'Av. Rivadavia 5100', 'Buenos Aires', 130],
+    ['FitZone Córdoba Nueva Córdoba', 'Obispo Trejo 800', 'Córdoba', 110],
+    ['FitZone Córdoba Cerro', 'Av. Colón 4500', 'Córdoba', 100],
+    ['FitZone Rosario Centro', 'Calle Córdoba 1500', 'Rosario', 120],
+    ['FitZone Rosario Fisherton', 'Eva Perón 7800', 'Rosario', 90],
+    ['FitZone Mendoza Centro', 'Av. San Martín 1200', 'Mendoza', 100],
+    ['FitZone Mendoza Godoy Cruz', 'Av. San Martín Sur 900', 'Mendoza', 85],
+    ['FitZone La Plata Centro', 'Calle 7 N° 650', 'La Plata', 95],
+    ['FitZone Tucumán Centro', 'Av. Mate de Luna 1800', 'San Miguel de Tucumán', 90],
+    ['FitZone Salta Centro', 'Av. Belgrano 700', 'Salta', 80],
+    ['FitZone Mar del Plata Centro', 'Av. Luro 3300', 'Mar del Plata', 110],
+    ['FitZone Mar del Plata Güemes', 'Güemes 2700', 'Mar del Plata', 75],
+    ['FitZone Neuquén Centro', 'Av. Argentina 400', 'Neuquén', 70],
+    ['FitZone Paraná Centro', 'Av. Rivadavia 250', 'Paraná', 70],
+    ['FitZone Santa Fe Centro', 'San Martín 2600', 'Santa Fe', 85],
+    ['FitZone Corrientes Centro', 'Av. Costanera 1100', 'Corrientes', 65],
+    ['FitZone Posadas Centro', 'Av. Mitre 1500', 'Posadas', 65],
+    ['FitZone Bahía Blanca Centro', 'Calle Alsina 300', 'Bahía Blanca', 80],
+    ['FitZone San Juan Centro', 'Av. Libertador 900', 'San Juan', 70],
+    ['FitZone Ushuaia Centro', 'Av. Maipú 800', 'Ushuaia', 50],
+    ['FitZone Bariloche Centro', 'Av. Bustillo 1300', 'San Carlos de Bariloche', 60],
+    ['FitZone Concordia Norte', 'Av. Yrigoyen 2200', 'Concordia', 75],
+  ];
+
+  const todasLasSedes = [sedeCentro, sedeCostanera];
+  for (const [nombre, direccion, localidad, aforo_maximo] of sedesExtra) {
+    const sede = await prisma.sede.upsert({
+      where: { nombre },
+      update: { direccion, localidad, aforo_maximo },
+      create: { nombre, direccion, localidad, aforo_maximo },
+    });
+    todasLasSedes.push(sede);
+  }
+  console.log(`   ${todasLasSedes.length} sedes cargadas.`);
 
   // ==========================================
   // 3. TIPOS DE CANCHA
@@ -151,6 +210,28 @@ async function main() {
       estado: 'EN_MANTENIMIENTO',
     },
   });
+
+  // Canchas de todas las sedes: Paddle, Fútbol 5 y Tenis en cada una (idempotente por sede+nombre)
+  const canchasPorSede = [
+    { nombre: 'Paddle 1', tipo: tipoPaddle, costo: 8000.0 },
+    { nombre: 'Fútbol 5 1', tipo: tipoFutbol, costo: 15000.0 },
+    { nombre: 'Tenis 1', tipo: tipoTenis, costo: 10000.0 },
+  ];
+  for (const sede of todasLasSedes) {
+    for (const c of canchasPorSede) {
+      await prisma.cancha.upsert({
+        where: { sede_id_nombre: { sede_id: sede.id, nombre: c.nombre } },
+        update: { costo_hora: c.costo, estado: 'HABILITADA' },
+        create: {
+          sede_id: sede.id,
+          tipo_cancha_id: c.tipo.id,
+          nombre: c.nombre,
+          costo_hora: c.costo,
+          estado: 'HABILITADA',
+        },
+      });
+    }
+  }
 
   // ==========================================
   // 5. TIPOS DE CLASE
@@ -269,6 +350,57 @@ async function main() {
     },
   });
 
+  // Recepcionista / administrador de sede (rol Administrador, sede Centro)
+  const hashRecepcion = await bcrypt.hash('Recepcion123!', 10);
+  await prisma.usuario.upsert({
+    where: { email: 'recepcion.centro@fitzone.com' },
+    update: { password_hash: hashRecepcion, id_rol: roles['Administrador'].id_rol },
+    create: {
+      dni: '30000005',
+      nombre: 'Romina',
+      apellido: 'Recepción',
+      email: 'recepcion.centro@fitzone.com',
+      telefono: '3454555555',
+      id_rol: roles['Administrador'].id_rol,
+      sede_base_id: sedeCentro.id,
+      password_hash: hashRecepcion,
+    },
+  });
+
+  // Cliente externo (rol Cliente, sin membresía)
+  const hashExterno = await bcrypt.hash('Externo123!', 10);
+  await prisma.usuario.upsert({
+    where: { email: 'externo@fitzone.com' },
+    update: { password_hash: hashExterno, id_rol: roles['Cliente'].id_rol },
+    create: {
+      dni: '30000006',
+      nombre: 'Esteban',
+      apellido: 'Externo',
+      email: 'externo@fitzone.com',
+      telefono: '3454666666',
+      id_rol: roles['Cliente'].id_rol,
+      sede_base_id: sedeCentro.id,
+      password_hash: hashExterno,
+    },
+  });
+
+  // Socio en mora (rol Cliente, membresía VENCIDO) para probar RN-03
+  const hashMora = await bcrypt.hash('Mora123!', 10);
+  const moraUser = await prisma.usuario.upsert({
+    where: { email: 'mora@fitzone.com' },
+    update: { password_hash: hashMora, id_rol: roles['Cliente'].id_rol },
+    create: {
+      dni: '30000007',
+      nombre: 'Martín',
+      apellido: 'Moroso',
+      email: 'mora@fitzone.com',
+      telefono: '3454777777',
+      id_rol: roles['Cliente'].id_rol,
+      sede_base_id: sedeCostanera.id,
+      password_hash: hashMora,
+    },
+  });
+
   // ==========================================
   // 8. PERFIL DE INSTRUCTOR
   // ==========================================
@@ -359,6 +491,41 @@ async function main() {
     });
   }
 
+  // Clases en todas las sedes: 3 por sede (Spinning, Yoga, CrossFit) con horarios escalonados por sede.
+  // Para Centro, Spinning y Yoga ya existen (arriba) y solo se agrega CrossFit.
+  const tiposClaseSede = [
+    { tipo: tipoSpinning, horaInicio: 8, capacidad: 20 },
+    { tipo: tipoYoga, horaInicio: 12, capacidad: 15 },
+    { tipo: tipoCrossFit, horaInicio: 18, capacidad: 12 },
+  ];
+  for (const [indiceSede, sede] of todasLasSedes.entries()) {
+    for (const t of tiposClaseSede) {
+      const existente = await prisma.clase.findFirst({
+        where: { sede_id: sede.id, tipo_clase_id: t.tipo.id },
+      });
+      if (existente) continue;
+
+      // Escalonamos los minutos según la sede (0, 15, 30, 45) para variar horarios
+      const inicio = new Date();
+      inicio.setDate(inicio.getDate() + 1);
+      inicio.setHours(t.horaInicio, (indiceSede % 4) * 15, 0, 0);
+      const fin = new Date(inicio);
+      fin.setHours(inicio.getHours() + 1);
+
+      await prisma.clase.create({
+        data: {
+          sede_id: sede.id,
+          tipo_clase_id: t.tipo.id,
+          instructor_id: instructorProfile.id,
+          inicio_at: inicio,
+          fin_at: fin,
+          capacidad_maxima: t.capacidad,
+          cupo_disponible: t.capacidad,
+        },
+      });
+    }
+  }
+
   // ==========================================
   // 11. MEMBRESÍAS
   // ==========================================
@@ -400,6 +567,34 @@ async function main() {
         estado: 'PENDIENTE_PAGO',
         renovacion_automatica: false,
       },
+    });
+  }
+
+  // Martín (mora) tiene membresía VENCIDO: cuota vencida hace un mes (RN-03)
+  const inicioVencida = new Date();
+  inicioVencida.setMonth(inicioVencida.getMonth() - 2);
+  const finVencida = new Date();
+  finVencida.setMonth(finVencida.getMonth() - 1);
+
+  let membresiaVencida = await prisma.membresia.findFirst({
+    where: { usuario_id: moraUser.id, plan_id: planMensual.id },
+  });
+
+  if (!membresiaVencida) {
+    membresiaVencida = await prisma.membresia.create({
+      data: {
+        usuario_id: moraUser.id,
+        plan_id: planMensual.id,
+        fecha_inicio: inicioVencida,
+        fecha_fin: finVencida,
+        estado: 'VENCIDO',
+        renovacion_automatica: false,
+      },
+    });
+  } else if (membresiaVencida.estado !== 'VENCIDO') {
+    membresiaVencida = await prisma.membresia.update({
+      where: { id: membresiaVencida.id },
+      data: { estado: 'VENCIDO', fecha_inicio: inicioVencida, fecha_fin: finVencida },
     });
   }
 
@@ -480,10 +675,14 @@ async function main() {
   console.log('✅ Seed completado con éxito.');
   console.log('======================================================');
   console.log('📋 USUARIOS DE PRUEBA:');
-  console.log('   - Gerente/Admin: admin@fitzone.com          | pass: Admin123!');
-  console.log('   - Instructor:    laura.instructor@fitzone.com | pass: Instructor123!');
-  console.log('   - Cliente 1:     carlos.cliente@fitzone.com  | pass: Cliente123!');
-  console.log('   - Cliente 2:     ana@fitzone.com             | pass: MiClaveSegura1');
+  console.log('   - Gerente central:        admin@fitzone.com              | pass: Admin123!');
+  console.log('   - Recepcionista (Centro): recepcion.centro@fitzone.com   | pass: Recepcion123!');
+  console.log('   - Socio activo:           carlos.cliente@fitzone.com     | pass: Cliente123!');
+  console.log('   - Cliente externo:        externo@fitzone.com            | pass: Externo123!');
+  console.log('   - Socio en mora (RN-03):  mora@fitzone.com               | pass: Mora123!');
+  console.log('   - Socio pago pendiente:   ana@fitzone.com                | pass: MiClaveSegura1');
+  console.log('   - Instructor:             laura.instructor@fitzone.com   | pass: Instructor123!');
+  console.log(`   - Total sedes cargadas:   ${todasLasSedes.length}`);
   console.log('\n🎯 DATOS CLAVE PARA TESTING DE ENDPOINTS:');
   console.log(`   - Login:             POST /auth/login { "email": "...", "password": "..." }`);
   console.log(`   - Sedes:             GET /sedes | Sede ID Centro: ${sedeCentro.id}, Costanera: ${sedeCostanera.id}`);

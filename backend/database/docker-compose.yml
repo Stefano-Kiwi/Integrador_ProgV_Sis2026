@@ -9,8 +9,8 @@ services:
     ports:
       - "5432:5432"
     volumes:
+      # El esquema lo crean las migraciones de Prisma (npm run db:migrate), no init.sql.
       - postgres_data:/var/lib/postgresql
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
 
 volumes:
   postgres_data:

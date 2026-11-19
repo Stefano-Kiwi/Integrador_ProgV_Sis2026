@@ -2,8 +2,8 @@ import { INestApplication } from '@nestjs/common';
 import { DocumentBuilder, SwaggerCustomOptions, SwaggerModule } from '@nestjs/swagger';
 import { writeFileSync } from 'node:fs';
 
-export function setupSwagger(app: INestApplication): void {
-  const config = new DocumentBuilder()
+export function buildSwaggerConfig() {
+  return new DocumentBuilder()
     .setTitle('FitZone Sports API')
     .setDescription('Documentación de la API de FitZone Sports')
     .setVersion('1.0')
@@ -13,6 +13,10 @@ export function setupSwagger(app: INestApplication): void {
     )
     .addSecurityRequirements('access-token') // Sends token on ALL endpoints by default
     .build();
+}
+
+export function setupSwagger(app: INestApplication): void {
+  const config = buildSwaggerConfig();
 
   const customOptions: SwaggerCustomOptions = {
     swaggerOptions: {
