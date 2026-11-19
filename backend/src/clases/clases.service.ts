@@ -157,4 +157,8 @@ export class ClasesService {
   miListaEspera(usuarioId: number) {
     return this.clasesRepository.findListaEsperaByUsuario(usuarioId);
   }
+
+  findReservasByUsuario(usuarioId: number) {
+    return this.clasesRepository.findReservasByUsuario(usuarioId);
+  }
 }

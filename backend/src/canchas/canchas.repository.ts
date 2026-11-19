@@ -51,6 +51,14 @@ export class CanchasRepository {
     });
   }
 
+  findReservasByUsuario(usuarioId: number) {
+    return this.prisma.reserva_cancha.findMany({
+      where: { usuario_id: usuarioId },
+      select: RESERVAS_CANCHA_SELECT,
+      orderBy: { id: 'desc' },
+    });
+  }
+
   findById(id: number) {
     return this.prisma.cancha.findUnique({
       where: { id },

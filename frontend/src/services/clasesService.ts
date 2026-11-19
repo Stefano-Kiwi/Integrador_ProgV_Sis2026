@@ -113,3 +113,19 @@ export async function obtenerMiListaEspera(): Promise<EntradaListaEsperaApi[]> {
     requireAuth: true,
   });
 }
+
+export interface MiReservaClaseApi {
+  id: number;
+  clase_id: number;
+  usuario_id: number;
+  estado: string;
+  con_penalidad: boolean;
+  creada_at: string;
+  clase: ClaseApi;
+}
+
+export async function obtenerMisReservasClase(): Promise<MiReservaClaseApi[]> {
+  return apiRequest<MiReservaClaseApi[]>("/clases/reservas/mias", {
+    requireAuth: true,
+  });
+}

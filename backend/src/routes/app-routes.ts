@@ -27,6 +27,7 @@ export const APP_ROUTES = {
     BY_ID: ':id',
     RESERVA: 'reserva',
     CANCELAR_RESERVA: 'reserva/:id/cancelar',
+    MIS_RESERVAS: 'reservas/mias',
     MI_LISTA_ESPERA: 'lista-espera/mia',
   },
   CANCHAS: {
@@ -34,6 +35,7 @@ export const APP_ROUTES = {
     BY_ID: ':id',
     RESERVA: 'reserva',
     RESERVAS: 'reservas',
+    MIS_RESERVAS: 'reservas/mias',
     DISPONIBILIDAD: ':id/disponibilidad',
     CANCELAR_RESERVA: 'reserva/:id/cancelar',
     ESTADO: ':id/estado',

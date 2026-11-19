@@ -41,6 +41,10 @@ export class CanchasService {
     return this.canchasRepository.findAllReservas();
   }
 
+  findReservasByUsuario(usuarioId: number) {
+    return this.canchasRepository.findReservasByUsuario(usuarioId);
+  }
+
   async findById(id: number) {
     const cancha = await this.canchasRepository.findById(id);
     if (!cancha) {
