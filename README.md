@@ -26,11 +26,17 @@ FitZone Sports es una plataforma web monolítica modular que unifica la gestión
    ```
 2. **Crear archivo de variables de entorno (opcional, hay valores por defecto para desarrollo local):**
    ```bash
-   cp .env.example .env
+   cp ./frontend/.env.example ./frontend/.env
+   Editar configuracion a gusto para establecer la sede y parametros
+   cp ./backend/.env.example ./backend/.env
    ```
 3. **Levantar PostgreSQL, Backend (con migraciones y seed automáticos) y Frontend:**
    ```bash
-   docker compose up --build
+   cd backend
+   docker-compose up --build
+   cd ..
+   cd frontend
+   docker-compose up --build
    ```
 4. **Acceder a la aplicación:**
    * Portal del socio y Consola Admin: `http://localhost:5173` (o `https://localhost:5443` para cámara QR en móvil)
@@ -38,6 +44,10 @@ FitZone Sports es una plataforma web monolítica modular que unifica la gestión
    * Contrato OpenAPI exportado: [`backend/swagger.json`](backend/swagger.json)
 5. **Reiniciar desde cero (opcional, borrando volúmenes):**
    ```bash
+   cd backend
+   docker compose down -v && docker compose up --build
+   cd ..
+   cd frontend
    docker compose down -v && docker compose up --build
    ```
 
