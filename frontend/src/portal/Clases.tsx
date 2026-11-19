@@ -1,366 +1,298 @@
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { AlertMessage, Badge, Button, Card, FormField, Spinner } from "../components";
+import { useAppStore } from "../store";
+import {
+  cancelarReservaClase,
+  inscribirUsuarioClase,
+  obtenerClases,
+  obtenerMiListaEspera,
+  type ClaseApi,
+  type EntradaListaEsperaApi,
+} from "../services/clasesService";
+import { obtenerSedes, type SedeApi } from "../services/sedesService";
+
+interface ReservaClaseLocal {
+  reserva_id: number;
+  clase: ClaseApi;
+  estado: string;
+}
 
 export default function Clases() {
+  const { usuario, token, sedeSeleccionadaId, seleccionarSede } = useAppStore();
+
+  const [sedes, setSedes] = useState<SedeApi[]>([]);
+  const [clases, setClases] = useState<ClaseApi[]>([]);
+  const [listaEspera, setListaEspera] = useState<EntradaListaEsperaApi[]>([]);
+  const [misReservas, setMisReservas] = useState<ReservaClaseLocal[]>([]);
+
+  const [cargando, setCargando] = useState(true);
+  const [procesandoId, setProcesandoId] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [exito, setExito] = useState<string | null>(null);
+
+  const cargarDatos = useCallback(async () => {
+    setCargando(true);
+    setError(null);
+    try {
+      const [listaSedes, listaClases] = await Promise.all([obtenerSedes(), obtenerClases()]);
+      setSedes(listaSedes);
+      setClases(listaClases);
+
+      if (token) {
+        const espera = await obtenerMiListaEspera().catch(() => []);
+        setListaEspera(espera);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudieron cargar las clases.");
+    } finally {
+      setCargando(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    void cargarDatos();
+  }, [cargarDatos]);
+
+  const clasesFiltradas = sedeSeleccionadaId
+    ? clases.filter((c) => c.sede_id === sedeSeleccionadaId)
+    : clases;
+
+  const manejarInscribir = async (clase: ClaseApi) => {
+    if (!usuario) {
+      setError("Iniciá sesión para reservar o anotarte en lista de espera.");
+      return;
+    }
+    setProcesandoId(clase.id);
+    setError(null);
+    setExito(null);
+    try {
+      const res = await inscribirUsuarioClase(clase.id, usuario.id);
+      setExito(res.mensaje);
+      if (res.estado === "CONFIRMADA" && res.reserva_id) {
+        setMisReservas((prev) => [
+          { reserva_id: res.reserva_id!, clase, estado: "CONFIRMADA" },
+          ...prev,
+        ]);
+      }
+      await cargarDatos();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo realizar la inscripción.");
+    } finally {
+      setProcesandoId(null);
+    }
+  };
+
+  const manejarCancelar = async (item: ReservaClaseLocal) => {
+    const horasRestantes = (new Date(item.clase.inicio_at).getTime() - Date.now()) / 3_600_000;
+    if (horasRestantes < 2) {
+      const confirmar = window.confirm(
+        "Atención: faltan menos de 2 horas para el inicio de la clase. Cancelar ahora registrará penalidad. ¿Deseás continuar?"
+      );
+      if (!confirmar) return;
+    }
+
+    setError(null);
+    setExito(null);
+    try {
+      const res = await cancelarReservaClase(item.reserva_id);
+      setMisReservas((prev) =>
+        prev.map((r) => (r.reserva_id === item.reserva_id ? { ...r, estado: "CANCELADA" } : r))
+      );
+      const extra = res.promovido_desde_lista_espera
+        ? ` Se promovió automáticamente al usuario #${res.promovido_desde_lista_espera.usuarioId} desde lista de espera.`
+        : "";
+      setExito(`${res.mensaje}${extra}`);
+      await cargarDatos();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo cancelar la reserva.");
+    }
+  };
+
   return (
-    <div className="profile-page-wrapper">
-      <main className="profile-container">
-        {/* Encabezado de la Vista */}
-        <header className="profile-page-header">
+    <div className="profile-page-wrapper" style={{ padding: "1.25rem 0.75rem" }}>
+      <main className="profile-container" style={{ maxWidth: "1080px", margin: "0 auto" }}>
+        <header className="profile-page-header" style={{ marginBottom: "1.25rem" }}>
           <h1 className="profile-page-title">
             CLASES <span className="highlight">GRUPALES</span>
           </h1>
           <p className="profile-page-subtitle">
-            Explora el cronograma semanal y asegura tu cupo en entrenamientos
-            guiados por profesionales certificados.
+            Reservas hasta 48 h antes · Cancelación sin penalidad hasta 2 h antes · Lista de espera FIFO.
           </p>
         </header>
 
-        {/* Barra de Días y Filtros por Disciplina */}
-        <div className="filter-controls-bar">
-          <div className="days-row">
-            <a href="#hoy" className="day-tab active">
-              <span className="day-tab-name">JUE</span>
-              <span className="day-tab-num">24</span>
-            </a>
-            <a href="#viernes" className="day-tab">
-              <span className="day-tab-name">VIE</span>
-              <span className="day-tab-num">25</span>
-            </a>
-            <a href="#sabado" className="day-tab">
-              <span className="day-tab-name">SÁB</span>
-              <span className="day-tab-num">26</span>
-            </a>
-            <a href="#domingo" className="day-tab">
-              <span className="day-tab-name">DOM</span>
-              <span className="day-tab-num">27</span>
-            </a>
-            <a href="#lunes" className="day-tab">
-              <span className="day-tab-name">LUN</span>
-              <span className="day-tab-num">28</span>
-            </a>
-            <a href="#martes" className="day-tab">
-              <span className="day-tab-name">MAR</span>
-              <span className="day-tab-num">29</span>
-            </a>
-          </div>
-        </div>
+        {error && <AlertMessage variant="error" message={error} onClose={() => setError(null)} />}
+        {exito && <AlertMessage variant="success" message={exito} onClose={() => setExito(null)} />}
 
-        {/* Grilla Principal Modular (2 Columnas: Listado y Panel Lateral) */}
-        <div className="profile-main-grid">
-          {/* Columna Izquierda: Cronograma del Día */}
-          <div className="profile-column">
-            <div className="classes-card-list">
-              {/* Clase 1: Spinning Power HIIT */}
-              <article className="class-detailed-card">
-                <div className="class-card-main">
-                  <div className="class-time-badge">
-                    <span className="class-time-hour">19:00</span>
-                    <span className="class-time-duration">45 min</span>
-                  </div>
-                  <div className="class-info-block">
-                    <span className="class-type-badge">Cardio HIIT</span>
-                    <h2 className="class-name-title">SPINNING POWER HIIT</h2>
-                    <div className="class-details-sub">
-                      <span className="class-detail-item">
-                        <svg
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                          <circle cx="12" cy="7" r="4" />
-                        </svg>
-                        Coach Sofía Pérez
-                      </span>
-                      <span className="class-detail-item">
-                        <svg
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                        </svg>
-                        Sala de Ciclismo 1
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="capacity-block">
-                  <span className="capacity-text">4 cupos libres (21/25)</span>
-                  <div className="capacity-bar">
-                    <div className="capacity-fill" style={{ width: "84%" }} />
-                  </div>
-                  <Link
-                    to="/profile"
-                    className="btn-reserve-class"
-                    style={{ marginTop: "0.5rem" }}
-                  >
-                    <span>RESERVAR CUPO</span>
-                  </Link>
-                </div>
-              </article>
-
-              {/* Clase 2: Cross Training Pro */}
-              <article className="class-detailed-card">
-                <div className="class-card-main">
-                  <div className="class-time-badge">
-                    <span className="class-time-hour">20:00</span>
-                    <span className="class-time-duration">60 min</span>
-                  </div>
-                  <div className="class-info-block">
-                    <span
-                      className="class-type-badge"
-                      style={{
-                        color: "var(--accent-orange)",
-                        borderColor: "rgba(255, 94, 58, 0.3)",
-                      }}
-                    >
-                      Fuerza Extrema
-                    </span>
-                    <h2 className="class-name-title">CROSS TRAINING PRO WOD</h2>
-                    <div className="class-details-sub">
-                      <span className="class-detail-item">
-                        <svg
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                          <circle cx="12" cy="7" r="4" />
-                        </svg>
-                        Coach Marcos Galván
-                      </span>
-                      <span className="class-detail-item">
-                        <svg
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                        </svg>
-                        Box Central Fit
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="capacity-block">
-                  <span className="capacity-text">2 cupos libres (18/20)</span>
-                  <div className="capacity-bar">
-                    <div className="capacity-fill" style={{ width: "90%" }} />
-                  </div>
-                  <Link
-                    to="/profile"
-                    className="btn-reserve-class"
-                    style={{ marginTop: "0.5rem" }}
-                  >
-                    <span>RESERVAR CUPO</span>
-                  </Link>
-                </div>
-              </article>
-
-              {/* Clase 3: Power Yoga & Flex */}
-              <article className="class-detailed-card">
-                <div className="class-card-main">
-                  <div className="class-time-badge">
-                    <span className="class-time-hour">09:00</span>
-                    <span className="class-time-duration">50 min</span>
-                  </div>
-                  <div className="class-info-block">
-                    <span className="class-type-badge">Relax & Flex</span>
-                    <h2 className="class-name-title">POWER YOGA & MOBILITY</h2>
-                    <div className="class-details-sub">
-                      <span className="class-detail-item">
-                        <svg
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                          <circle cx="12" cy="7" r="4" />
-                        </svg>
-                        Coach Camila Ramos
-                      </span>
-                      <span className="class-detail-item">
-                        <svg
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                        </svg>
-                        Sala Zen & Pilates
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="capacity-block">
-                  <span className="capacity-text">8 cupos libres (10/18)</span>
-                  <div className="capacity-bar">
-                    <div className="capacity-fill" style={{ width: "55%" }} />
-                  </div>
-                  <Link
-                    to="/profile"
-                    className="btn-reserve-class"
-                    style={{ marginTop: "0.5rem" }}
-                  >
-                    <span>RESERVAR CUPO</span>
-                  </Link>
-                </div>
-              </article>
-
-              {/* Clase 4: Boxing Conditioning */}
-              <article className="class-detailed-card">
-                <div className="class-card-main">
-                  <div
-                    className="class-time-badge"
-                    style={{
-                      borderColor: "rgba(255, 94, 58, 0.3)",
-                      color: "var(--accent-orange)",
-                      background: "rgba(255, 94, 58, 0.08)",
-                    }}
-                  >
-                    <span className="class-time-hour">18:00</span>
-                    <span className="class-time-duration">55 min</span>
-                  </div>
-                  <div className="class-info-block">
-                    <span className="class-type-badge">Combate</span>
-                    <h2 className="class-name-title">BOXING CONDITIONING</h2>
-                    <div className="class-details-sub">
-                      <span className="class-detail-item">
-                        <svg
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                          <circle cx="12" cy="7" r="4" />
-                        </svg>
-                        Coach Diego "Toro" Rossi
-                      </span>
-                      <span className="class-detail-item">
-                        <svg
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                        </svg>
-                        Sector Ring & Sacos
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="capacity-block">
-                  <span
-                    className="capacity-text"
-                    style={{ color: "var(--accent-orange)" }}
-                  >
-                    Cupo Completo (15/15)
-                  </span>
-                  <div className="capacity-bar">
-                    <div
-                      className="capacity-fill full"
-                      style={{ width: "100%" }}
-                    />
-                  </div>
-                  <a
-                    href="#espera"
-                    className="btn-reserve-class btn-waitlist"
-                    style={{ marginTop: "0.5rem" }}
-                  >
-                    <span>LISTA DE ESPERA (2)</span>
-                  </a>
-                </div>
-              </article>
-            </div>
-          </div>
-
-          {/* Columna Derecha: Tus Reservas, Instructores y Políticas */}
-          <div className="profile-column">
-            {/* Mis Reservas Activas (Sincronizado con profile.html) */}
-            <section
-              className="profile-section-card"
-              aria-labelledby="card-my-classes"
-            >
-              <div className="card-title-group">
-                <div className="card-title-left">
-                  <svg
-                    className="card-title-icon"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                    <line x1="16" y1="2" x2="16" y2="6" />
-                    <line x1="8" y1="2" x2="8" y2="6" />
-                    <line x1="3" y1="10" x2="21" y2="10" />
-                  </svg>
-                  <h2 id="card-my-classes">TUS CLASES RESERVADAS</h2>
-                </div>
-                <span className="card-title-badge">2 Confirmadas</span>
-              </div>
-
-              <div className="classes-list">
-                <div className="class-item">
-                  <div className="class-left">
-                    <div className="class-time-box">
-                      <span className="class-time-day">HOY</span>
-                      <span className="class-time-hour">19:00</span>
-                    </div>
-                    <div className="class-details">
-                      <div className="class-title">Spinning Power HIIT</div>
-                      <div className="class-meta">
-                        Sala de Ciclismo 1 • Sofía Pérez
-                      </div>
-                    </div>
-                  </div>
-                  <span className="badge-status confirmed">Confirmada</span>
-                </div>
-
-                <div className="class-item">
-                  <div className="class-left">
-                    <div className="class-time-box">
-                      <span className="class-time-day">JUE</span>
-                      <span className="class-time-hour">20:00</span>
-                    </div>
-                    <div className="class-details">
-                      <div className="class-title">Cross Training Pro</div>
-                      <div className="class-meta">
-                        Box Central • Marcos Galván
-                      </div>
-                    </div>
-                  </div>
-                  <span className="badge-status confirmed">Confirmada</span>
-                </div>
-              </div>
-
-              <Link
-                to="/profile"
-                className="slot-btn"
+        <div style={{ display: "grid", gap: "1.25rem" }}>
+          <Card>
+            <FormField label="Filtrar por sede" htmlFor="clases-sede">
+              <select
+                id="clases-sede"
+                value={sedeSeleccionadaId ?? ""}
+                onChange={(e) => seleccionarSede(Number(e.target.value) || null)}
                 style={{
-                  justifyContent: "center",
-                  textAlign: "center",
-                  marginTop: "0.5rem",
-                  textDecoration: "none",
+                  width: "100%",
+                  maxWidth: "360px",
+                  padding: "0.65rem",
+                  borderRadius: "8px",
+                  background: "#0f1524",
+                  color: "#fff",
+                  border: "1px solid var(--border-color, #222b40)",
                 }}
               >
-                Ver Ficha en Perfil
-              </Link>
-            </section>
-          </div>
+                <option value="">Todas las sedes</option>
+                {sedes.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.nombre} ({s.localidad})
+                  </option>
+                ))}
+              </select>
+            </FormField>
+          </Card>
+
+          {cargando ? (
+            <Card>
+              <Spinner label="Cargando cronograma de clases..." />
+            </Card>
+          ) : (
+            <div style={{ display: "grid", gap: "0.9rem" }}>
+              {clasesFiltradas.length === 0 ? (
+                <Card>
+                  <p style={{ color: "var(--text-muted, #8b95a5)", margin: 0 }}>
+                    No hay clases programadas para la sede seleccionada.
+                  </p>
+                </Card>
+              ) : (
+                clasesFiltradas.map((clase) => {
+                  const llena = clase.cupo_disponible <= 0;
+                  const inicio = new Date(clase.inicio_at);
+                  const fin = new Date(clase.fin_at);
+                  return (
+                    <Card
+                      key={clase.id}
+                      title={clase.tipo_clase.nombre}
+                      subtitle={`${clase.sede.nombre} · Prof. ${clase.instructor.usuario.nombre} ${clase.instructor.usuario.apellido}`}
+                      headerAction={
+                        <Badge variant={llena ? "warning" : "success"}>
+                          {llena
+                            ? "Cupo completo"
+                            : `${clase.cupo_disponible}/${clase.capacidad_maxima} libres`}
+                        </Badge>
+                      }
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          flexWrap: "wrap",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          gap: "0.75rem",
+                        }}
+                      >
+                        <div style={{ fontSize: "0.88rem", color: "#cbd5e1" }}>
+                          {inicio.toLocaleDateString("es-AR")} ·{" "}
+                          {inicio.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })} -{" "}
+                          {fin.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
+                        </div>
+
+                        {token ? (
+                          <Button
+                            variant={llena ? "secondary" : "primary"}
+                            loading={procesandoId === clase.id}
+                            onClick={() => manejarInscribir(clase)}
+                          >
+                            {llena ? "Anotarme en Lista de Espera" : "Reservar Cupo"}
+                          </Button>
+                        ) : (
+                          <Link to="/login">
+                            <Button variant="secondary">Iniciar sesión</Button>
+                          </Link>
+                        )}
+                      </div>
+                    </Card>
+                  );
+                })
+              )}
+            </div>
+          )}
+
+          {token && listaEspera.length > 0 && (
+            <Card title="Mi Lista de Espera (RF-08)">
+              <div style={{ display: "grid", gap: "0.65rem" }}>
+                {listaEspera.map((e) => (
+                  <div
+                    key={e.lista_espera_id}
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                      padding: "0.75rem",
+                      borderRadius: "8px",
+                      background: "rgba(255, 255, 255, 0.03)",
+                      border: "1px solid var(--border-color, #222b40)",
+                    }}
+                  >
+                    <div>
+                      <strong style={{ color: "#fff" }}>{e.clase.tipo_clase.nombre}</strong>
+                      <div style={{ fontSize: "0.82rem", color: "#94a3b8" }}>
+                        {e.clase.sede.nombre} · {new Date(e.clase.inicio_at).toLocaleString("es-AR")}
+                      </div>
+                    </div>
+                    <Badge variant="info">Posición #{e.posicion}</Badge>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+
+          {misReservas.length > 0 && (
+            <Card title="Tus reservas de clases de esta sesión">
+              <div style={{ display: "grid", gap: "0.65rem" }}>
+                {misReservas.map((r) => {
+                  const horas = (new Date(r.clase.inicio_at).getTime() - Date.now()) / 3_600_000;
+                  return (
+                    <div
+                      key={r.reserva_id}
+                      style={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        gap: "0.75rem",
+                        padding: "0.75rem",
+                        borderRadius: "8px",
+                        background: "rgba(255, 255, 255, 0.03)",
+                        border: "1px solid var(--border-color, #222b40)",
+                      }}
+                    >
+                      <div>
+                        <strong style={{ color: "#fff" }}>
+                          #{r.reserva_id} · {r.clase.tipo_clase.nombre}
+                        </strong>
+                        <div style={{ fontSize: "0.82rem", color: "#94a3b8" }}>
+                          {new Date(r.clase.inicio_at).toLocaleString("es-AR")}
+                          {r.estado === "CONFIRMADA" && horas < 2 && " · Cancelar ahora tiene penalidad"}
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                        <Badge variant={r.estado === "CANCELADA" ? "danger" : "success"}>
+                          {r.estado}
+                        </Badge>
+                        {r.estado === "CONFIRMADA" && (
+                          <Button variant="danger" onClick={() => manejarCancelar(r)}>
+                            Cancelar
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+          )}
         </div>
       </main>
     </div>
