@@ -95,6 +95,13 @@ export async function cancelarClase(claseId: number): Promise<{ mensaje: string;
   });
 }
 
+export async function eliminarClase(claseId: number): Promise<void> {
+  await apiRequest<void>(`/clases/${claseId}`, {
+    method: "DELETE",
+    requireAuth: true,
+  });
+}
+
 export async function inscribirUsuarioClase(
   claseId: number,
   usuarioId: number

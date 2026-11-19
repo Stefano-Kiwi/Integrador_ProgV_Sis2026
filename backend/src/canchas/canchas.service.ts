@@ -20,6 +20,7 @@ import type { ReservaCanchaDto } from './dto/reserva-cancha.dto.js';
 import type { EstadoCanchaValor } from './dto/update-estado-cancha.dto.js';
 import type { DisponibilidadResponseDto } from './dto/disponibilidad.dto.js';
 import type { JwtPayload } from '../common/decorators/current-user.decorator.js';
+import { obtenerSedeRestringida, validarAccesoASede } from '../common/auth/branch-scope.js';
 
 /** id_rol del personal (Gerente, Administrador) según el mapa de roles de roles.guard.ts. */
 const ID_ROLES_PERSONAL = [3, 4];
@@ -33,18 +34,18 @@ export class CanchasService {
     private readonly pricingService: PricingService,
   ) {}
 
-  async findAll(user: JwtPayload) {
-    if (user.id_rol === 3) {
-      const sedeId = await this.canchasRepository.findSedeBaseId(user.sub);
-      return sedeId === null ? [] : this.canchasRepository.findAll(sedeId);
+  async findAll(user?: JwtPayload) {
+    const sedeId = obtenerSedeRestringida(user);
+    if (sedeId !== null) {
+      return this.canchasRepository.findAll(sedeId);
     }
     return this.canchasRepository.findAll();
   }
 
-  async findAllReservas(user: JwtPayload) {
-    if (user.id_rol === 3) {
-      const sedeId = await this.canchasRepository.findSedeBaseId(user.sub);
-      return sedeId === null ? [] : this.canchasRepository.findAllReservas(sedeId);
+  async findAllReservas(user?: JwtPayload) {
+    const sedeId = obtenerSedeRestringida(user);
+    if (sedeId !== null) {
+      return this.canchasRepository.findAllReservas(sedeId);
     }
     return this.canchasRepository.findAllReservas();
   }
@@ -58,26 +59,20 @@ export class CanchasService {
     if (!cancha) {
       throw new NotFoundException(`Cancha con ID ${id} no encontrada`);
     }
-    if (user?.id_rol === 3 && (await this.canchasRepository.findSedeBaseId(user.sub)) !== cancha.sede_id) {
-      throw new ForbiddenException('Solo podés consultar canchas de tu sede.');
-    }
+    validarAccesoASede(user, cancha.sede_id);
     return cancha;
   }
 
-  async create(dto: CreateCanchaDto, user: JwtPayload) {
-    if (user.id_rol === 3 && (await this.canchasRepository.findSedeBaseId(user.sub)) !== dto.sede_id) {
-      throw new ForbiddenException('Solo podés crear canchas en tu sede.');
-    }
+  async create(dto: CreateCanchaDto, user?: JwtPayload) {
+    validarAccesoASede(user, dto.sede_id);
     return this.canchasRepository.create(dto);
   }
 
-  async update(id: number, dto: Partial<CreateCanchaDto>, user: JwtPayload) {
+  async update(id: number, dto: Partial<CreateCanchaDto>, user?: JwtPayload) {
     const cancha = await this.findById(id, user);
-    if (user.id_rol === 3 && (await this.canchasRepository.findSedeBaseId(user.sub)) !== cancha.sede_id) {
-      throw new ForbiddenException('Solo podés editar canchas de tu sede.');
-    }
-    if (dto.sede_id !== undefined && user.id_rol === 3 && dto.sede_id !== cancha.sede_id) {
-      throw new ForbiddenException('No podés mover una cancha a otra sede.');
+    validarAccesoASede(user, cancha.sede_id);
+    if (dto.sede_id !== undefined) {
+      validarAccesoASede(user, dto.sede_id);
     }
     return this.canchasRepository.update(id, dto);
   }
@@ -85,6 +80,10 @@ export class CanchasService {
   async delete(id: number) {
     await this.findById(id);
     return this.canchasRepository.delete(id);
+  }
+
+  async remove(id: number) {
+    return this.delete(id);
   }
 
   /** Calcula el precio de un turno con las estrategias (RF-11). RN-03: sin membresía ACTIVO paga como externo. */
@@ -222,11 +221,9 @@ export class CanchasService {
   }
 
   /** RF-12: habilita o inhabilita la cancha. No modifica reservas ya existentes. */
-  async cambiarEstado(id: number, estado: EstadoCanchaValor, user: JwtPayload) {
-    const cancha = await this.findById(id);
-    if (user.id_rol === 3 && (await this.canchasRepository.findSedeBaseId(user.sub)) !== cancha.sede_id) {
-      throw new ForbiddenException('Solo podés modificar canchas de tu sede.');
-    }
+  async cambiarEstado(id: number, estado: EstadoCanchaValor, user?: JwtPayload) {
+    const cancha = await this.findById(id, user);
+    validarAccesoASede(user, cancha.sede_id);
     return this.canchasRepository.updateEstado(id, estado);
   }
 }

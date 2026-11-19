@@ -24,7 +24,7 @@ import { CurrentUser, type JwtPayload } from '../common/decorators/current-user.
 @ApiTags('canchas')
 @Controller(APP_ROUTES.CANCHAS.ROOT)
 export class CanchasController {
-  constructor(private readonly canchasService: CanchasService) {}
+  constructor(private readonly canchasService: CanchasService) { }
 
   @Public()
   @Get()
@@ -32,6 +32,14 @@ export class CanchasController {
   @ApiOkResponse({ description: 'Listado de canchas disponibles' })
   findAll(@CurrentUser() user?: JwtPayload) {
     return this.canchasService.findAll(user);
+  }
+
+  @Get(APP_ROUTES.CANCHAS.MIS_RESERVAS)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Listar mis reservas de canchas' })
+  @ApiOkResponse({ description: 'Listado de reservas del usuario autenticado' })
+  findMisReservas(@CurrentUser('sub') usuarioId: number) {
+    return this.canchasService.findReservasByUsuario(usuarioId);
   }
 
   @Get(APP_ROUTES.CANCHAS.RESERVAS)

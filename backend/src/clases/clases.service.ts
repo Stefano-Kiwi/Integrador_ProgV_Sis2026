@@ -11,6 +11,7 @@ import { CupoLiberadoSubject } from './observer/index.js';
 import type { CreateClaseDto } from './dto/create-clase.dto.js';
 import type { ReservaClaseDto } from './dto/reserva-clase.dto.js';
 import type { JwtPayload } from '../common/decorators/current-user.decorator.js';
+import { obtenerSedeRestringida, validarAccesoASede } from '../common/auth/branch-scope.js';
 
 /** RF-07: reserva habilitada hasta 48 horas antes; cancelación sin penalidad hasta 2 horas antes. */
 export const HORAS_MAX_ANTICIPACION_RESERVA = 48;
@@ -25,10 +26,10 @@ export class ClasesService {
     private readonly cupoLiberadoSubject: CupoLiberadoSubject,
   ) {}
 
-  async findAll(user: JwtPayload) {
-    if (user.id_rol === 3) {
-      const sedeId = await this.clasesRepository.findSedeBaseId(user.sub);
-      return sedeId === null ? [] : this.clasesRepository.findAll(sedeId);
+  async findAll(user?: JwtPayload) {
+    const sedeId = obtenerSedeRestringida(user);
+    if (sedeId !== null) {
+      return this.clasesRepository.findAll(sedeId);
     }
     return this.clasesRepository.findAll();
   }
@@ -38,33 +39,34 @@ export class ClasesService {
     if (!clase) {
       throw new NotFoundException(`Clase con ID ${id} no encontrada`);
     }
-    if (user?.id_rol === 3 && (await this.clasesRepository.findSedeBaseId(user.sub)) !== clase.sede_id) {
-      throw new ForbiddenException('Solo podés consultar clases de tu sede.');
-    }
+    validarAccesoASede(user, clase.sede_id);
     return clase;
   }
 
-  async create(dto: CreateClaseDto, user: JwtPayload) {
-    if (user.id_rol === 3 && (await this.clasesRepository.findSedeBaseId(user.sub)) !== dto.sede_id) {
-      throw new ForbiddenException('Solo podés crear clases en tu sede.');
-    }
+  async create(dto: CreateClaseDto, user?: JwtPayload) {
+    validarAccesoASede(user, dto.sede_id);
     return this.clasesRepository.create(dto);
   }
 
-  async update(id: number, dto: Partial<CreateClaseDto>, user: JwtPayload) {
+  async update(id: number, dto: Partial<CreateClaseDto>, user?: JwtPayload) {
     const clase = await this.findById(id, user);
-    if (user.id_rol === 3 && (await this.clasesRepository.findSedeBaseId(user.sub)) !== clase.sede_id) {
-      throw new ForbiddenException('Solo podés editar clases de tu sede.');
-    }
-    if (dto.sede_id !== undefined && user.id_rol === 3 && dto.sede_id !== clase.sede_id) {
-      throw new ForbiddenException('No podés mover una clase a otra sede.');
+    validarAccesoASede(user, clase.sede_id);
+    if (dto.sede_id !== undefined) {
+      validarAccesoASede(user, dto.sede_id);
     }
     return this.clasesRepository.update(id, dto);
   }
 
-  async delete(id: number) {
-    await this.findById(id);
+  async delete(id: number, user?: JwtPayload) {
+    if (user && user.id_rol === 2) {
+      return this.cancelarClase(id, user);
+    }
+    await this.findById(id, user);
     return this.clasesRepository.delete(id);
+  }
+
+  async remove(id: number, user?: JwtPayload) {
+    return this.delete(id, user);
   }
 
   /** RF-07 + RN-03 + RF-08: reserva cupo o agrega a lista de espera si está completa. */
