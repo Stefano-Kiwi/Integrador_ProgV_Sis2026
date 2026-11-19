@@ -9,14 +9,8 @@ import { Prisma } from '@prisma/client';
 import { ClasesRepository } from './clases.repository.js';
 import { CupoLiberadoSubject } from './observer/index.js';
 import type { CreateClaseDto } from './dto/create-clase.dto.js';
-import type { UpdateClaseDto } from './dto/update-clase.dto.js';
 import type { ReservaClaseDto } from './dto/reserva-clase.dto.js';
 import type { JwtPayload } from '../common/decorators/current-user.decorator.js';
-import {
-  obtenerSedeRestringida,
-  resolverSedeEscritura,
-  validarAccesoASede,
-} from '../common/auth/branch-scope.js';
 
 /** RF-07: reserva habilitada hasta 48 horas antes; cancelación sin penalidad hasta 2 horas antes. */
 export const HORAS_MAX_ANTICIPACION_RESERVA = 48;
@@ -31,9 +25,12 @@ export class ClasesService {
     private readonly cupoLiberadoSubject: CupoLiberadoSubject,
   ) {}
 
-  findAll(user?: JwtPayload) {
-    const sedeRestringida = obtenerSedeRestringida(user);
-    return this.clasesRepository.findAll(sedeRestringida ?? undefined);
+  async findAll(user: JwtPayload) {
+    if (user.id_rol === 3) {
+      const sedeId = await this.clasesRepository.findSedeBaseId(user.sub);
+      return sedeId === null ? [] : this.clasesRepository.findAll(sedeId);
+    }
+    return this.clasesRepository.findAll();
   }
 
   async findById(id: number, user?: JwtPayload) {
@@ -41,32 +38,38 @@ export class ClasesService {
     if (!clase) {
       throw new NotFoundException(`Clase con ID ${id} no encontrada`);
     }
-    validarAccesoASede(user, clase.sede_id);
+    if (user?.id_rol === 3 && (await this.clasesRepository.findSedeBaseId(user.sub)) !== clase.sede_id) {
+      throw new ForbiddenException('Solo podés consultar clases de tu sede.');
+    }
     return clase;
   }
 
-  async create(dto: CreateClaseDto, user?: JwtPayload) {
-    const sedeId = resolverSedeEscritura(user, dto.sede_id);
-    return this.clasesRepository.create({ ...dto, sede_id: sedeId });
+  async create(dto: CreateClaseDto, user: JwtPayload) {
+    if (user.id_rol === 3 && (await this.clasesRepository.findSedeBaseId(user.sub)) !== dto.sede_id) {
+      throw new ForbiddenException('Solo podés crear clases en tu sede.');
+    }
+    return this.clasesRepository.create(dto);
   }
 
-  async update(id: number, dto: UpdateClaseDto, user?: JwtPayload) {
-    const existente = await this.findById(id, user);
-    const sedeDestino =
-      dto.sede_id !== undefined
-        ? resolverSedeEscritura(user, dto.sede_id)
-        : existente.sede_id;
-    return this.clasesRepository.update(id, { ...dto, sede_id: sedeDestino });
+  async update(id: number, dto: Partial<CreateClaseDto>, user: JwtPayload) {
+    const clase = await this.findById(id, user);
+    if (user.id_rol === 3 && (await this.clasesRepository.findSedeBaseId(user.sub)) !== clase.sede_id) {
+      throw new ForbiddenException('Solo podés editar clases de tu sede.');
+    }
+    if (dto.sede_id !== undefined && user.id_rol === 3 && dto.sede_id !== clase.sede_id) {
+      throw new ForbiddenException('No podés mover una clase a otra sede.');
+    }
+    return this.clasesRepository.update(id, dto);
   }
 
-  async remove(id: number) {
+  async delete(id: number) {
     await this.findById(id);
-    return this.clasesRepository.remove(id);
+    return this.clasesRepository.delete(id);
   }
 
   /** RF-07 + RN-03 + RF-08: reserva cupo o agrega a lista de espera si está completa. */
-  async reservar(dto: ReservaClaseDto, ahora: Date = new Date()) {
-    const clase = await this.findById(dto.clase_id);
+  async reservar(dto: ReservaClaseDto, ahora: Date = new Date(), user?: JwtPayload) {
+    const clase = await this.findById(dto.clase_id, user);
 
     // RN-03: un socio en mora (VENCIDO / SUSPENDIDO) o sin membresía activa no puede reservar clases.
     const estadoMembresia = await this.clasesRepository.findEstadoMembresiaUsuario(dto.usuario_id);
@@ -183,5 +186,26 @@ export class ClasesService {
 
   findReservasByUsuario(usuarioId: number) {
     return this.clasesRepository.findReservasByUsuario(usuarioId);
+  }
+
+  async cancelarClase(claseId: number, user: JwtPayload) {
+    const clase = await this.findById(claseId);
+    if (!clase) {
+      throw new NotFoundException(`Clase con ID ${claseId} no encontrada`);
+    }
+
+    const esPersonal = ID_ROLES_PERSONAL.includes(user.id_rol);
+    const esInstructorDeClase = clase.instructor?.usuario_id === user.sub;
+
+    if (!esInstructorDeClase && !esPersonal) {
+      throw new ForbiddenException('Solo el instructor de la clase o administradores pueden cancelarla.');
+    }
+
+    await this.clasesRepository.cancelarClase(claseId);
+
+    return {
+      mensaje: 'Clase cancelada exitosamente.',
+      clase_id: claseId,
+    };
   }
 }

@@ -1,16 +1,9 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post } from '@nestjs/common';
-import {
-  ApiCreatedResponse,
-  ApiForbiddenResponse,
-  ApiNotFoundResponse,
-  ApiOkResponse,
-  ApiOperation,
-  ApiTags,
-} from '@nestjs/swagger';
+import { Body, Controller, ForbiddenException, Get, Param, ParseIntPipe, Patch, Post } from '@nestjs/common';
+import { ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CreateSedeDto } from './dto/create-sede.dto.js';
+import { UpdateSedeDto } from './dto/update-sede.dto.js';
 import { SedesService } from './sedes.service.js';
 import { APP_ROUTES } from '../routes/index.js';
-import { Public } from '../common/decorators/public.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { CurrentUser, type JwtPayload } from '../common/decorators/current-user.decorator.js';
 
@@ -19,31 +12,38 @@ import { CurrentUser, type JwtPayload } from '../common/decorators/current-user.
 export class SedesController {
   constructor(private readonly sedesService: SedesService) {}
 
-  @Public()
   @Get()
-  @ApiOperation({
-    summary: 'Listar sedes (un Gerente solo recibe su sede asignada)',
-  })
+  @Roles('Gerente', 'Administrador')
+  @ApiOperation({ summary: 'Listar todas las sedes' })
   @ApiOkResponse({ description: 'Listado de sedes disponibles' })
-  findAll(@CurrentUser() user?: JwtPayload) {
+  findAll(@CurrentUser() user: JwtPayload) {
     return this.sedesService.findAll(user);
   }
 
-  @Public()
   @Get(APP_ROUTES.SEDES.BY_ID)
-  @ApiOperation({ summary: 'Obtener sede por ID (403 si un Gerente consulta otra sede)' })
+  @Roles('Gerente', 'Administrador')
+  @ApiOperation({ summary: 'Obtener sede por ID' })
   @ApiOkResponse({ description: 'Detalle de la sede' })
-  @ApiForbiddenResponse({ description: 'El gerente solo puede consultar su propia sede' })
   @ApiNotFoundResponse({ description: 'Sede no encontrada' })
-  findById(@Param('id', ParseIntPipe) id: number, @CurrentUser() user?: JwtPayload) {
-    return this.sedesService.findById(id, user);
+  async findById(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: JwtPayload) {
+    const sede = await this.sedesService.findById(id);
+    if (user.id_rol === 3 && sede.id !== await this.sedesService.sedeBaseId(user.sub)) {
+      throw new ForbiddenException('Solo podés consultar tu sede.');
+    }
+    return sede;
   }
 
   @Roles('Administrador')
   @Post()
-  @ApiOperation({ summary: 'Crear una nueva sede (solo Administrador)' })
+  @ApiOperation({ summary: 'Crear una nueva sede' })
   @ApiCreatedResponse({ description: 'Sede creada exitosamente' })
   create(@Body() dto: CreateSedeDto) {
     return this.sedesService.create(dto);
+  }
+
+  @Patch(APP_ROUTES.SEDES.BY_ID)
+  @Roles('Gerente', 'Administrador')
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateSedeDto, @CurrentUser() user: JwtPayload) {
+    return this.sedesService.update(id, dto, user);
   }
 }

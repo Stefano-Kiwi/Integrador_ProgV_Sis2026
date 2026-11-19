@@ -39,12 +39,30 @@ export class ClasesRepository {
     });
   }
 
+  findSedeBaseId(usuarioId: number): Promise<number | null> {
+    return this.prisma.usuario.findUnique({ where: { id: usuarioId }, select: { sede_base_id: true } })
+      .then((usuario) => usuario?.sede_base_id ?? null);
+  }
+
   findById(id: number) {
     return this.prisma.clase.findUnique({
       where: { id },
       include: CLASE_INCLUDE,
     });
   }
+
+  update(id: number, dto: Partial<CreateClaseDto>) {
+    return this.prisma.clase.update({ where: { id }, data: {
+      ...(dto.sede_id !== undefined ? { sede_id: dto.sede_id } : {}),
+      ...(dto.tipo_clase_id !== undefined ? { tipo_clase_id: dto.tipo_clase_id } : {}),
+      ...(dto.instructor_id !== undefined ? { instructor_id: dto.instructor_id } : {}),
+      ...(dto.inicio_at !== undefined ? { inicio_at: new Date(dto.inicio_at) } : {}),
+      ...(dto.fin_at !== undefined ? { fin_at: new Date(dto.fin_at) } : {}),
+      ...(dto.capacidad_maxima !== undefined ? { capacidad_maxima: dto.capacidad_maxima } : {}),
+    }, include: CLASE_INCLUDE });
+  }
+
+  delete(id: number) { return this.prisma.clase.delete({ where: { id } }); }
 
   create(dto: CreateClaseDto): Promise<clase> {
     return this.prisma.clase.create({
@@ -233,6 +251,14 @@ export class ClasesRepository {
         clase: { include: CLASE_INCLUDE },
       },
       orderBy: { id: 'desc' },
+    });
+  }
+
+  async cancelarClase(claseId: number): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      await tx.reserva_clase.deleteMany({ where: { clase_id: claseId } });
+      await tx.lista_espera_clase.deleteMany({ where: { clase_id: claseId } });
+      await tx.clase.delete({ where: { id: claseId } });
     });
   }
 }

@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -15,22 +15,18 @@ import { UpdateClaseDto } from './dto/update-clase.dto.js';
 import { ReservaClaseDto } from './dto/reserva-clase.dto.js';
 import { ClasesService } from './clases.service.js';
 import { APP_ROUTES } from '../routes/index.js';
-import { Public } from '../common/decorators/public.decorator.js';
-import { Roles } from '../common/decorators/roles.decorator.js';
 import { CurrentUser, type JwtPayload } from '../common/decorators/current-user.decorator.js';
+import { Roles } from '../common/decorators/roles.decorator.js';
 
 @ApiTags('clases')
 @Controller(APP_ROUTES.CLASES.ROOT)
 export class ClasesController {
   constructor(private readonly clasesService: ClasesService) {}
 
-  @Public()
   @Get()
-  @ApiOperation({
-    summary: 'Listar clases programadas (un Gerente solo ve las de su sede)',
-  })
+  @ApiOperation({ summary: 'Listar clases programadas' })
   @ApiOkResponse({ description: 'Listado de clases' })
-  findAll(@CurrentUser() user?: JwtPayload) {
+  findAll(@CurrentUser() user: JwtPayload) {
     return this.clasesService.findAll(user);
   }
 
@@ -46,53 +42,39 @@ export class ClasesController {
     return this.clasesService.miListaEspera(usuarioId);
   }
 
-  @Public()
+  @Get(APP_ROUTES.CLASES.MIS_RESERVAS)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Consultar mis reservas de clases (RF-07)' })
+  @ApiOkResponse({ description: 'Listado de reservas de clase del usuario autenticado' })
+  findMisReservas(@CurrentUser('sub') usuarioId: number) {
+    return this.clasesService.findReservasByUsuario(usuarioId);
+  }
+
   @Get(APP_ROUTES.CLASES.BY_ID)
-  @ApiOperation({ summary: 'Obtener detalle de una clase (403 si un Gerente consulta otra sede)' })
+  @ApiOperation({ summary: 'Obtener detalle de una clase' })
   @ApiOkResponse({ description: 'Detalle de la clase' })
-  @ApiForbiddenResponse({ description: 'La clase pertenece a otra sede' })
   @ApiNotFoundResponse({ description: 'Clase no encontrada' })
-  findById(@Param('id', ParseIntPipe) id: number, @CurrentUser() user?: JwtPayload) {
+  findById(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: JwtPayload) {
     return this.clasesService.findById(id, user);
   }
 
   @Post()
   @Roles('Gerente', 'Administrador')
-  @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Crear una nueva clase (RF-06; Gerente solo en su sede)' })
+  @ApiOperation({ summary: 'Crear una nueva clase (RF-06)' })
   @ApiCreatedResponse({ description: 'Clase programada exitosamente' })
-  @ApiForbiddenResponse({ description: 'Sin permisos o sede distinta a la del Gerente' })
   create(@Body() dto: CreateClaseDto, @CurrentUser() user: JwtPayload) {
     return this.clasesService.create(dto, user);
   }
 
-  @Patch(APP_ROUTES.CLASES.BY_ID)
+  @Put(APP_ROUTES.CLASES.BY_ID)
   @Roles('Gerente', 'Administrador')
-  @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Modificar una clase (Gerente solo las de su sede)' })
-  @ApiOkResponse({ description: 'Clase actualizada correctamente' })
-  @ApiForbiddenResponse({ description: 'Sin permisos o clase perteneciente a otra sede' })
-  @ApiNotFoundResponse({ description: 'Clase no encontrada' })
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateClaseDto,
-    @CurrentUser() user: JwtPayload,
-  ) {
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateClaseDto, @CurrentUser() user: JwtPayload) {
     return this.clasesService.update(id, dto, user);
   }
 
   @Delete(APP_ROUTES.CLASES.BY_ID)
   @Roles('Administrador')
-  @ApiBearerAuth('access-token')
-  @ApiOperation({
-    summary: 'Eliminar una clase (reservado exclusivamente a Administrador)',
-  })
-  @ApiOkResponse({ description: 'Clase eliminada correctamente' })
-  @ApiForbiddenResponse({ description: 'Los Gerentes no tienen permiso para eliminar clases' })
-  @ApiNotFoundResponse({ description: 'Clase no encontrada' })
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.clasesService.remove(id);
-  }
+  delete(@Param('id', ParseIntPipe) id: number) { return this.clasesService.delete(id); }
 
   @Post(APP_ROUTES.CLASES.RESERVA)
   @ApiBearerAuth('access-token')
@@ -106,8 +88,8 @@ export class ClasesController {
   @ApiBadRequestResponse({ description: 'Fuera de la ventana de 48 h o clase ya comenzada' })
   @ApiForbiddenResponse({ description: 'Socio en mora (membresía VENCIDO/SUSPENDIDO) o sin membresía activa (RN-03)' })
   @ApiConflictResponse({ description: 'Ya posee reserva confirmada o lugar en lista de espera' })
-  reservar(@Body() dto: ReservaClaseDto) {
-    return this.clasesService.reservar(dto);
+  reservar(@Body() dto: ReservaClaseDto, @CurrentUser() user: JwtPayload) {
+    return this.clasesService.reservar(dto, undefined, user);
   }
 
   @Patch(APP_ROUTES.CLASES.CANCELAR_RESERVA)
@@ -125,5 +107,13 @@ export class ClasesController {
   @ApiConflictResponse({ description: 'La reserva ya estaba cancelada' })
   cancelarReserva(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: JwtPayload) {
     return this.clasesService.cancelarReserva(id, user);
+  }
+
+  @Delete(APP_ROUTES.CLASES.BY_ID)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Cancelar/Eliminar una clase dictada por el instructor' })
+  @ApiOkResponse({ description: 'Clase cancelada exitosamente' })
+  cancelarClase(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: JwtPayload) {
+    return this.clasesService.cancelarClase(id, user);
   }
 }

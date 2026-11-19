@@ -19,6 +19,7 @@ import {
 
 const mockCanchasRepository = {
   findAll: vi.fn(),
+  findSedeBaseId: vi.fn(),
   findAllReservas: vi.fn(),
   findById: vi.fn(),
   create: vi.fn(),
@@ -113,7 +114,7 @@ describe('CanchasService', () => {
 
       mockCanchasRepository.findAllReservas.mockResolvedValue(mockReservas);
 
-      const result = await service.findAllReservas();
+      const result = await service.findAllReservas(usuarioAdmin);
 
       expect(result).toEqual(mockReservas);
       expect(mockCanchasRepository.findAllReservas).toHaveBeenCalledOnce();
@@ -288,7 +289,7 @@ describe('CanchasService', () => {
       ]);
       mockCanchasRepository.usuarioEsSocioActivo.mockResolvedValue(true);
 
-      const res = await service.disponibilidad(1, '2026-12-01', 5);
+      const res = await service.disponibilidad(1, '2026-12-01', 5, usuarioAdmin);
 
       expect(res.cancha_id).toBe(1);
       expect(res.franjas).toHaveLength(15); // 8..22 inclusive
@@ -306,7 +307,7 @@ describe('CanchasService', () => {
       mockCanchasRepository.findById.mockResolvedValue(canchaMantenimiento);
       mockCanchasRepository.findReservasActivasByFecha.mockResolvedValue([{ hora_inicio: 18 }]);
 
-      const res = await service.disponibilidad(3, '2026-12-01', 5);
+      const res = await service.disponibilidad(3, '2026-12-01', 5, usuarioAdmin);
 
       expect(res.franjas.find((f) => f.hora_inicio === 18)?.estado).toBe('OCUPADA');
       expect(res.franjas.find((f) => f.hora_inicio === 19)?.estado).toBe('MANTENIMIENTO');
@@ -413,7 +414,7 @@ describe('CanchasService', () => {
       mockCanchasRepository.findById.mockResolvedValue(canchaHabilitada);
       mockCanchasRepository.updateEstado.mockResolvedValue(canchaMantenimiento);
 
-      const res = await service.cambiarEstado(1, 'EN_MANTENIMIENTO');
+      const res = await service.cambiarEstado(1, 'EN_MANTENIMIENTO', { sub: 1, id_rol: 4 });
 
       expect(res.estado).toBe('EN_MANTENIMIENTO');
       expect(mockCanchasRepository.updateEstado).toHaveBeenCalledWith(1, 'EN_MANTENIMIENTO');
@@ -421,7 +422,7 @@ describe('CanchasService', () => {
 
     it('debería lanzar NotFoundException si la cancha no existe', async () => {
       mockCanchasRepository.findById.mockResolvedValue(null);
-      await expect(service.cambiarEstado(999, 'EN_MANTENIMIENTO')).rejects.toThrow(
+      await expect(service.cambiarEstado(999, 'EN_MANTENIMIENTO', { sub: 1, id_rol: 4 })).rejects.toThrow(
         NotFoundException,
       );
     });

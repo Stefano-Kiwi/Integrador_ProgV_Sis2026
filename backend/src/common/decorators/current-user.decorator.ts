@@ -3,14 +3,20 @@ import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 export interface JwtPayload {
   sub: number;
   id_rol: number;
-  clase_rol?: string;
-  sede_base_id?: number | null;
+  id_rol: number;
   iat?: number;
   exp?: number;
 }
 
 /**
  * Extrae el payload del JWT del request (ya validado por JwtAuthGuard).
+ *
+ * @example
+ * // Obtener todo el payload
+ * @CurrentUser() user: JwtPayload
+ *
+ * // Obtener solo el id
+ * @CurrentUser('sub') userId: number
  */
 export const CurrentUser = createParamDecorator(
   (field: keyof JwtPayload | undefined, ctx: ExecutionContext) => {
@@ -19,3 +25,4 @@ export const CurrentUser = createParamDecorator(
     return field ? user?.[field] : user;
   },
 );
+

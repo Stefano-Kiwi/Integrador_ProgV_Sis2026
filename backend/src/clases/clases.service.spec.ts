@@ -22,6 +22,7 @@ const mockClasesRepository = {
   findReservaById: vi.fn(),
   cancelarReservaYNotificar: vi.fn(),
   findListaEsperaByUsuario: vi.fn(),
+  cancelarClase: vi.fn(),
 };
 
 const mockSubject = {
@@ -61,7 +62,7 @@ describe('ClasesService', () => {
       const clases = [{ id: 1, tipo_clase: { nombre: 'Spinning' } }];
       mockClasesRepository.findAll.mockResolvedValue(clases);
 
-      const result = await service.findAll();
+      const result = await service.findAll(admin);
 
       expect(result).toEqual(clases);
       expect(mockClasesRepository.findAll).toHaveBeenCalledOnce();
@@ -313,6 +314,37 @@ describe('ClasesService', () => {
 
       expect(res).toEqual(espera);
       expect(mockClasesRepository.findListaEsperaByUsuario).toHaveBeenCalledWith(10);
+    });
+  });
+
+  // ── cancelarClase ──────────────────────────────────────────────────────────
+
+  describe('cancelarClase()', () => {
+    it('debería permitir al instructor de la clase cancelarla exitosamente', async () => {
+      mockClasesRepository.findById.mockResolvedValue({
+        id: 1,
+        instructor: { usuario_id: 50 },
+      });
+      mockClasesRepository.cancelarClase.mockResolvedValue(undefined);
+
+      const res = await service.cancelarClase(1, { sub: 50, id_rol: 2 });
+
+      expect(res).toMatchObject({
+        mensaje: 'Clase cancelada exitosamente.',
+        clase_id: 1,
+      });
+      expect(mockClasesRepository.cancelarClase).toHaveBeenCalledWith(1);
+    });
+
+    it('debería rechazar si otro usuario que no es instructor ni admin intenta cancelarla', async () => {
+      mockClasesRepository.findById.mockResolvedValue({
+        id: 1,
+        instructor: { usuario_id: 50 },
+      });
+
+      await expect(
+        service.cancelarClase(1, { sub: 60, id_rol: 1 }),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 });

@@ -16,16 +16,10 @@ import {
   puedeTransicionar,
 } from './reserva-reglas.js';
 import type { CreateCanchaDto } from './dto/create-cancha.dto.js';
-import type { UpdateCanchaDto } from './dto/update-cancha.dto.js';
 import type { ReservaCanchaDto } from './dto/reserva-cancha.dto.js';
 import type { EstadoCanchaValor } from './dto/update-estado-cancha.dto.js';
 import type { DisponibilidadResponseDto } from './dto/disponibilidad.dto.js';
 import type { JwtPayload } from '../common/decorators/current-user.decorator.js';
-import {
-  obtenerSedeRestringida,
-  resolverSedeEscritura,
-  validarAccesoASede,
-} from '../common/auth/branch-scope.js';
 
 /** id_rol del personal (Gerente, Administrador) según el mapa de roles de roles.guard.ts. */
 const ID_ROLES_PERSONAL = [3, 4];
@@ -39,14 +33,20 @@ export class CanchasService {
     private readonly pricingService: PricingService,
   ) {}
 
-  findAll(user?: JwtPayload) {
-    const sedeRestringida = obtenerSedeRestringida(user);
-    return this.canchasRepository.findAll(sedeRestringida ?? undefined);
+  async findAll(user: JwtPayload) {
+    if (user.id_rol === 3) {
+      const sedeId = await this.canchasRepository.findSedeBaseId(user.sub);
+      return sedeId === null ? [] : this.canchasRepository.findAll(sedeId);
+    }
+    return this.canchasRepository.findAll();
   }
 
-  findAllReservas(user?: JwtPayload) {
-    const sedeRestringida = obtenerSedeRestringida(user);
-    return this.canchasRepository.findAllReservas(sedeRestringida ?? undefined);
+  async findAllReservas(user: JwtPayload) {
+    if (user.id_rol === 3) {
+      const sedeId = await this.canchasRepository.findSedeBaseId(user.sub);
+      return sedeId === null ? [] : this.canchasRepository.findAllReservas(sedeId);
+    }
+    return this.canchasRepository.findAllReservas();
   }
 
   findReservasByUsuario(usuarioId: number) {
@@ -58,27 +58,33 @@ export class CanchasService {
     if (!cancha) {
       throw new NotFoundException(`Cancha con ID ${id} no encontrada`);
     }
-    validarAccesoASede(user, cancha.sede_id);
+    if (user?.id_rol === 3 && (await this.canchasRepository.findSedeBaseId(user.sub)) !== cancha.sede_id) {
+      throw new ForbiddenException('Solo podés consultar canchas de tu sede.');
+    }
     return cancha;
   }
 
-  async create(dto: CreateCanchaDto, user?: JwtPayload) {
-    const sedeId = resolverSedeEscritura(user, dto.sede_id);
-    return this.canchasRepository.create({ ...dto, sede_id: sedeId });
+  async create(dto: CreateCanchaDto, user: JwtPayload) {
+    if (user.id_rol === 3 && (await this.canchasRepository.findSedeBaseId(user.sub)) !== dto.sede_id) {
+      throw new ForbiddenException('Solo podés crear canchas en tu sede.');
+    }
+    return this.canchasRepository.create(dto);
   }
 
-  async update(id: number, dto: UpdateCanchaDto, user?: JwtPayload) {
-    const existente = await this.findById(id, user);
-    const sedeDestino =
-      dto.sede_id !== undefined
-        ? resolverSedeEscritura(user, dto.sede_id)
-        : existente.sede_id;
-    return this.canchasRepository.update(id, { ...dto, sede_id: sedeDestino });
+  async update(id: number, dto: Partial<CreateCanchaDto>, user: JwtPayload) {
+    const cancha = await this.findById(id, user);
+    if (user.id_rol === 3 && (await this.canchasRepository.findSedeBaseId(user.sub)) !== cancha.sede_id) {
+      throw new ForbiddenException('Solo podés editar canchas de tu sede.');
+    }
+    if (dto.sede_id !== undefined && user.id_rol === 3 && dto.sede_id !== cancha.sede_id) {
+      throw new ForbiddenException('No podés mover una cancha a otra sede.');
+    }
+    return this.canchasRepository.update(id, dto);
   }
 
-  async remove(id: number) {
+  async delete(id: number) {
     await this.findById(id);
-    return this.canchasRepository.remove(id);
+    return this.canchasRepository.delete(id);
   }
 
   /** Calcula el precio de un turno con las estrategias (RF-11). RN-03: sin membresía ACTIVO paga como externo. */
@@ -87,8 +93,8 @@ export class CanchasService {
     return this.pricingService.calcular({ costoHora, horaInicio, esSocioActivo });
   }
 
-  async reservar(dto: ReservaCanchaDto) {
-    const cancha = await this.findById(dto.cancha_id);
+  async reservar(dto: ReservaCanchaDto, user?: JwtPayload) {
+    const cancha = await this.findById(dto.cancha_id, user);
 
     if (cancha.estado !== 'HABILITADA') {
       throw new BadRequestException('La cancha no está disponible para reservas (se encuentra en mantenimiento)');
@@ -140,12 +146,7 @@ export class CanchasService {
   }
 
   /** RF-10: grilla horaria del día con franjas libres/ocupadas y el precio calculado por las estrategias. */
-  async disponibilidad(
-    canchaId: number,
-    fecha: string,
-    usuarioId: number,
-    user?: JwtPayload,
-  ): Promise<DisponibilidadResponseDto> {
+  async disponibilidad(canchaId: number, fecha: string, usuarioId: number, user: JwtPayload): Promise<DisponibilidadResponseDto> {
     const fechaDate = new Date(fecha);
     if (Number.isNaN(fechaDate.getTime())) {
       throw new BadRequestException('La fecha no es válida (formato esperado: YYYY-MM-DD)');
@@ -221,8 +222,11 @@ export class CanchasService {
   }
 
   /** RF-12: habilita o inhabilita la cancha. No modifica reservas ya existentes. */
-  async cambiarEstado(id: number, estado: EstadoCanchaValor, user?: JwtPayload) {
-    await this.findById(id, user);
+  async cambiarEstado(id: number, estado: EstadoCanchaValor, user: JwtPayload) {
+    const cancha = await this.findById(id);
+    if (user.id_rol === 3 && (await this.canchasRepository.findSedeBaseId(user.sub)) !== cancha.sede_id) {
+      throw new ForbiddenException('Solo podés modificar canchas de tu sede.');
+    }
     return this.canchasRepository.updateEstado(id, estado);
   }
 }
