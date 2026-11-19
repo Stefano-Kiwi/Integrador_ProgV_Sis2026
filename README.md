@@ -87,13 +87,3 @@ El seed ([`backend/prisma/seed.mjs`](backend/prisma/seed.mjs)) carga **26 sedes*
   * [`backend/test/flujos.e2e-spec.ts`](backend/test/flujos.e2e-spec.ts): flujos completos de reserva+pago+PDF, clase+cancelación+Observer FIFO y QR+validación+aforo+egreso.
 * **Lint y Build:** `backend` (`oxlint`: 0 errores, `nest build`: OK) y `frontend` (`oxlint`: 0 errores, `tsc -b && vite build`: OK).
 * **CI:** [`.github/workflows/ci.yml`](.github/workflows/ci.yml) ejecuta lint, build, cobertura y e2e con PostgreSQL 18 en cada PR.
-
----
-
-## Declaración de uso de asistentes de IA y librerías de terceros
-
-* **Asistentes de IA:** Durante el desarrollo y cierre del trabajo integrador se utilizaron asistentes de IA (Antigravity / Gemini / Claude) como apoyo para la estructuración de módulos, implementación de patrones de diseño (Strategy, Observer, Repository), generación de pruebas automatizadas, reorganización bajo Atomic Design y revisión de documentación. Todo el código generado fue revisado, integrado y verificado por el equipo.
-* **Librerías de terceros principales:**
-  * **Backend:** `@nestjs/core`, `@nestjs/common`, `@nestjs/jwt`, `@nestjs/swagger`, `@prisma/client`, `prisma`, `bcryptjs`, `class-validator`, `class-transformer`, `vitest`, `@vitest/coverage-v8`, `supertest`, `oxlint`.
-  * **Frontend:** `react`, `react-dom`, `react-router-dom`, `vite`, `qrcode`, `html5-qrcode`, `jsqr`, `oxlint`.
-  * **Infraestructura:** `PostgreSQL 18 (Alpine)`, `Nginx (Alpine)`, `Docker / Docker Compose`, `GitHub Actions`.
