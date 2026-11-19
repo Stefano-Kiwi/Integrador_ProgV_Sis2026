@@ -19,6 +19,19 @@ export class SedesRepository {
     });
   }
 
+  findByIds(ids: number[]): Promise<sede[]> {
+    return this.prisma.sede.findMany({ where: { id: { in: ids } }, orderBy: { id: 'asc' } });
+  }
+
+  findSedeBaseId(usuarioId: number): Promise<number | null> {
+    return this.prisma.usuario.findUnique({ where: { id: usuarioId }, select: { sede_base_id: true } })
+      .then((usuario) => usuario?.sede_base_id ?? null);
+  }
+
+  update(id: number, data: Partial<CreateSedeDto>): Promise<sede> {
+    return this.prisma.sede.update({ where: { id }, data });
+  }
+
   create(data: CreateSedeDto): Promise<sede> {
     return this.prisma.sede.create({
       data,

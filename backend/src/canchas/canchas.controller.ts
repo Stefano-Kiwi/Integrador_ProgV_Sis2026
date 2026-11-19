@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Put, Query } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -11,12 +11,12 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { CreateCanchaDto } from './dto/create-cancha.dto.js';
+import { UpdateCanchaDto } from './dto/update-cancha.dto.js';
 import { ReservaCanchaDto } from './dto/reserva-cancha.dto.js';
 import { DisponibilidadQueryDto, DisponibilidadResponseDto } from './dto/disponibilidad.dto.js';
 import { UpdateEstadoCanchaDto } from './dto/update-estado-cancha.dto.js';
 import { CanchasService } from './canchas.service.js';
 import { APP_ROUTES } from '../routes/index.js';
-import { Public } from '../common/decorators/public.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { CurrentUser, type JwtPayload } from '../common/decorators/current-user.decorator.js';
 
@@ -25,20 +25,19 @@ import { CurrentUser, type JwtPayload } from '../common/decorators/current-user.
 export class CanchasController {
   constructor(private readonly canchasService: CanchasService) {}
 
-  @Public()
   @Get()
   @ApiOperation({ summary: 'Listar todas las canchas deportivas' })
   @ApiOkResponse({ description: 'Listado de canchas disponibles' })
-  findAll() {
-    return this.canchasService.findAll();
+  findAll(@CurrentUser() user: JwtPayload) {
+    return this.canchasService.findAll(user);
   }
 
   @Get(APP_ROUTES.CANCHAS.RESERVAS)
   @Roles('Gerente', 'Administrador')
   @ApiOperation({ summary: 'Listar todas las reservas de canchas' })
   @ApiOkResponse({ description: 'Listado de reservas con datos del usuario y la cancha' })
-  findAllReservas() {
-    return this.canchasService.findAllReservas();
+  findAllReservas(@CurrentUser() user: JwtPayload) {
+    return this.canchasService.findAllReservas(user);
   }
 
   @Get(APP_ROUTES.CANCHAS.MIS_RESERVAS)
@@ -63,26 +62,36 @@ export class CanchasController {
   disponibilidad(
     @Param('id', ParseIntPipe) id: number,
     @Query() query: DisponibilidadQueryDto,
-    @CurrentUser('sub') usuarioId: number,
+    @CurrentUser() user: JwtPayload,
   ) {
-    return this.canchasService.disponibilidad(id, query.fecha, usuarioId);
+    return this.canchasService.disponibilidad(id, query.fecha, user.sub, user);
   }
 
-  @Public()
   @Get(APP_ROUTES.CANCHAS.BY_ID)
   @ApiOperation({ summary: 'Obtener detalle de una cancha por ID' })
   @ApiOkResponse({ description: 'Detalle de la cancha' })
   @ApiNotFoundResponse({ description: 'Cancha no encontrada' })
-  findById(@Param('id', ParseIntPipe) id: number) {
-    return this.canchasService.findById(id);
+  findById(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: JwtPayload) {
+    return this.canchasService.findById(id, user);
   }
 
   @Post()
+  @Roles('Gerente', 'Administrador')
   @ApiOperation({ summary: 'Registrar una nueva cancha' })
   @ApiCreatedResponse({ description: 'Cancha registrada exitosamente' })
-  create(@Body() dto: CreateCanchaDto) {
-    return this.canchasService.create(dto);
+  create(@Body() dto: CreateCanchaDto, @CurrentUser() user: JwtPayload) {
+    return this.canchasService.create(dto, user);
   }
+
+  @Put(APP_ROUTES.CANCHAS.BY_ID)
+  @Roles('Gerente', 'Administrador')
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateCanchaDto, @CurrentUser() user: JwtPayload) {
+    return this.canchasService.update(id, dto, user);
+  }
+
+  @Delete(APP_ROUTES.CANCHAS.BY_ID)
+  @Roles('Administrador')
+  delete(@Param('id', ParseIntPipe) id: number) { return this.canchasService.delete(id); }
 
   @Post(APP_ROUTES.CANCHAS.RESERVA)
   @ApiOperation({
@@ -95,8 +104,8 @@ export class CanchasController {
   @ApiCreatedResponse({ description: 'Turno bloqueado pendiente de pago, con el desglose de precio' })
   @ApiConflictResponse({ description: 'El turno ya se encuentra ocupado (409)' })
   @ApiBadRequestResponse({ description: 'La cancha está en mantenimiento' })
-  reservar(@Body() dto: ReservaCanchaDto) {
-    return this.canchasService.reservar(dto);
+  reservar(@Body() dto: ReservaCanchaDto, @CurrentUser() user: JwtPayload) {
+    return this.canchasService.reservar(dto, user);
   }
 
   @Patch(APP_ROUTES.CANCHAS.CANCELAR_RESERVA)
@@ -124,7 +133,7 @@ export class CanchasController {
   })
   @ApiOkResponse({ description: 'Cancha con su nuevo estado' })
   @ApiNotFoundResponse({ description: 'Cancha no encontrada' })
-  cambiarEstado(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateEstadoCanchaDto) {
-    return this.canchasService.cambiarEstado(id, dto.estado);
+  cambiarEstado(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateEstadoCanchaDto, @CurrentUser() user: JwtPayload) {
+    return this.canchasService.cambiarEstado(id, dto.estado, user);
   }
 }

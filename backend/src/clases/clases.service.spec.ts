@@ -62,7 +62,7 @@ describe('ClasesService', () => {
       const clases = [{ id: 1, tipo_clase: { nombre: 'Spinning' } }];
       mockClasesRepository.findAll.mockResolvedValue(clases);
 
-      const result = await service.findAll();
+      const result = await service.findAll(admin);
 
       expect(result).toEqual(clases);
       expect(mockClasesRepository.findAll).toHaveBeenCalledOnce();

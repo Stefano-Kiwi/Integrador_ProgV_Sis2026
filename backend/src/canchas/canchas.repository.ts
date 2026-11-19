@@ -37,15 +37,22 @@ export const RESERVAS_CANCHA_SELECT = {
 export class CanchasRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll() {
+  findAll(sedeId?: number) {
     return this.prisma.cancha.findMany({
+      ...(sedeId !== undefined ? { where: { sede_id: sedeId } } : {}),
       include: CANCHA_INCLUDE,
       orderBy: { id: 'asc' },
     });
   }
 
-  findAllReservas() {
+  findSedeBaseId(usuarioId: number): Promise<number | null> {
+    return this.prisma.usuario.findUnique({ where: { id: usuarioId }, select: { sede_base_id: true } })
+      .then((usuario) => usuario?.sede_base_id ?? null);
+  }
+
+  findAllReservas(sedeId?: number) {
     return this.prisma.reserva_cancha.findMany({
+      ...(sedeId !== undefined ? { where: { cancha: { sede_id: sedeId } } } : {}),
       select: RESERVAS_CANCHA_SELECT,
       orderBy: { id: 'desc' },
     });
@@ -65,6 +72,17 @@ export class CanchasRepository {
       include: CANCHA_INCLUDE,
     });
   }
+
+  update(id: number, dto: Partial<CreateCanchaDto>) {
+    return this.prisma.cancha.update({ where: { id }, data: {
+      ...(dto.sede_id !== undefined ? { sede_id: dto.sede_id } : {}),
+      ...(dto.tipo_cancha_id !== undefined ? { tipo_cancha_id: dto.tipo_cancha_id } : {}),
+      ...(dto.nombre !== undefined ? { nombre: dto.nombre } : {}),
+      ...(dto.costo_hora !== undefined ? { costo_hora: dto.costo_hora } : {}),
+    }, include: CANCHA_INCLUDE });
+  }
+
+  delete(id: number) { return this.prisma.cancha.delete({ where: { id } }); }
 
   create(dto: CreateCanchaDto): Promise<cancha> {
     return this.prisma.cancha.create({

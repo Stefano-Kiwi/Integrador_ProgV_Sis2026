@@ -30,11 +30,17 @@ export const CLASE_INCLUDE = {
 export class ClasesRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll() {
+  findAll(sedeId?: number) {
     return this.prisma.clase.findMany({
+      ...(sedeId !== undefined ? { where: { sede_id: sedeId } } : {}),
       include: CLASE_INCLUDE,
       orderBy: { inicio_at: 'asc' },
     });
+  }
+
+  findSedeBaseId(usuarioId: number): Promise<number | null> {
+    return this.prisma.usuario.findUnique({ where: { id: usuarioId }, select: { sede_base_id: true } })
+      .then((usuario) => usuario?.sede_base_id ?? null);
   }
 
   findById(id: number) {
@@ -43,6 +49,19 @@ export class ClasesRepository {
       include: CLASE_INCLUDE,
     });
   }
+
+  update(id: number, dto: Partial<CreateClaseDto>) {
+    return this.prisma.clase.update({ where: { id }, data: {
+      ...(dto.sede_id !== undefined ? { sede_id: dto.sede_id } : {}),
+      ...(dto.tipo_clase_id !== undefined ? { tipo_clase_id: dto.tipo_clase_id } : {}),
+      ...(dto.instructor_id !== undefined ? { instructor_id: dto.instructor_id } : {}),
+      ...(dto.inicio_at !== undefined ? { inicio_at: new Date(dto.inicio_at) } : {}),
+      ...(dto.fin_at !== undefined ? { fin_at: new Date(dto.fin_at) } : {}),
+      ...(dto.capacidad_maxima !== undefined ? { capacidad_maxima: dto.capacidad_maxima } : {}),
+    }, include: CLASE_INCLUDE });
+  }
+
+  delete(id: number) { return this.prisma.clase.delete({ where: { id } }); }
 
   create(dto: CreateClaseDto): Promise<clase> {
     return this.prisma.clase.create({
