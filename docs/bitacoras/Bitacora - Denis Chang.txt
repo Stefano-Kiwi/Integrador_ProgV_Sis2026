@@ -1,0 +1,50 @@
+﻿# Bitácora individual — Denis Chang (P4)
+
+**Proyecto:** FitZone Sports — Grupo 12  
+**Rol indicado en el plan:** Líder Mobile-QA  
+**Período:** desarrollo del TIF, Sprints 1 a 8  
+**Fuentes:** `docs/planificacion/plan-de-proyecto.md`, el PDF de plan de trabajo adjunto y el historial Git del repositorio.
+
+> Esta bitácora diferencia las tareas asignadas por el plan de la evidencia encontrada en el repositorio. Las horas reales no aparecen en las fuentes consultadas y no se estiman retrospectivamente.
+
+## Responsabilidades previstas en el plan del proyecto
+
+El plan asigna a Denis prototipos de navegación mobile/PWA, la interfaz de escaneo QR para terminales con WebRTC y diseño/ejecución de pruebas unitarias backend con Vitest. También lo incluye como responsable o colaborador en estas tareas:
+
+- **ST-01.3:** variables de entorno y scripts de arranque.
+- **HU-04:** gestión y perfil de usuarios.
+- **ST-07.3:** pruebas de validación de firma y rotación temporal de tokens QR.
+- **HU-09:** soporte offline y sincronización idempotente.
+- **ST-12.3:** lista de espera y feedback en el portal.
+- **ST-16.3:** integración de confirmación de pago para canchas y membresías.
+- **ST-18.3:** ajustes responsive para móviles y pantallas táctiles.
+- **HU-20:** pruebas unitarias backend con Vitest.
+- **ST-22.2:** evidencias de RNF y catálogo Atomic Design.
+
+## Registro de actividades del plan de trabajo adjunto
+
+| Etapa | Actividad y participación | Resultado previsto/registrado en el plan | Estado indicado | Esfuerzo planificado |
+|---|---|---|---|---:|
+| Sprint IV — Componentes | Organización de servicios frontend, junto con Lautaro. Preparar una capa común HTTP, configuración de API y manejo de errores. | Servicios reutilizables para consumir el backend. | Terminado | 5 h |
+| Sprint IV — Componentes | Integración de clases y canchas. Conectar listados y reservas a los endpoints; mostrar errores de cupo o turno ocupado. | Consultas y reservas conectadas al backend. | Terminado | 6 h |
+| Sprint V — Pruebas | Pruebas de recorridos frontend, junto con Lautaro. Verificar formularios, reservas, membresías y pagos; registrar resultado esperado, resultado obtenido y errores. | Planilla de pruebas funcionales con resultados. | Terminado | 6 h |
+
+El PDF marca estas actividades como terminadas. No se encontró en el repositorio una planilla de pruebas funcionales con resultados; conviene agregarla como evidencia si está disponible fuera del repositorio. Los valores de esfuerzo de la tabla son los planificados, no horas reales trabajadas.
+
+## Evidencia de actividad en el repositorio
+
+El historial Git atribuido a **DC** registra los siguientes hitos relacionados con las responsabilidades anteriores:
+
+| Fecha | Evidencia Git | Relación con el plan |
+|---|---|---|
+| 2026-09-28 | `78ba745` — Pasaje de vistas HTML a React (Admin). | Trabajo de interfaz y navegación web. |
+| 2026-10-11 | `6fd83f7` — Refinamiento de vistas; `31df984` — Ajustes de UI. | Pulido de vistas y experiencia responsive. |
+| 2026-10-14 | `2b4d34e` — Creación de pantallas de Clases y Canchas; `166c8e1` — Configuraciones y Reportes. | Desarrollo de pantallas de clases/canchas y soporte de interfaz. |
+| 2026-11-11 | `5d84350` — Eliminado el QR del control de acceso del admin. | Ajuste de interfaz del módulo de acceso. |
+| 2026-11-19 | `5e6477a` — Implementación de criterios de aceptación según rol; `1c90116` — Consideraciones de implementación. | Revisión e implementación de permisos y documentación de criterios. |
+
+## Cierre y pendientes de evidencia
+
+El plan registra como terminadas las tareas de organización de servicios frontend, integración de clases/canchas y pruebas de recorridos. El historial Git aporta evidencia de trabajo en vistas administrativas, clases, canchas y control de acceso. Para cerrar la trazabilidad documental, resta incorporar la planilla de pruebas funcionales mencionada en el plan y, si se dispone de ellos, los registros de horas reales y resultados detallados por caso.
+
+**Criterio de registro:** las asignaciones y estados se transcriben del plan; los hitos de actividad se vinculan a commits disponibles. No se presentan horas planificadas como horas reales ni se atribuyen resultados de pruebas que no estén respaldados por evidencia.
