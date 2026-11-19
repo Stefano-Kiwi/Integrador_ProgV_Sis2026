@@ -8,6 +8,31 @@ export const CANCHA_INCLUDE = {
   sede: true,
 } as const;
 
+export const RESERVAS_CANCHA_SELECT = {
+  id: true,
+  fecha: true,
+  hora_inicio: true,
+  estado: true,
+  monto_total: true,
+  usuario: {
+    select: {
+      id: true,
+      nombre: true,
+      apellido: true,
+      email: true,
+      dni: true,
+    },
+  },
+  cancha: {
+    select: {
+      id: true,
+      nombre: true,
+      tipo_cancha: true,
+      sede: true,
+    },
+  },
+} as const;
+
 @Injectable()
 export class CanchasRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -16,6 +41,13 @@ export class CanchasRepository {
     return this.prisma.cancha.findMany({
       include: CANCHA_INCLUDE,
       orderBy: { id: 'asc' },
+    });
+  }
+
+  findAllReservas() {
+    return this.prisma.reserva_cancha.findMany({
+      select: RESERVAS_CANCHA_SELECT,
+      orderBy: { id: 'desc' },
     });
   }
 
