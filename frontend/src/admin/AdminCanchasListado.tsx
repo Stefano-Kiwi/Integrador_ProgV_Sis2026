@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
+  cambiarEstadoCancha,
   obtenerCanchas,
   type CanchaApi,
 } from "../services/canchasService";
@@ -17,6 +18,28 @@ export default function AdminCanchasListado() {
   const [estado, setEstado] = useState("Todos");
   const [vista, setVista] = useState<"cards" | "table">("cards");
   const [intento, setIntento] = useState(0);
+  const [cambiandoId, setCambiandoId] = useState<number | null>(null);
+
+  async function alternarMantenimiento(cancha: CanchaApi) {
+    const nuevoEstado =
+      cancha.estado === "HABILITADA" ? "EN_MANTENIMIENTO" : "HABILITADA";
+    setCambiandoId(cancha.id);
+    setError(null);
+    try {
+      const actualizada = await cambiarEstadoCancha(cancha.id, nuevoEstado);
+      setCanchas((prev) =>
+        prev.map((item) => (item.id === cancha.id ? actualizada : item))
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "No se pudo actualizar el estado de la cancha."
+      );
+    } finally {
+      setCambiandoId(null);
+    }
+  }
 
   useEffect(() => {
     let activo = true;
@@ -262,7 +285,7 @@ export default function AdminCanchasListado() {
                   </div>
                 </div>
 
-                <div className="cancha-card-actions">
+                <div className="cancha-card-actions" style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
                   <Link
                     to={`/admin/canchas/${c.id}`}
                     className="btn-secondary"
@@ -270,6 +293,18 @@ export default function AdminCanchasListado() {
                   >
                     Ver detalle
                   </Link>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    disabled={cambiandoId === c.id}
+                    onClick={() => void alternarMantenimiento(c)}
+                  >
+                    {cambiandoId === c.id
+                      ? "Actualizando..."
+                      : c.estado === "HABILITADA"
+                        ? "Pasar a mantenimiento"
+                        : "Habilitar cancha"}
+                  </button>
                 </div>
               </div>
             </div>
@@ -300,10 +335,18 @@ export default function AdminCanchasListado() {
                   <td>{c.sede.nombre}</td>
                   <td>{precio(c.costo_hora)}</td>
                   <td>{nombreEstado(c.estado)}</td>
-                  <td>
+                  <td style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
                     <Link to={`/admin/canchas/${c.id}`}>
                       Detalle
                     </Link>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      disabled={cambiandoId === c.id}
+                      onClick={() => void alternarMantenimiento(c)}
+                    >
+                      {c.estado === "HABILITADA" ? "Mantenimiento" : "Habilitar"}
+                    </button>
                   </td>
                 </tr>
               ))}

@@ -22,34 +22,29 @@ interface RoleConfig {
 
 const ROLES_CONFIG: Record<UserRole, RoleConfig> = {
   admin: {
-    name: "Gerardo Ruiz",
-    badge: "Admin General",
+    name: "Recepción / Admin de Sede",
+    badge: "Recepcionista",
     avatar: "/src/assets/gerardo.jpg",
+    // Recepcionista / administrador de sede: acceso, clases, canchas, reservas, socios y pagos (NO sedes ni configuración de precios)
     allowedPaths: [
       "/admin",
-      "/admin/sedes",
-      "/admin/personal",
-      "/admin/instructores",
-      "/admin/tipos-clase",
-      "/admin/tipos-cancha",
-      "/admin/planes",
-      "/admin/socios",
-      "/admin/membresias",
+      "/admin/controlacceso",
       "/admin/clases",
       "/admin/canchas",
       "/admin/reservas",
-      "/admin/controlacceso",
+      "/admin/socios",
+      "/admin/membresias",
       "/admin/pagos",
-      "/admin/reportes",
-      "/admin/configuracion",
     ],
   },
   gerente: {
-    name: "Valeria Morales",
-    badge: "Gerente de Sede",
+    name: "Gerente Central",
+    badge: "Gerente Central",
     avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
+    // Gerente central: todo lo anterior + sedes, planes, precios/configuración, personal y reportes
     allowedPaths: [
       "/admin",
+      "/admin/controlacceso",
       "/admin/sedes",
       "/admin/personal",
       "/admin/instructores",
@@ -418,6 +413,21 @@ useEffect(() => {
   ];
 
   const rolReal = usuario?.rol.clase_rol;
+
+  // Bloqueo por URL directa: rutas exclusivas de Gerente (sedes y configuración de tarifas/precios)
+  useEffect(() => {
+    if (!rolReal) return;
+    if (rolReal === "Cliente") {
+      navigate("/403", { replace: true });
+      return;
+    }
+    const soloGerente =
+      location.pathname.startsWith("/admin/sedes") ||
+      location.pathname.startsWith("/admin/configuracion");
+    if (soloGerente && rolReal !== "Gerente") {
+      navigate("/403", { replace: true });
+    }
+  }, [rolReal, location.pathname, navigate]);
 
   const rutasPermitidas = rolReal === "Administrador" ? ROLES_CONFIG.admin.allowedPaths : rolReal === "Gerente" 
   ? ROLES_CONFIG.gerente.allowedPaths: rolReal === "Instructor"
