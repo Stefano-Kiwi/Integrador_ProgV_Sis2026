@@ -1,0 +1,99 @@
+**Bitácora - Carbajal Budón, Stéfano - Rol**
+
+**Proyecto FitZone Sports - Programación V - Equipo 12**
+
+---
+
+## SEMANA 1 - Unidad I (Arquitectura)
+
+**Actividad:**
+
+Revisamos entre los cuatro el alcance, los requisitos, las tecnologías y cómo cortar los módulos. Fue más que nada charla y decidir el rumbo de la arquitectura.
+
+---
+
+## SEMANA 2 - Unidad I (Arquitectura)
+
+**Actividad:**
+
+Con el equipo armamos el C4 hasta nivel 2 y los primeros ADR. También hicimos el diagrama relacional de la base y los prototipos de las pantallas en Figma. Mi parte fue trabajar en el diseño y la organización de la base de datos.
+
+---
+
+## SEMANA 3 - Unidad II (Frameworks)
+
+**Actividad:**
+
+Con Matías armé el DDL de PostgreSQL y el docker compose para levantar la base. Después integramos Prisma en NestJS para mapear las entidades principales y dejar las migraciones iniciales en el repo. También definimos el contrato de la API REST en OpenAPI/Swagger, incluyendo cómo iba a consumir el login el frontend. Fui líder técnico de esta semana.
+
+---
+
+## SEMANA 4 - Unidad II (Frameworks)
+
+**Actividad:**
+
+Con Matías implementamos los repositorios y servicios y levantamos los endpoints CRUD básicos de las entidades ya mapeadas, con la API de NestJS respondiendo contra PostgreSQL. Fui líder técnico de esta semana.
+
+---
+
+## SEMANA 5 - Unidad III (Patrones de diseño)
+
+**Actividad:**
+
+Cerramos la configuración del ORM mapeando con Prisma las 17 tablas del DDL ya aplicado (prisma generate sin errores). Armamos los usuarios de base de datos con sus permisos para restringir accesos indebidos desde la API. Del lado del backend hice el repositorio y servicio de usuarios y el POST /auth/login con hash de contraseña, publicado en Swagger.
+
+---
+
+## SEMANA 6 - Unidad III (Patrones de diseño)
+
+**Actividad:**
+
+Con Matías hicimos el adapter de la pasarela de pago mock y el builder del comprobante, para simular pagos y generar comprobantes básicos. Además entre todos justificamos los patrones aplicados y cargamos las entradas en el LOG.
+
+---
+
+## SEMANA 7 - Unidad III
+
+**Actividad:**
+
+Terminamos autenticación y autorización: validación de credenciales, generación de tokens y protección de rutas y endpoints según el rol. Integramos el servicio de precios con la pasarela simulada y los comprobantes, contemplando pagos aprobados y rechazados. Actualicé la documentación técnica con lo que fuimos decidiendo.
+
+---
+
+## SEMANA 8 - Unidad III
+
+**Actividad:**
+
+Cerramos los endpoints CRUD de las entidades principales con validaciones, manejo de errores y persistencia con Prisma, documentados en Swagger. Implementé la gestión de sesión y la navegación protegida (acceso a vistas privadas, cierre de sesión y redirección si no hay autenticación). También verifiqué que los pagos y comprobantes se guarden bien en Postgres y que los importes sean consistentes.
+
+---
+
+## SEMANA 9 - Unidad IV (Componentes)
+
+**Actividad:**
+
+Revisé con el frontend el contrato de la API: rutas, campos y respuestas disponibles, y acordamos los formatos que hacían falta para la integración. Quedó el contrato actualizado y la lista de pendientes.
+
+---
+
+## SEMANA 10 - Unidad IV (Componentes)
+
+**Actividad:**
+
+Resolví los endpoints que faltaban para el registro de usuarios y la contratación o renovación de membresías, para que el frontend pudiera completar el flujo.
+
+---
+
+## SEMANA 11 - Unidad V (Pruebas)
+
+**Actividad:**
+
+Con Matías incorporamos pruebas automatizadas del backend: servicios y endpoints críticos, con datos inválidos y conflictos de reserva, y el reporte de ejecución. También revisamos incidencias pendientes y actualizamos las instrucciones de ejecución.
+
+---
+
+## CIERRE - 18/11 al 19/11 (Congelamiento)
+
+**Actividad:**
+
+Hice fixes en el backend y en el frontend y varias actualizaciones necesarias para dejar todo listo para la entrega.

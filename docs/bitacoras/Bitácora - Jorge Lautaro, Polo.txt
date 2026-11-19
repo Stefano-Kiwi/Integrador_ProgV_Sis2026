@@ -1,0 +1,174 @@
+# Bitácora individual — Lautaro Polo
+
+**Proyecto:** FitZone Sports — Trabajo Integrador Final de Programación V  
+**Equipo:** 12  
+**Integrante:** Lautaro Polo  
+**Usuario de GitHub:** `@politen22`  
+**Rol:** P5 — Frontend, consola administrativa y QA  
+
+## Entrada 1 — 23 de septiembre de 2026
+
+**Sprint:** Pendiente de identificar.  
+**Unidad:** Desarrollo de interfaces frontend.
+
+**Actividad realizada:** Desarrollé las primeras vistas estáticas de la consola administrativa. Trabajé en las pantallas de dashboard, sedes y canchas, clases, control de acceso, login, pagos y socios, junto con los estilos CSS correspondientes.
+
+**Decisión técnica:** Pendiente de completar con el motivo por el que inicialmente trabajé con vistas HTML estáticas.
+
+**Problema o bloqueo:** Pendiente de completar.
+
+**Commit:** `3d50b9b5f5` — `creado vistas estaticas para administrador`
+
+**Horas efectivas:** Pendiente de completar.
+
+---
+
+## Entrada 2 — 13 de octubre de 2026
+
+**Sprint:** Pendiente de identificar.  
+**Unidad:** Componentes y navegación frontend.
+
+**Actividad realizada:** Completé una primera etapa de la consola administrativa dedicada a catálogos y sedes. Incorporé componentes React para listar y consultar sedes, crear nuevas sedes, administrar instructores, tipos de clases, tipos de canchas y planes. También trabajé en la navegación administrativa y los datos de prueba que permitían desarrollar las pantallas.
+
+**Decisión técnica:** Pendiente de completar. En esta etapa se utilizaron datos locales antes de conectar todas las funcionalidades con el backend.
+
+**Problema o bloqueo:** Pendiente de completar.
+
+**Commit:** `7b65179a2f` — `Finalizada la Fase 1 'Catalogos y Sedes'`
+
+**Horas efectivas:** Pendiente de completar.
+
+---
+
+## Entrada 3 — 15 de octubre de 2026
+
+**Sprint:** Pendiente de identificar.  
+**Unidad:** Frontend y módulos administrativos.
+
+**Actividad realizada:** Avancé con las interfaces administrativas relacionadas con las membresías y los pagos. Incorporé vistas de listado, detalle y formulario de membresías, además de pantallas para el proceso de contratación, checkout y visualización de pagos. También actualicé las rutas de navegación y los datos locales utilizados por estos módulos.
+
+**Decisión técnica:** Pendiente de completar.
+
+**Problema o bloqueo:** Pendiente de completar.
+
+**Commit:** `d45627ee64` — `Completada la Fase 3`
+
+**Horas efectivas:** Pendiente de completar.
+
+---
+
+## Entrada 4 — 12 de noviembre de 2026
+
+**Sprint:** Pendiente de identificar.  
+**Unidad:** Integración frontend-backend.
+
+**Actividad realizada:** Comencé una etapa de limpieza e integración del frontend con los servicios reales del backend. Incorporé el servicio de autenticación, el servicio de sedes y un componente de protección de rutas. También modifiqué el login administrativo, el layout y distintas pantallas de gestión de sedes.
+
+**Decisión técnica:** Pendiente de completar. Se inició el reemplazo progresivo de datos locales por consultas a la API.
+
+**Problema o bloqueo:** Pendiente de completar, especialmente las dificultades encontradas al conectar React con NestJS y Docker.
+
+**Commit:** `383384e09b` — `Comenzada la limpieza general del frontend y conectar al backend`
+
+**Horas efectivas:** Pendiente de completar.
+
+---
+
+## Entrada 5 — 14 de noviembre de 2026
+
+**Sprint:** Pendiente de identificar.  
+**Unidad:** Autenticación e integración de componentes.
+
+**Actividad realizada:** Integré información del usuario autenticado en la consola administrativa, incorporé un selector de sedes y conecté las consultas de personal con datos del backend. Trabajé en el layout administrativo y en las pantallas de personal, detalle de usuario y pagos, además de actualizar los servicios de autenticación y usuarios.
+
+**Decisión técnica:** Pendiente de completar.
+
+**Problema o bloqueo:** Pendiente de completar.
+
+**Commit:** `9bc8de17eb` — `Integra perfil autenticado, selector de sedes y consultas de personal`
+
+**Horas efectivas:** Pendiente de completar.
+
+---
+
+## Entrada 6 — 18 de noviembre de 2026
+
+**Sprint:** Pendiente de identificar.  
+**Unidad:** Integración de módulos funcionales.
+
+**Actividad realizada:** Trabajé en la conexión de las funcionalidades administrativas con la API de NestJS. Integré pantallas de clases grupales y canchas deportivas, incluyendo listados, detalles y formularios. También avancé con las vistas de planes, pagos, reservas deportivas, socios y dashboard, incorporando servicios para consultar información real desde el backend.
+
+**Decisión técnica:** Pendiente de completar. En esta etapa se priorizó reemplazar los mocks de las pantallas administrativas por los datos reales de la base de datos.
+
+**Problema o bloqueo:** Pendiente de completar.
+
+**Commits:**
+- `4d68672e44` — `integrar canchas y clases administrativas con backend`
+- `57cfe1aac2` — `integrar planes, pagos, reservas, socios y dashboard con backend`
+
+**Horas efectivas:** Pendiente de completar.
+
+---
+
+## Entrada 7 — 19 de noviembre de 2026 — Documentación
+
+**Sprint:** Sprint de cierre, pendiente de confirmar numeración.  
+**Unidad:** Refactoring y calidad de código.
+
+**Actividad realizada:** Elaboré la documentación de code smells y refactorings del proyecto. Registré problemas de mantenibilidad detectados en la implementación y las mejoras correspondientes, con el objetivo de dejar evidencia de las decisiones tomadas durante la evolución del sistema.
+
+**Decisión técnica:** Pendiente de completar con los refactorings específicos en los que participé.
+
+**Problema o bloqueo:** Pendiente de completar.
+
+**Commit:** `8821f3739b` — `docs: documentar code smells y refactorings`
+
+**Horas efectivas:** Pendiente de completar.
+
+---
+
+## Entrada 8 — 19 de noviembre de 2026 — Correcciones responsive
+
+**Sprint:** Sprint de cierre, pendiente de confirmar numeración.  
+**Unidad:** Frontend, integración y estabilización.
+
+**Actividad realizada:** Realicé ajustes en los estilos responsive de la aplicación para mejorar su funcionamiento en dispositivos móviles. También actualicé la pantalla de edición de perfil para utilizar datos del usuario real y eliminé vistas HTML administrativas antiguas que habían sido reemplazadas por componentes React.
+
+**Decisión técnica:** Pendiente de completar con las razones de los cambios de navegación móvil y limpieza de archivos.
+
+**Problema o bloqueo:** Pendiente de completar.
+
+**Commit:** `04dd17d2bb` — `Acomodado vistas movil y limpieza general`
+
+**Horas efectivas:** Pendiente de completar.
+
+---
+
+## Entrada 9 — 19 de noviembre de 2026 — Manual técnico
+
+**Sprint:** Sprint de cierre, pendiente de confirmar numeración.  
+**Unidad:** Documentación y entrega.
+
+**Actividad realizada:** Incorporé al repositorio el Manual Técnico de FitZone Sports. El documento describe la arquitectura, los módulos funcionales, el modelo de datos, los patrones Strategy, Observer y Repository, las restricciones de concurrencia, el funcionamiento offline, la estrategia de pruebas y CI/CD. También incluye dos casos de extensión: agregar canchas de tenis e incorporar una nueva estrategia de precio.
+
+**Decisión técnica:** Pendiente de completar con el criterio de organización utilizado para el manual.
+
+**Problema o bloqueo:** Pendiente de completar.
+
+**Commit:** `eb16e97ea4` — `Manual tecnico creado`
+
+**Horas efectivas:** Pendiente de completar.
+
+---
+
+## Actividades complementarias pendientes de reconstrucción
+
+La planilla de seguimiento del Equipo 12 menciona actividades compartidas de análisis arquitectónico, prototipado en Figma, maquetado de interfaces, pruebas unitarias, integración de APIs, pruebas de recorridos y coordinación de tareas.
+
+Estas actividades se incorporarán como entradas individuales cuando se confirme la participación concreta, las fechas aproximadas, las horas trabajadas y su evidencia.
+
+## Reflexión personal y lecciones aprendidas
+
+**Pendiente de redactar a partir de mi experiencia.**
+
+Aquí explicaré los principales conocimientos adquiridos, los problemas de integración más importantes, las decisiones técnicas que tomé y qué haría diferente si comenzara nuevamente el proyecto.

@@ -25,6 +25,7 @@ export const APP_ROUTES = {
   CLASES: {
     ROOT: 'clases',
     BY_ID: ':id',
+    CANCELAR: ':id/cancelar',
     RESERVA: 'reserva',
     CANCELAR_RESERVA: 'reserva/:id/cancelar',
     MIS_RESERVAS: 'reservas/mias',
