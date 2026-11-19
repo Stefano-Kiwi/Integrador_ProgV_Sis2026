@@ -1,142 +1,173 @@
-import { useState } from "react";
+
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getCanchas, type CanchaItem } from "../../data/clasesCanchasData";
-import { getSedes } from "../../data/sedesData";
+import {
+  obtenerCanchas,
+  type CanchaApi,
+} from "../../services/canchasService";
 import "../../admin.css";
 
 export default function AdminCanchasListado() {
-  const [canchas] = useState<CanchaItem[]>(() => getCanchas());
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterSede, setFilterSede] = useState("Todas");
-  const [filterDeporte, setFilterDeporte] = useState("Todos");
-  const [filterEstado, setFilterEstado] = useState("Todos");
-  const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
+  const [canchas, setCanchas] = useState<CanchaApi[]>([]);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [busqueda, setBusqueda] = useState("");
+  const [sede, setSede] = useState("Todas");
+  const [deporte, setDeporte] = useState("Todos");
+  const [estado, setEstado] = useState("Todos");
+  const [vista, setVista] = useState<"cards" | "table">("cards");
+  const [intento, setIntento] = useState(0);
 
-  const sedes = getSedes();
+  useEffect(() => {
+    let activo = true;
 
-  // Filtrado
-  const filteredCanchas = canchas.filter((c) => {
-    const matchSearch =
-      c.nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.codigo.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.superficie.toLowerCase().includes(searchQuery.toLowerCase());
+    async function cargar() {
+      try {
+        const datos = await obtenerCanchas();
+        if (activo) {
+          setCanchas(datos);
+          setError(null);
+        }
+      } catch (err) {
+        if (activo) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Error al consultar las canchas."
+          );
+        }
+      } finally {
+        if (activo) setCargando(false);
+      }
+    }
 
-    const matchSede = filterSede === "Todas" || c.sedeId === filterSede;
-    const matchDeporte = filterDeporte === "Todos" || c.deporte === filterDeporte;
-    const matchEstado = filterEstado === "Todos" || c.estado === filterEstado;
+    void cargar();
+    return () => { activo = false; };
+  }, [intento]);
 
-    return matchSearch && matchSede && matchDeporte && matchEstado;
-  });
-
-  // Métricas
-  const totalCanchas = canchas.length;
-  const totalOperativas = canchas.filter((c) => c.estado === "Operativa").length;
-  const totalMantenimiento = canchas.filter((c) => c.estado === "Mantenimiento").length;
-  const ocupacionPromedio = Math.round(
-    canchas.reduce((acc, curr) => acc + curr.statsMes.tasaOcupacion, 0) / (totalCanchas || 1)
+  const sedes = Array.from(
+    new Map(canchas.map(c => [c.sede.id, c.sede])).values()
   );
 
+  const deportes = Array.from(
+    new Set(canchas.map(c => c.tipo_cancha.nombre))
+  );
+
+  const filtradas = canchas.filter(c => {
+    const texto = busqueda.toLowerCase();
+
+    return (
+      (
+        c.nombre.toLowerCase().includes(texto) ||
+        c.tipo_cancha.nombre.toLowerCase().includes(texto) ||
+        String(c.id).includes(texto)
+      ) &&
+      (sede === "Todas" || String(c.sede_id) === sede) &&
+      (deporte === "Todos" || c.tipo_cancha.nombre === deporte) &&
+      (estado === "Todos" || c.estado === estado)
+    );
+  });
+
+  const operativas = canchas.filter(
+    c => c.estado === "HABILITADA"
+  ).length;
+
+  const mantenimiento = canchas.filter(
+    c => c.estado === "EN_MANTENIMIENTO"
+  ).length;
+
+  const precio = (valor: string) =>
+    new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
+      maximumFractionDigits: 2,
+    }).format(Number(valor));
+
+  const nombreEstado = (valor: string) =>
+    valor === "HABILITADA" ? "Operativa" : "Mantenimiento";
+
   return (
-    <div style={{ maxWidth: "1280px", margin: "0 auto", paddingBottom: "3rem" }}>
-      {/* TOPBAR */}
+    <div style={{
+      maxWidth: "1280px",
+      margin: "0 auto",
+      paddingBottom: "3rem"
+    }}>
       <header className="topbar" style={{ marginBottom: "1.5rem" }}>
         <div className="header-titles">
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <span style={{ fontSize: "0.8rem", color: "var(--accent-orange)", fontWeight: 700, textTransform: "uppercase" }}>
-              Módulo CA-01
-            </span>
-            <span style={{ color: "var(--text-muted)" }}>•</span>
-            <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Inventario Físico de Pistas</span>
-          </div>
+          <span style={{
+            color: "var(--accent-orange)",
+            fontWeight: 700
+          }}>
+            Módulo CA-01
+          </span>
           <h1>Listado e Inventario de Canchas</h1>
-          <p>Supervisa el estado técnico, disponibilidad, equipamiento y tarifas de las canchas en todas las sedes</p>
+          <p>
+            Gestión de canchas deportivas registradas en FitZone Sports
+          </p>
         </div>
-        <div className="header-controls" style={{ display: "flex", gap: "0.75rem" }}>
-          <Link
-            to="/admin/canchas"
-            className="btn-secondary"
-            style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "0.4rem" }}
-          >
-            <span>📅</span> Grilla en Vivo (R-01)
-          </Link>
-          <Link
-            to="/admin/canchas/nueva"
-            className="btn-primary"
-            style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "0.4rem" }}
-          >
-            <span>+</span> Nueva Cancha (CA-02)
+
+        <div className="header-controls">
+          <Link to="/admin/canchas/nueva" className="btn-primary">
+            + Nueva Cancha
           </Link>
         </div>
       </header>
 
-      {/* KPI METRIC CARDS */}
       <div className="fase4-metrics-grid">
-        <div className="fase4-metric-card">
-          <div className="fase4-metric-title">
-            <span>Total Canchas</span>
-            <span>🏟️</span>
+        {[
+          ["Total Canchas", canchas.length, "🏟️"],
+          ["Operativas", operativas, "✓"],
+          ["En Mantenimiento", mantenimiento, "🔧"],
+          ["Sedes con Canchas", sedes.length, "📍"],
+        ].map(([titulo, valor, icono]) => (
+          <div className="fase4-metric-card" key={String(titulo)}>
+            <div className="fase4-metric-title">
+              <span>{titulo}</span>
+              <span>{icono}</span>
+            </div>
+            <div className="fase4-metric-val">{valor}</div>
+            <div className="fase4-metric-sub">
+              Datos registrados en PostgreSQL
+            </div>
           </div>
-          <div className="fase4-metric-val">{totalCanchas}</div>
-          <div className="fase4-metric-sub">Distribuídas en 4 sedes activas</div>
-        </div>
-
-        <div className="fase4-metric-card">
-          <div className="fase4-metric-title">
-            <span>Canchas Operativas</span>
-            <span>✓</span>
-          </div>
-          <div className="fase4-metric-val" style={{ color: "var(--accent-green)" }}>
-            {totalOperativas}
-          </div>
-          <div className="fase4-metric-sub">Disponibles para juego inmediato</div>
-        </div>
-
-        <div className="fase4-metric-card">
-          <div className="fase4-metric-title">
-            <span>En Mantenimiento</span>
-            <span>🔧</span>
-          </div>
-          <div className="fase4-metric-val" style={{ color: "var(--accent-red)" }}>
-            {totalMantenimiento}
-          </div>
-          <div className="fase4-metric-sub">Con bloqueo técnico preventivo</div>
-        </div>
-
-        <div className="fase4-metric-card">
-          <div className="fase4-metric-title">
-            <span>Ocupación Promedio</span>
-            <span>📈</span>
-          </div>
-          <div className="fase4-metric-val" style={{ color: "var(--accent-yellow)" }}>
-            {ocupacionPromedio}%
-          </div>
-          <div className="fase4-metric-sub">Horarios pico de 19:00 a 21:00 hs</div>
-        </div>
+        ))}
       </div>
 
-      {/* BARRA DE FILTROS */}
-      <div className="classes-filter-bar" style={{ marginBottom: "1.5rem" }}>
-        <div className="filter-group" style={{ flexGrow: 1, minWidth: "220px" }}>
-          <label className="filter-label">Buscar Cancha / Superficie:</label>
+      {error && (
+        <div role="alert" className="fase4-metric-card">
+          <p>{error}</p>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => {
+              setCargando(true);
+              setIntento(v => v + 1);
+            }}
+          >
+            Reintentar
+          </button>
+        </div>
+      )}
+
+      <div className="classes-filter-bar"
+        style={{ marginBottom: "1.5rem" }}>
+        <div className="filter-group" style={{ flexGrow: 1 }}>
+          <label className="filter-label">Buscar cancha</label>
           <input
-            type="text"
             className="form-control"
-            placeholder="ej. Cristal, Césped Azul, PAD-01, FIFA..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={busqueda}
+            onChange={e => setBusqueda(e.target.value)}
+            placeholder="Nombre, deporte o ID..."
           />
         </div>
 
         <div className="filter-group">
-          <label className="filter-label">Sede:</label>
-          <select
-            className="filter-select"
-            value={filterSede}
-            onChange={(e) => setFilterSede(e.target.value)}
-          >
-            <option value="Todas">Todas las Sedes</option>
-            {sedes.map((s) => (
-              <option key={s.id} value={s.id}>
+          <label className="filter-label">Sede</label>
+          <select className="filter-select" value={sede}
+            onChange={e => setSede(e.target.value)}>
+            <option value="Todas">Todas</option>
+            {sedes.map(s => (
+              <option key={s.id} value={String(s.id)}>
                 {s.nombre}
               </option>
             ))}
@@ -144,241 +175,138 @@ export default function AdminCanchasListado() {
         </div>
 
         <div className="filter-group">
-          <label className="filter-label">Deporte:</label>
-          <select
-            className="filter-select"
-            value={filterDeporte}
-            onChange={(e) => setFilterDeporte(e.target.value)}
-          >
-            <option value="Todos">Todos los Deportes</option>
-            <option value="Pádel">Pádel</option>
-            <option value="Fútbol 5">Fútbol 5</option>
-            <option value="Tenis">Tenis</option>
+          <label className="filter-label">Deporte</label>
+          <select className="filter-select" value={deporte}
+            onChange={e => setDeporte(e.target.value)}>
+            <option value="Todos">Todos</option>
+            {deportes.map(d => (
+              <option key={d} value={d}>{d}</option>
+            ))}
           </select>
         </div>
 
         <div className="filter-group">
-          <label className="filter-label">Estado:</label>
-          <select
-            className="filter-select"
-            value={filterEstado}
-            onChange={(e) => setFilterEstado(e.target.value)}
-          >
-            <option value="Todos">Todos los Estados</option>
-            <option value="Operativa">Operativa</option>
-            <option value="Mantenimiento">Mantenimiento</option>
-            <option value="Fuera de Servicio">Fuera de Servicio</option>
+          <label className="filter-label">Estado</label>
+          <select className="filter-select" value={estado}
+            onChange={e => setEstado(e.target.value)}>
+            <option value="Todos">Todos</option>
+            <option value="HABILITADA">Operativa</option>
+            <option value="EN_MANTENIMIENTO">
+              Mantenimiento
+            </option>
           </select>
         </div>
 
-        {/* TOGGLE VISTA */}
-        <div style={{ marginLeft: "auto", display: "flex", gap: "0.25rem", alignItems: "flex-end" }}>
-          <button
-            type="button"
-            className={`tab-btn ${viewMode === "cards" ? "active" : ""}`}
-            style={{ padding: "0.45rem 0.75rem", fontSize: "0.8rem" }}
-            onClick={() => setViewMode("cards")}
-          >
+        <div style={{ display: "flex", gap: "0.25rem" }}>
+          <button type="button"
+            className={`tab-btn ${vista === "cards" ? "active" : ""}`}
+            onClick={() => setVista("cards")}>
             Tarjetas
           </button>
-          <button
-            type="button"
-            className={`tab-btn ${viewMode === "table" ? "active" : ""}`}
-            style={{ padding: "0.45rem 0.75rem", fontSize: "0.8rem" }}
-            onClick={() => setViewMode("table")}
-          >
+          <button type="button"
+            className={`tab-btn ${vista === "table" ? "active" : ""}`}
+            onClick={() => setVista("table")}>
             Tabla
           </button>
         </div>
       </div>
 
-      {/* VISTA TARJETAS (CARDS) */}
-      {viewMode === "cards" && (
+      {cargando && <p>Cargando inventario...</p>}
+
+      {!cargando && !error && filtradas.length === 0 && (
+        <p>No se encontraron canchas.</p>
+      )}
+
+      {!cargando && !error && vista === "cards" && (
         <div className="canchas-grid">
-          {filteredCanchas.map((cancha) => {
-            const precioSocio = Math.round(cancha.tarifaBaseHora * (1 - cancha.descuentoSocioPorc / 100));
-            return (
-              <div key={cancha.id} className="cancha-card">
-                <div className="cancha-card-img-wrap">
-                  <img src={cancha.imagenUrl} alt={cancha.nombre} className="cancha-card-img" />
-                  <div className="cancha-card-badges">
-                    <span
-                      className={`sport-tag ${
-                        cancha.deporte === "Pádel"
-                          ? "sport-tag-padel"
-                          : cancha.deporte === "Fútbol 5"
-                          ? "sport-tag-futbol"
-                          : "sport-tag-tenis"
-                      }`}
-                    >
-                      {cancha.deporte}
+          {filtradas.map(c => (
+            <div key={c.id} className="cancha-card">
+              <div className="cancha-card-body">
+                <div className="cancha-card-header">
+                  <span className="cancha-card-code">
+                    CAN-{String(c.id).padStart(3, "0")}
+                  </span>
+                  <h3 className="cancha-card-name">{c.nombre}</h3>
+                  <div className="cancha-card-sede">
+                    📍 {c.sede.nombre} — {c.sede.localidad}
+                  </div>
+                </div>
+
+                <div className="cancha-specs-list">
+                  <div className="cancha-spec-item">
+                    <span className="cancha-spec-label">Deporte</span>
+                    <span className="cancha-spec-val">
+                      {c.tipo_cancha.nombre}
                     </span>
-                    <span
-                      className={`status-pill ${
-                        cancha.estado === "Operativa" ? "status-pill-operativa" : "status-pill-mantenimiento"
-                      }`}
-                    >
-                      {cancha.estado}
+                  </div>
+                  <div className="cancha-spec-item">
+                    <span className="cancha-spec-label">Estado</span>
+                    <span className={`status-pill ${
+                      c.estado === "HABILITADA"
+                        ? "status-pill-operativa"
+                        : "status-pill-mantenimiento"
+                    }`}>
+                      {nombreEstado(c.estado)}
                     </span>
                   </div>
                 </div>
 
-                <div className="cancha-card-body">
-                  <div className="cancha-card-header">
-                    <span className="cancha-card-code">{cancha.codigo}</span>
-                    <h3 className="cancha-card-name">{cancha.nombre}</h3>
-                    <div className="cancha-card-sede">
-                      <span>📍</span> {cancha.sedeNombre}
+                <div className="cancha-pricing-box">
+                  <div>
+                    <div className="cancha-price-main">
+                      {precio(c.costo_hora)} / hora
+                    </div>
+                    <div className="cancha-price-socio">
+                      Tarifa base registrada
                     </div>
                   </div>
+                </div>
 
-                  {/* Especificaciones */}
-                  <div className="cancha-specs-list">
-                    <div className="cancha-spec-item">
-                      <span className="cancha-spec-label">Superficie:</span>
-                      <span className="cancha-spec-val" title={cancha.superficie}>
-                        {cancha.superficie.slice(0, 24)}...
-                      </span>
-                    </div>
-                    <div className="cancha-spec-item">
-                      <span className="cancha-spec-label">Iluminación:</span>
-                      <span className="cancha-spec-val">{cancha.iluminacion.split(" ")[0]}</span>
-                    </div>
-                    <div className="cancha-spec-item">
-                      <span className="cancha-spec-label">Cubierta:</span>
-                      <span className="cancha-spec-val">{cancha.techada ? "Techada" : "Al aire libre"}</span>
-                    </div>
-                    <div className="cancha-spec-item">
-                      <span className="cancha-spec-label">Turno Estándar:</span>
-                      <span className="cancha-spec-val">{cancha.duracionTurnoMin} min</span>
-                    </div>
-                  </div>
-
-                  {/* Tarifas */}
-                  <div className="cancha-pricing-box">
-                    <div>
-                      <div className="cancha-price-main">${cancha.tarifaBaseHora.toLocaleString()} / turno</div>
-                      <div className="cancha-price-socio">
-                        Socio ({cancha.descuentoSocioPorc}% OFF): <strong>${precioSocio.toLocaleString()}</strong>
-                      </div>
-                    </div>
-                    <span style={{ fontSize: "0.72rem", color: "var(--accent-yellow)", fontWeight: 700 }}>
-                      ⚡ +{cancha.recargoHoraPicoPorc}% Pico
-                    </span>
-                  </div>
-
-                  {/* Botones Acciones */}
-                  <div className="cancha-card-actions">
-                    <Link
-                      to={`/admin/canchas/${cancha.id}`}
-                      className="btn-secondary"
-                      style={{ flex: 1, textAlign: "center", textDecoration: "none", fontSize: "0.8rem", padding: "0.45rem" }}
-                    >
-                      Ver Detalle (CA-04)
-                    </Link>
-                    <Link
-                      to={`/admin/canchas/${cancha.id}/editar`}
-                      className="btn-secondary"
-                      style={{ textAlign: "center", textDecoration: "none", fontSize: "0.8rem", padding: "0.45rem 0.75rem" }}
-                      title="Editar especificaciones"
-                    >
-                      ✏️
-                    </Link>
-                    {cancha.estado === "Operativa" && (
-                      <Link
-                        to={`/admin/reservas/nueva?canchaId=${cancha.id}`}
-                        className="btn-primary"
-                        style={{ textAlign: "center", textDecoration: "none", fontSize: "0.8rem", padding: "0.45rem 0.85rem" }}
-                        title="Crear reserva directa"
-                      >
-                        Reservar (R-03)
-                      </Link>
-                    )}
-                  </div>
+                <div className="cancha-card-actions">
+                  <Link
+                    to={`/admin/canchas/${c.id}`}
+                    className="btn-secondary"
+                    style={{ textDecoration: "none" }}
+                  >
+                    Ver detalle
+                  </Link>
                 </div>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       )}
 
-      {/* VISTA TABLA */}
-      {viewMode === "table" && (
+      {!cargando && !error && vista === "table" && (
         <div className="waitlist-table-container">
-          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.88rem" }}>
+          <table style={{ width: "100%", textAlign: "left" }}>
             <thead>
-              <tr style={{ borderBottom: "1px solid var(--border-color)", backgroundColor: "rgba(0,0,0,0.2)" }}>
-                <th style={{ padding: "1rem" }}>Código</th>
-                <th style={{ padding: "1rem" }}>Nombre & Deporte</th>
-                <th style={{ padding: "1rem" }}>Sede</th>
-                <th style={{ padding: "1rem" }}>Superficie</th>
-                <th style={{ padding: "1rem" }}>Tarifa Base</th>
-                <th style={{ padding: "1rem" }}>Tarifa Socio (-15%)</th>
-                <th style={{ padding: "1rem" }}>Estado</th>
-                <th style={{ padding: "1rem", textAlign: "right" }}>Acciones</th>
+              <tr>
+                <th>ID</th>
+                <th>Cancha</th>
+                <th>Deporte</th>
+                <th>Sede</th>
+                <th>Precio/hora</th>
+                <th>Estado</th>
+                <th>Acción</th>
               </tr>
             </thead>
             <tbody>
-              {filteredCanchas.map((cancha) => {
-                const precioSocio = Math.round(cancha.tarifaBaseHora * (1 - cancha.descuentoSocioPorc / 100));
-                return (
-                  <tr key={cancha.id} style={{ borderBottom: "1px solid var(--border-color)" }}>
-                    <td style={{ padding: "1rem", fontWeight: 800, color: "var(--accent-orange)" }}>
-                      {cancha.codigo}
-                    </td>
-                    <td style={{ padding: "1rem" }}>
-                      <div style={{ fontWeight: 700, color: "var(--text-pure)" }}>{cancha.nombre}</div>
-                      <span
-                        className={`sport-tag ${
-                          cancha.deporte === "Pádel"
-                            ? "sport-tag-padel"
-                            : cancha.deporte === "Fútbol 5"
-                            ? "sport-tag-futbol"
-                            : "sport-tag-tenis"
-                        }`}
-                        style={{ marginTop: "0.2rem" }}
-                      >
-                        {cancha.deporte}
-                      </span>
-                    </td>
-                    <td style={{ padding: "1rem", color: "var(--text-muted)" }}>{cancha.sedeNombre}</td>
-                    <td style={{ padding: "1rem", fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                      {cancha.superficie}
-                    </td>
-                    <td style={{ padding: "1rem", fontWeight: 700, color: "var(--accent-green)" }}>
-                      ${cancha.tarifaBaseHora.toLocaleString()}
-                    </td>
-                    <td style={{ padding: "1rem", color: "var(--text-pure)" }}>${precioSocio.toLocaleString()}</td>
-                    <td style={{ padding: "1rem" }}>
-                      <span
-                        className={`status-pill ${
-                          cancha.estado === "Operativa" ? "status-pill-operativa" : "status-pill-mantenimiento"
-                        }`}
-                      >
-                        {cancha.estado}
-                      </span>
-                    </td>
-                    <td style={{ padding: "1rem", textAlign: "right" }}>
-                      <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem" }}>
-                        <Link
-                          to={`/admin/canchas/${cancha.id}`}
-                          className="btn-secondary"
-                          style={{ padding: "0.35rem 0.65rem", fontSize: "0.75rem", textDecoration: "none" }}
-                        >
-                          Detalle (CA-04)
-                        </Link>
-                        <Link
-                          to={`/admin/canchas/${cancha.id}/editar`}
-                          className="btn-secondary"
-                          style={{ padding: "0.35rem 0.65rem", fontSize: "0.75rem", textDecoration: "none" }}
-                        >
-                          Editar
-                        </Link>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+              {filtradas.map(c => (
+                <tr key={c.id}>
+                  <td>{c.id}</td>
+                  <td>{c.nombre}</td>
+                  <td>{c.tipo_cancha.nombre}</td>
+                  <td>{c.sede.nombre}</td>
+                  <td>{precio(c.costo_hora)}</td>
+                  <td>{nombreEstado(c.estado)}</td>
+                  <td>
+                    <Link to={`/admin/canchas/${c.id}`}>
+                      Detalle
+                    </Link>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

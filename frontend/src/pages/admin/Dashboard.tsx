@@ -1,167 +1,610 @@
-import { Link, useNavigate } from "react-router-dom";
+
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import {
+  obtenerUsuarios,
+  type UsuarioApi,
+} from "../../services/usuariosService";
+import {
+  obtenerCanchas,
+  type CanchaApi,
+} from "../../services/canchasService";
+import {
+  obtenerClases,
+  type ClaseApi,
+} from "../../services/clasesService";
+import {
+  obtenerPlanes,
+  type PlanApi,
+} from "../../services/planesService";
+import {
+  obtenerSedes,
+  type SedeApi,
+} from "../../services/sedesService";
+import {
+  obtenerPagosAdmin,
+  type PagoApi,
+} from "../../services/pagosAdminService";
 import "../../admin.css";
 
+interface DatosDashboard {
+  usuarios: UsuarioApi[] | null;
+  canchas: CanchaApi[] | null;
+  clases: ClaseApi[] | null;
+  planes: PlanApi[] | null;
+  sedes: SedeApi[] | null;
+  pagos: PagoApi[] | null;
+}
+
+function dinero(valor: number): string {
+  return valor.toLocaleString("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    maximumFractionDigits: 2,
+  });
+}
+
+function fechaArgentina(valor: string): string {
+  return new Date(valor).toLocaleString("es-AR", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "America/Argentina/Buenos_Aires",
+  });
+}
+
 export default function Dashboard() {
-  const navigate = useNavigate();
+  const [datos, setDatos] = useState<DatosDashboard | null>(null);
+  const [errores, setErrores] = useState<string[]>([]);
+  const [cargando, setCargando] = useState(true);
+  const [recarga, setRecarga] = useState(0);
+
+  useEffect(() => {
+    let activo = true;
+
+    async function cargarDashboard() {
+      const nombres = [
+        "Usuarios",
+        "Canchas",
+        "Clases",
+        "Planes",
+        "Sedes",
+        "Pagos",
+      ];
+
+      const resultados = await Promise.allSettled([
+        obtenerUsuarios(),
+        obtenerCanchas(),
+        obtenerClases(),
+        obtenerPlanes(),
+        obtenerSedes(),
+        obtenerPagosAdmin(),
+      ] as const);
+
+      if (!activo) return;
+
+      const [usuarios, canchas, clases, planes, sedes, pagos] =
+        resultados;
+
+      setDatos({
+        usuarios:
+          usuarios.status === "fulfilled"
+            ? usuarios.value
+            : null,
+        canchas:
+          canchas.status === "fulfilled"
+            ? canchas.value
+            : null,
+        clases:
+          clases.status === "fulfilled"
+            ? clases.value
+            : null,
+        planes:
+          planes.status === "fulfilled"
+            ? planes.value
+            : null,
+        sedes:
+          sedes.status === "fulfilled"
+            ? sedes.value
+            : null,
+        pagos:
+          pagos.status === "fulfilled"
+            ? pagos.value
+            : null,
+      });
+
+      const problemas = resultados.flatMap((resultado, indice) => {
+        if (resultado.status === "fulfilled") {
+          return [];
+        }
+
+        const motivo =
+          resultado.reason instanceof Error
+            ? resultado.reason.message
+            : "Error desconocido";
+
+        return [`${nombres[indice]}: ${motivo}`];
+      });
+
+      setErrores(problemas);
+      setCargando(false);
+    }
+
+    void cargarDashboard();
+
+    return () => {
+      activo = false;
+    };
+  }, [recarga]);
+
+  function actualizar() {
+    setCargando(true);
+    setErrores([]);
+    setRecarga(valor => valor + 1);
+  }
+
+  const ahora = Date.now();
+
+  const sociosRegistrados = datos?.usuarios?.filter(
+    usuario =>
+      usuario.rol.clase_rol.toLowerCase() === "cliente"
+  ).length;
+
+  const canchasHabilitadas = datos?.canchas?.filter(
+    cancha => cancha.estado === "HABILITADA"
+  ).length;
+
+  const canchasMantenimiento = (datos?.canchas ?? []).filter(
+    cancha => cancha.estado === "EN_MANTENIMIENTO"
+  );
+
+  const clasesFuturas = (datos?.clases ?? [])
+    .filter(clase => new Date(clase.inicio_at).getTime() > ahora)
+    .sort(
+      (a, b) =>
+        new Date(a.inicio_at).getTime() -
+        new Date(b.inicio_at).getTime()
+    );
+
+  const clasesCompletas = clasesFuturas.filter(
+    clase => clase.cupo_disponible === 0
+  );
+
+  const pagosAprobados = datos?.pagos?.filter(
+    pago => pago.estado === "APROBADO"
+  );
+
+  const importeAprobado = pagosAprobados?.reduce(
+    (suma, pago) => suma + Number(pago.monto),
+    0
+  );
+
+  const tarjetas = [
+    {
+      titulo: "Socios registrados",
+      valor:
+        sociosRegistrados === undefined
+          ? "—"
+          : String(sociosRegistrados),
+      descripcion: "Usuarios con rol Cliente",
+      icono: "👥",
+      ruta: "/admin/personal",
+      enlace: "Ver usuarios",
+    },
+    {
+      titulo: "Canchas habilitadas",
+      valor:
+        canchasHabilitadas === undefined
+          ? "—"
+          : String(canchasHabilitadas),
+      descripcion: `De ${datos?.canchas?.length ?? "—"} canchas`,
+      icono: "🏟️",
+      ruta: "/admin/canchas/listado",
+      enlace: "Ver inventario",
+    },
+    {
+      titulo: "Próximas clases",
+      valor:
+        datos?.clases == null
+          ? "—"
+          : String(clasesFuturas.length),
+      descripcion: "Clases que todavía no comenzaron",
+      icono: "📅",
+      ruta: "/admin/clases",
+      enlace: "Ver agenda",
+    },
+    {
+      titulo: "Pagos aprobados",
+      valor:
+        importeAprobado === undefined
+          ? "—"
+          : dinero(importeAprobado),
+      descripcion: "Total histórico registrado (simulación)",
+      icono: "💳",
+      ruta: "/admin/pagos",
+      enlace: "Ver pagos",
+    },
+  ];
+
+  const fechaHoy = new Date().toLocaleDateString("es-AR", {
+    dateStyle: "full",
+    timeZone: "America/Argentina/Buenos_Aires",
+  });
 
   return (
     <>
       <header className="topbar">
         <div className="header-titles">
-          <h1>Dashboard Overview</h1>
-          <p>Panel de administración global para todas las sedes FitZone Sports</p>
+          <h1>Panel de Administración</h1>
+          <p>
+            Resumen operativo de FitZone Sports con
+            información registrada en PostgreSQL.
+          </p>
         </div>
-        <div className="header-controls">
-          <Link to="/admin/controlacceso" className="btn-secondary" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
-            <span>◎ Aforo Global</span>
-          </Link>
-          <Link to="/admin/pagos" className="btn-secondary" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
-            <span>💳 Ver Balances</span>
-          </Link>
-          <button className="btn-secondary" onClick={() => alert("Mostrando actividad de hoy: 14 de Octubre")}>
-            📅 Hoy, 14 de Octubre
+
+        <div
+          className="header-controls"
+          style={{
+            display: "flex",
+            gap: "0.75rem",
+            flexWrap: "wrap",
+          }}
+        >
+          <span
+            className="btn-secondary"
+            style={{ cursor: "default" }}
+          >
+            📅 {fechaHoy}
+          </span>
+
+          <button
+            className="btn-secondary"
+            type="button"
+            onClick={actualizar}
+            disabled={cargando}
+          >
+            ↻ Actualizar
           </button>
         </div>
       </header>
 
-      <div className="dashboard-grid">
-        {/* KPI: Socios Activos -> /admin/socios */}
-        <Link to="/admin/socios" className="panel-card kpi-card-interactive" style={{ textDecoration: "none", color: "inherit" }}>
-          <div className="kpi-header">
-            Socios Activos <span>👥</span>
-          </div>
-          <div className="kpi-value">14,204</div>
-          <div className="kpi-trend trend-up">
-            ↗ +8.4% <span className="trend-text">este mes</span>
-          </div>
-          <span className="card-explore-hint">Ir a gestión de socios →</span>
-        </Link>
-
-        {/* KPI: Ingresos Mensuales -> /admin/pagos */}
-        <Link to="/admin/pagos" className="panel-card kpi-card-interactive" style={{ textDecoration: "none", color: "inherit" }}>
-          <div className="kpi-header">
-            Ingresos Mensuales <span>💳</span>
-          </div>
-          <div className="kpi-value">$162,450 USD</div>
-          <div className="kpi-trend trend-up">
-            ↗ +12.1% <span className="trend-text">este mes</span>
-          </div>
-          <span className="card-explore-hint">Ver transacciones y caja →</span>
-        </Link>
-
-        {/* KPI: Ocupación Promedio -> /admin/controlacceso */}
-        <Link to="/admin/controlacceso" className="panel-card kpi-card-interactive" style={{ textDecoration: "none", color: "inherit" }}>
-          <div className="kpi-header">
-            Ocupación Promedio <span>📊</span>
-          </div>
-          <div className="kpi-value">78.2%</div>
-          <div className="kpi-trend trend-up">
-            ↗ +3.4% <span className="trend-text">este mes</span>
-          </div>
-          <span className="card-explore-hint">Monitorear molinetes →</span>
-        </Link>
-
-        {/* KPI: Clases de Hoy -> /admin/clases */}
-        <Link to="/admin/clases" className="panel-card kpi-card-interactive" style={{ textDecoration: "none", color: "inherit" }}>
-          <div className="kpi-header">
-            Clases de Hoy <span>📅</span>
-          </div>
-          <div className="kpi-value">148</div>
-          <div className="kpi-trend trend-down">
-            ↘ -1.2% <span className="trend-text">este mes</span>
-          </div>
-          <span className="card-explore-hint">Ver agenda y cupos →</span>
-        </Link>
-
-        {/* Columna Izquierda: Gráficos */}
-        <div className="charts-area">
-          <div className="panel-card">
-            <div className="panel-header">
-              <div className="panel-title">Tendencia de Crecimiento de Socios</div>
-              <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Últimos 6 meses</span>
-            </div>
-            <div className="bar-chart-mock">
-              <div className="bar-col"><div className="bar-fill-area"><div className="bar" style={{ height: "40%" }}><span className="bar-val">10.2k</span></div></div><span className="bar-label">Mayo</span></div>
-              <div className="bar-col"><div className="bar-fill-area"><div className="bar" style={{ height: "50%" }}><span className="bar-val">11.1k</span></div></div><span className="bar-label">Junio</span></div>
-              <div className="bar-col"><div className="bar-fill-area"><div className="bar" style={{ height: "55%" }}><span className="bar-val">11.8k</span></div></div><span className="bar-label">Julio</span></div>
-              <div className="bar-col"><div className="bar-fill-area"><div className="bar" style={{ height: "65%" }}><span className="bar-val">12.4k</span></div></div><span className="bar-label">Agosto</span></div>
-              <div className="bar-col"><div className="bar-fill-area"><div className="bar" style={{ height: "75%" }}><span className="bar-val">13.2k</span></div></div><span className="bar-label">Sept</span></div>
-              <div className="bar-col"><div className="bar-fill-area"><div className="bar active" style={{ height: "90%" }}><span className="bar-val">14.2k</span></div></div><span className="bar-label">Oct</span></div>
-            </div>
-          </div>
-
-          <div className="panel-card">
-            <div className="panel-header">
-              <div className="panel-title">Ingresos por Sede Principal (Top 4)</div>
-              <Link to="/admin/pagos" style={{ color: "var(--accent-orange)", fontSize: "0.85rem", textDecoration: "none" }}>
-                Ver desglose completo de pagos →
-              </Link>
-            </div>
-            <div className="ranking-list">
-              <div className="ranking-item">
-                <div className="ranking-info"><span>Sede Las Condes</span><strong>$45,200</strong></div>
-                <div className="ranking-bar-bg"><div className="ranking-bar-fill" style={{ width: "85%", background: "var(--accent-orange)" }}></div></div>
-              </div>
-              <div className="ranking-item">
-                <div className="ranking-info"><span>Sede Vitacura</span><strong>$38,400</strong></div>
-                <div className="ranking-bar-bg"><div className="ranking-bar-fill" style={{ width: "70%", background: "var(--accent-green)" }}></div></div>
-              </div>
-              <div className="ranking-item">
-                <div className="ranking-info"><span>Sede Providencia</span><strong>$31,900</strong></div>
-                <div className="ranking-bar-bg"><div className="ranking-bar-fill" style={{ width: "60%", background: "var(--accent-yellow)" }}></div></div>
-              </div>
-              <div className="ranking-item">
-                <div className="ranking-info"><span>Sede Lo Barnechea</span><strong>$24,150</strong></div>
-                <div className="ranking-bar-bg"><div className="ranking-bar-fill" style={{ width: "45%", background: "var(--text-muted)" }}></div></div>
-              </div>
-            </div>
-          </div>
+      {cargando && (
+        <div className="panel-card">
+          Actualizando indicadores desde el backend...
         </div>
+      )}
 
-        {/* Columna Derecha: Alertas Operativas con Links */}
-        <div className="alerts-area">
-          <div className="panel-title" style={{ marginBottom: "0.5rem" }}>Alertas de Operaciones</div>
+      {!cargando && errores.length > 0 && (
+        <div
+          className="panel-card"
+          role="alert"
+          style={{ marginBottom: "1rem" }}
+        >
+          <h3>Algunos indicadores no están disponibles</h3>
+          <p>
+            El resto de los módulos continúa funcionando.
+          </p>
 
-          <Link
-            to="/admin/controlacceso"
-            className="alert-card"
-            style={{ borderColor: "rgba(255, 75, 114, 0.4)", backgroundColor: "rgba(255, 75, 114, 0.05)", textDecoration: "none", color: "inherit", display: "block" }}
-          >
-            <div className="alert-title"><span style={{ color: "var(--accent-red)" }}>⚠️</span> Saturación de Capacidad</div>
-            <div className="alert-desc">Las Condes se encuentra al 94% de su límite máximo permitido.</div>
-            <span style={{ display: "inline-block", marginTop: "0.5rem", fontSize: "0.75rem", color: "var(--accent-red)", fontWeight: 600 }}>Gestionar aforo →</span>
-          </Link>
-
-          <Link
-            to="/admin/canchas"
-            className="alert-card"
-            style={{ borderColor: "rgba(255, 176, 32, 0.4)", backgroundColor: "rgba(255, 176, 32, 0.05)", textDecoration: "none", color: "inherit", display: "block" }}
-          >
-            <div className="alert-title"><span style={{ color: "var(--accent-yellow)" }}>🔧</span> Mantenimiento Cancha 2</div>
-            <div className="alert-desc">Sede Vitacura reporta daño en el vidrio perimetral de Pádel.</div>
-            <span style={{ display: "inline-block", marginTop: "0.5rem", fontSize: "0.75rem", color: "var(--accent-yellow)", fontWeight: 600 }}>Ver canchas →</span>
-          </Link>
-
-          <Link
-            to="/admin/socios"
-            className="alert-card"
-            style={{ textDecoration: "none", color: "inherit", display: "block" }}
-          >
-            <div className="alert-title">📄 Suscripciones por Vencer</div>
-            <div className="alert-desc">42 socios activos ingresan al periodo de renovación esta semana.</div>
-            <span style={{ display: "inline-block", marginTop: "0.5rem", fontSize: "0.75rem", color: "var(--accent-orange)", fontWeight: 600 }}>Revisar socios →</span>
-          </Link>
+          <ul>
+            {errores.map((error, indice) => (
+              <li key={indice}>{error}</li>
+            ))}
+          </ul>
 
           <button
-            className="btn-primary"
-            style={{ marginTop: "auto" }}
-            onClick={() => navigate("/admin/controlacceso")}
+            className="btn-secondary"
+            type="button"
+            onClick={actualizar}
           >
-            Atender Incidencias en Molinetes
+            Reintentar consultas
           </button>
+        </div>
+      )}
+
+      <div className="dashboard-grid">
+        {tarjetas.map(tarjeta => (
+          <Link
+            to={tarjeta.ruta}
+            key={tarjeta.titulo}
+            className="panel-card kpi-card-interactive"
+            style={{
+              textDecoration: "none",
+              color: "inherit",
+            }}
+          >
+            <div className="kpi-header">
+              {tarjeta.titulo}
+              <span>{tarjeta.icono}</span>
+            </div>
+
+            <div
+              className="kpi-value"
+              style={{
+                fontSize: tarjeta.titulo === "Pagos aprobados"
+                  ? "1.8rem"
+                  : undefined,
+              }}
+            >
+              {tarjeta.valor}
+            </div>
+
+            <div
+              className="kpi-trend"
+              style={{ color: "var(--text-muted)" }}
+            >
+              {tarjeta.descripcion}
+            </div>
+
+            <span className="card-explore-hint">
+              {tarjeta.enlace} →
+            </span>
+          </Link>
+        ))}
+
+        <div className="charts-area">
+          <section className="panel-card">
+            <div className="panel-header">
+              <div className="panel-title">
+                Próximas Clases Grupales
+              </div>
+
+              <Link
+                to="/admin/clases"
+                style={{
+                  color: "var(--accent-orange)",
+                  fontSize: "0.85rem",
+                  textDecoration: "none",
+                }}
+              >
+                Ver agenda →
+              </Link>
+            </div>
+
+            {datos?.clases == null ? (
+              <p style={{ color: "var(--text-muted)" }}>
+                Información no disponible.
+              </p>
+            ) : clasesFuturas.length === 0 ? (
+              <p style={{ color: "var(--text-muted)" }}>
+                No hay clases futuras programadas.
+              </p>
+            ) : (
+              <div className="ranking-list">
+                {clasesFuturas.slice(0, 5).map(clase => (
+                  <div
+                    key={clase.id}
+                    className="ranking-item"
+                    style={{
+                      padding: "0.65rem 0",
+                      borderBottom:
+                        "1px solid var(--border-color)",
+                    }}
+                  >
+                    <div className="ranking-info">
+                      <span>
+                        <strong>
+                          {clase.tipo_clase.nombre}
+                        </strong>
+
+                        <span style={{
+                          display: "block",
+                          color: "var(--text-muted)",
+                          fontSize: "0.8rem",
+                          marginTop: "0.2rem",
+                        }}>
+                          {fechaArgentina(clase.inicio_at)}
+                        </span>
+
+                        <span style={{
+                          display: "block",
+                          color: "var(--text-muted)",
+                          fontSize: "0.8rem",
+                        }}>
+                          {clase.instructor.usuario.nombre}
+                          {" "}
+                          {clase.instructor.usuario.apellido}
+                        </span>
+                      </span>
+
+                      <strong>
+                        {clase.cupo_disponible} libres
+                      </strong>
+                    </div>
+
+                    <div className="ranking-bar-bg">
+                      <div
+                        className="ranking-bar-fill"
+                        style={{
+                          width: `${
+                            clase.capacidad_maxima > 0
+                              ? Math.min(
+                                  100,
+                                  ((clase.capacidad_maxima -
+                                    clase.cupo_disponible) /
+                                    clase.capacidad_maxima) * 100
+                                )
+                              : 0
+                          }%`,
+                          background: "var(--accent-orange)",
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className="panel-card">
+            <div className="panel-header">
+              <div className="panel-title">
+                Infraestructura y Membresías
+              </div>
+            </div>
+
+            <div className="ranking-list">
+              {[
+                {
+                  titulo: "Sedes registradas",
+                  cantidad: datos?.sedes?.length,
+                  ruta: "/admin/sedes",
+                },
+                {
+                  titulo: "Planes de membresía",
+                  cantidad: datos?.planes?.length,
+                  ruta: "/admin/planes",
+                },
+                {
+                  titulo: "Canchas en mantenimiento",
+                  cantidad: datos?.canchas
+                    ? canchasMantenimiento.length
+                    : undefined,
+                  ruta: "/admin/canchas",
+                },
+                {
+                  titulo: "Clases futuras completas",
+                  cantidad: datos?.clases
+                    ? clasesCompletas.length
+                    : undefined,
+                  ruta: "/admin/clases",
+                },
+              ].map(indicador => (
+                <Link
+                  key={indicador.titulo}
+                  to={indicador.ruta}
+                  className="ranking-item"
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    padding: "0.8rem 0",
+                    textDecoration: "none",
+                    color: "inherit",
+                    borderBottom:
+                      "1px solid var(--border-color)",
+                  }}
+                >
+                  <span>{indicador.titulo}</span>
+
+                  <strong>
+                    {indicador.cantidad ?? "—"}
+                  </strong>
+                </Link>
+              ))}
+            </div>
+          </section>
+        </div>
+
+        <div className="alerts-area">
+          <div
+            className="panel-title"
+            style={{ marginBottom: "0.5rem" }}
+          >
+            Alertas Operativas
+          </div>
+
+          {canchasMantenimiento.map(cancha => (
+            <Link
+              to={`/admin/canchas/${cancha.id}`}
+              key={cancha.id}
+              className="alert-card"
+              style={{
+                display: "block",
+                textDecoration: "none",
+                color: "inherit",
+              }}
+            >
+              <div className="alert-title">
+                🔧 Cancha en mantenimiento
+              </div>
+
+              <div className="alert-desc">
+                {cancha.nombre}
+                {" — "}
+                {cancha.sede.nombre}
+              </div>
+
+              <span style={{
+                fontSize: "0.8rem",
+                color: "var(--accent-orange)",
+              }}>
+                Ver cancha →
+              </span>
+            </Link>
+          ))}
+
+          {clasesCompletas.map(clase => (
+            <Link
+              to="/admin/clases"
+              key={`clase-${clase.id}`}
+              className="alert-card"
+              style={{
+                display: "block",
+                textDecoration: "none",
+                color: "inherit",
+              }}
+            >
+              <div className="alert-title">
+                📅 Clase sin cupos
+              </div>
+
+              <div className="alert-desc">
+                {clase.tipo_clase.nombre}
+                {" — "}
+                {fechaArgentina(clase.inicio_at)}
+              </div>
+
+              <span style={{
+                fontSize: "0.8rem",
+                color: "var(--accent-orange)",
+              }}>
+                Ver clases →
+              </span>
+            </Link>
+          ))}
+
+          {datos?.canchas != null &&
+            datos?.clases != null &&
+            canchasMantenimiento.length === 0 &&
+            clasesCompletas.length === 0 && (
+              <div className="alert-card">
+                <div className="alert-title">
+                  ✓ Sin alertas detectadas
+                </div>
+
+                <div className="alert-desc">
+                  No se encontraron canchas en
+                  mantenimiento ni clases futuras
+                  sin cupos.
+                </div>
+              </div>
+            )}
+
+          {(datos?.canchas == null ||
+            datos?.clases == null) && (
+            <div className="alert-card">
+              <div className="alert-title">
+                Información parcial
+              </div>
+
+              <div className="alert-desc">
+                Algunas fuentes no están disponibles.
+                No podemos confirmar todas las alertas.
+              </div>
+            </div>
+          )}
+
+          <Link
+            to="/admin/canchas/listado"
+            className="btn-primary"
+            style={{
+              display: "block",
+              textAlign: "center",
+              textDecoration: "none",
+            }}
+          >
+            Gestionar Canchas
+          </Link>
         </div>
       </div>
     </>
   );
 }
-

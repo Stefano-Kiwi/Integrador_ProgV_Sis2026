@@ -1,81 +1,122 @@
+
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { getPagoById } from "../../data/pagosData";
-import { formatearImporteMembresia } from "../../data/membresiasData";
+import {
+  obtenerPagoAdminPorId,
+  type PagoApi,
+} from "../../services/pagosAdminService";
 import "../../admin.css";
+
+const dinero = (valor: string | number) =>
+  Number(valor).toLocaleString("es-AR", {
+    style: "currency",
+    currency: "ARS",
+  });
+
+const fecha = (valor: string) =>
+  new Date(valor).toLocaleString("es-AR", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "America/Argentina/Buenos_Aires",
+  });
 
 export default function AdminPagoDetalle() {
   const { id } = useParams<{ id: string }>();
-  const pago = id ? getPagoById(id) : undefined;
 
-  if (!pago) {
+  const [pago, setPago] = useState<PagoApi | null>(null);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let activo = true;
+
+    async function cargar() {
+      const pagoId = Number(id);
+
+      if (!Number.isSafeInteger(pagoId) || pagoId <= 0) {
+        setError("Identificador de pago inválido.");
+        setCargando(false);
+        return;
+      }
+
+      try {
+        const datos = await obtenerPagoAdminPorId(pagoId);
+
+        if (activo) {
+          setPago(datos);
+          setError(null);
+        }
+      } catch (err) {
+        if (activo) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "No se pudo cargar el pago."
+          );
+        }
+      } finally {
+        if (activo) setCargando(false);
+      }
+    }
+
+    void cargar();
+
+    return () => {
+      activo = false;
+    };
+  }, [id]);
+
+  if (cargando) {
     return (
-      <section className="empty-state-card" role="status">
-        <h1>Pago no encontrado</h1>
-        <p>
-          El identificador no existe o el pago simulado se perdió al
-          recargar la página.
-        </p>
-        <Link
-          to="/admin/pagos"
-          className="btn-primary"
-          style={{ display: "inline-block", textDecoration: "none" }}
-        >
-          Volver a pagos
-        </Link>
-      </section>
+      <div className="panel-card">
+        Cargando detalle de pago...
+      </div>
     );
   }
 
-  const claseEstado =
-    pago.estado === "Aprobado"
-      ? "status-active"
-      : pago.estado === "Pendiente"
-        ? "status-warning"
-        : "status-inactive";
+  if (error || !pago) {
+    return (
+      <div className="panel-card" role="alert">
+        <h2>No se pudo consultar el pago</h2>
+        <p>{error ?? "El pago no existe."}</p>
 
-  const mensaje =
-    pago.estado === "Aprobado"
-      ? "La operación figura como aprobada."
-      : pago.estado === "Pendiente"
-        ? "La operación está pendiente de confirmación. No debe considerarse cobrada."
-        : "La operación fue rechazada. El importe no debe considerarse cobrado.";
+        <Link
+          to="/admin/pagos"
+          className="btn-secondary"
+        >
+          Volver a pagos
+        </Link>
+      </div>
+    );
+  }
 
   const datos = [
-    { etiqueta: "Identificador de pago", valor: pago.id },
-    { etiqueta: "Socio / cliente", valor: pago.socio },
-    { etiqueta: "DNI", valor: pago.dni },
-    { etiqueta: "Concepto", valor: pago.concepto },
-    { etiqueta: "Fecha", valor: pago.fecha },
-    { etiqueta: "Medio de pago", valor: pago.medioPago },
-    {
-      etiqueta: "Número de comprobante",
-      valor:
-        pago.estado === "Aprobado"
-          ? pago.comprobanteNro || "Sin comprobante asociado"
-          : "No disponible para este estado",
-    },
+    ["Identificador", `PAG-${String(pago.id).padStart(4, "0")}`],
+    ["Origen", pago.reserva_cancha_id != null
+      ? "Reserva de cancha"
+      : pago.membresia_id != null
+        ? "Membresía"
+        : "Sin origen asociado"],
+    ["Reserva de cancha", pago.reserva_cancha_id ?? "—"],
+    ["Membresía", pago.membresia_id ?? "—"],
+    ["Fecha de creación", fecha(pago.creado_at)],
+    ["Fecha de pago", pago.pagado_at
+      ? fecha(pago.pagado_at)
+      : "Todavía no registrada"],
+    ["Estado", pago.estado],
+    ["Comprobante asociado", pago.comprobante
+      ? `Registro #${pago.comprobante.id}`
+      : "Sin comprobante"],
   ];
 
   return (
     <>
-      <nav aria-label="Ruta de navegación">
-        <Link
-          to="/admin/pagos"
-          style={{ color: "var(--text-muted)" }}
-        >
-          Pagos
-        </Link>
-        <span> / </span>
-        <span aria-current="page">{pago.id}</span>
-      </nav>
-
-      <header
-        className="topbar"
-        style={{ flexWrap: "wrap", gap: "1rem" }}
-      >
+      <header className="topbar">
         <div className="header-titles">
-          <h1>Detalle de pago</h1>
-          <p>{pago.socio} · {pago.concepto}</p>
+          <h1>Detalle de Pago #{pago.id}</h1>
+          <p>
+            Transacción consultada desde PostgreSQL.
+          </p>
         </div>
 
         <Link
@@ -83,81 +124,86 @@ export default function AdminPagoDetalle() {
           className="btn-secondary"
           style={{ textDecoration: "none" }}
         >
-          Volver a pagos
+          ← Volver a pagos
         </Link>
       </header>
 
       <section className="panel-card">
-        <span className={`status-badge ${claseEstado}`}>
+        <span className={`status-badge ${
+          pago.estado === "APROBADO"
+            ? "status-active"
+            : pago.estado === "PENDIENTE"
+              ? "status-warning"
+              : "status-inactive"
+        }`}>
           {pago.estado}
         </span>
 
-        <div className="kpi-value" style={{ marginTop: "1.25rem" }}>
-          {formatearImporteMembresia(pago.monto)}
+        <div
+          className="kpi-value"
+          style={{ marginTop: "1.25rem" }}
+        >
+          {dinero(pago.monto)}
         </div>
 
         <p style={{ color: "var(--text-muted)" }}>
-          Importe de la operación
+          Importe registrado
         </p>
 
-        <p style={{ marginTop: "1rem", lineHeight: 1.6 }}>
-          {mensaje}
-        </p>
+        {pago.estado === "PENDIENTE" && (
+          <p>
+            El sistema todavía no registra este pago
+            como aprobado.
+          </p>
+        )}
       </section>
 
       <section className="panel-card">
-        <h2 className="panel-title" style={{ marginBottom: "1.5rem" }}>
+        <h2 className="panel-title">
           Información de la transacción
         </h2>
 
-        <dl
-          style={{
-            margin: 0,
-            display: "grid",
-            gridTemplateColumns:
-              "repeat(auto-fit, minmax(min(100%, 260px), 1fr))",
-            gap: "1.5rem",
-          }}
-        >
-          {datos.map((dato) => (
+        <dl style={{
+          display: "grid",
+          gridTemplateColumns:
+            "repeat(auto-fit, minmax(220px, 1fr))",
+          gap: "1.25rem",
+        }}>
+          {datos.map(([etiqueta, valor]) => (
             <div
-              key={dato.etiqueta}
+              key={String(etiqueta)}
               style={{
-                borderBottom: "1px solid var(--border-color)",
-                paddingBottom: "1rem",
+                borderBottom:
+                  "1px solid var(--border-color)",
+                paddingBottom: "0.75rem",
               }}
             >
-              <dt
-                style={{
-                  color: "var(--text-muted)",
-                  fontSize: "0.85rem",
-                  marginBottom: "0.5rem",
-                }}
-              >
-                {dato.etiqueta}
+              <dt style={{
+                color: "var(--text-muted)",
+                marginBottom: "0.4rem",
+              }}>
+                {etiqueta}
               </dt>
-              <dd
-                style={{
-                  margin: 0,
-                  fontWeight: 600,
-                  overflowWrap: "anywhere",
-                }}
-              >
-                {dato.valor}
+
+              <dd style={{
+                margin: 0,
+                fontWeight: 700,
+              }}>
+                {valor}
               </dd>
             </div>
           ))}
         </dl>
 
-        {pago.estado === "Aprobado" && (
-          <p
-            style={{
-              color: "var(--text-muted)",
-              marginTop: "1.5rem",
-            }}
-          >
-            Podés consultar el comprobante desde “Ver Factura” en
-            la fila correspondiente del listado de pagos.
+        {pago.comprobante && (
+          <p style={{
+            color: "var(--text-muted)",
+            fontSize: "0.85rem",
+          }}>
+            El backend tiene asociado un registro de
+            comprobante, pero todavía no verificamos
+            que exista un PDF descargable ni una
+            factura fiscal válida.
           </p>
         )}
       </section>

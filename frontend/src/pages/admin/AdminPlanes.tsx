@@ -1,232 +1,473 @@
-import { useState } from "react";
-import { INITIAL_PLANES, type PlanMembresiaItem } from "../../data/catalogosData";
+
+import { useEffect, useState, type FormEvent } from "react";
+import {
+  obtenerPlanes,
+  crearPlan,
+  type PlanApi,
+} from "../../services/planesService";
 import "../../admin.css";
 
-export default function AdminPlanes() {
-  const [planes, setPlanes] = useState<PlanMembresiaItem[]>(INITIAL_PLANES);
-  const [filterPeriodicidad, setFilterPeriodicidad] = useState("Todas");
-
-  // Modales
-  const [showModal, setShowModal] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<PlanMembresiaItem | null>(null);
-
-  // Form nuevo plan
-  const [newNombre, setNewNombre] = useState("");
-  const [newPeriodicidad, setNewPeriodicidad] = useState<"Mensual" | "Trimestral" | "Anual" | "Diario">("Mensual");
-  const [newPrecio, setNewPrecio] = useState(30000);
-  const [newDescuento, setNewDescuento] = useState(15);
-  const [newBeneficio, setNewBeneficio] = useState("");
-
-  const filtered = planes.filter((p) => {
-    return filterPeriodicidad === "Todas" || p.periodicidad === filterPeriodicidad;
+function dinero(valor: string | number): string {
+  return Number(valor).toLocaleString("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    maximumFractionDigits: 2,
   });
+}
 
-  const handleCreatePlan = (e: React.FormEvent) => {
+function duracion(meses: number): string {
+  return meses === 1 ? "1 mes" : `${meses} meses`;
+}
+
+export default function AdminPlanes() {
+  const [planes, setPlanes] = useState<PlanApi[]>([]);
+  const [filtroMeses, setFiltroMeses] = useState("Todos");
+
+  const [showModal, setShowModal] = useState(false);
+  const [selectedPlan, setSelectedPlan] =
+    useState<PlanApi | null>(null);
+
+  const [newNombre, setNewNombre] = useState("");
+  const [newMeses, setNewMeses] = useState("1");
+  const [newPrecio, setNewPrecio] = useState("");
+
+  const [cargando, setCargando] = useState(true);
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [errorFormulario, setErrorFormulario] =
+    useState<string | null>(null);
+  const [exito, setExito] = useState<string | null>(null);
+  const [recarga, setRecarga] = useState(0);
+
+  useEffect(() => {
+    let activo = true;
+
+    async function cargar() {
+      try {
+        const datos = await obtenerPlanes();
+
+        if (!activo) return;
+
+        setPlanes(datos);
+        setError(null);
+      } catch (err) {
+        if (activo) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "No se pudieron cargar los planes."
+          );
+        }
+      } finally {
+        if (activo) setCargando(false);
+      }
+    }
+
+    void cargar();
+
+    return () => {
+      activo = false;
+    };
+  }, [recarga]);
+
+  function actualizar() {
+    setCargando(true);
+    setError(null);
+    setRecarga(v => v + 1);
+  }
+
+  const duraciones = Array.from(
+    new Set(planes.map(p => p.duracion_meses))
+  ).sort((a, b) => a - b);
+
+  const filtrados = planes.filter(
+    p =>
+      filtroMeses === "Todos" ||
+      p.duracion_meses === Number(filtroMeses)
+  );
+
+  const menorPrecio = planes.length
+    ? Math.min(...planes.map(p => Number(p.precio)))
+    : 0;
+
+  const mayorDuracion = planes.length
+    ? Math.max(...planes.map(p => p.duracion_meses))
+    : 0;
+
+  async function handleCreatePlan(
+    e: FormEvent<HTMLFormElement>
+  ) {
     e.preventDefault();
-    if (!newNombre.trim()) {
-      alert("Por favor completa el nombre del plan.");
+
+    if (guardando) return;
+
+    setErrorFormulario(null);
+
+    const meses = Number(newMeses);
+    const precio = Number(newPrecio);
+
+    if (!newNombre.trim() || newNombre.trim().length > 100) {
+      setErrorFormulario(
+        "El nombre es obligatorio y debe tener hasta 100 caracteres."
+      );
       return;
     }
 
-    const nuevo: PlanMembresiaItem = {
-      id: `PLAN-${planes.length + 10}`,
-      nombre: newNombre,
-      periodicidad: newPeriodicidad,
-      precio: Number(newPrecio),
-      popular: false,
-      beneficios: [
-        "Acceso multi-sede sin restricciones (RF-03)",
-        `${newDescuento}% de descuento en canchas de Paddle y Fútbol 5`,
-        "Clases grupales regulares incluidas",
-        newBeneficio || "Credencial QR dinámico en App móvil",
-      ],
-      sedesAcceso: "Multi-Sede Total (25+ Sedes)",
-      descuentoCanchas: Number(newDescuento),
-      sociosInscriptos: 0,
-      estado: "Activo",
-    };
+    if (!Number.isInteger(meses) || meses <= 0) {
+      setErrorFormulario(
+        "La duración debe ser un número entero mayor que cero."
+      );
+      return;
+    }
 
-    setPlanes([...planes, nuevo]);
-    setShowModal(false);
-    setNewNombre("");
-    setNewBeneficio("");
-  };
+    if (!Number.isFinite(precio) || precio <= 0) {
+      setErrorFormulario(
+        "El precio debe ser un número mayor que cero."
+      );
+      return;
+    }
+
+    setGuardando(true);
+
+    try {
+      const creado = await crearPlan({
+        nombre: newNombre.trim(),
+        duracion_meses: meses,
+        precio,
+      });
+
+      setPlanes(prev =>
+        [...prev, creado].sort((a, b) => a.id - b.id)
+      );
+
+      setFiltroMeses("Todos");
+      setExito(`El plan "${creado.nombre}" se creó correctamente.`);
+
+      setNewNombre("");
+      setNewMeses("1");
+      setNewPrecio("");
+      setShowModal(false);
+    } catch (err) {
+      setErrorFormulario(
+        err instanceof Error
+          ? err.message
+          : "No se pudo guardar el plan."
+      );
+    } finally {
+      setGuardando(false);
+    }
+  }
 
   return (
     <>
       <header className="topbar">
         <div className="header-titles">
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <span style={{ fontSize: "0.8rem", color: "var(--accent-orange)", fontWeight: 700, textTransform: "uppercase" }}>
-              Módulo PL-01
-            </span>
-          </div>
+          <span style={{
+            fontSize: "0.8rem",
+            color: "var(--accent-orange)",
+            fontWeight: 700,
+          }}>
+            Módulo PL-01
+          </span>
+
           <h1>Catálogo de Planes de Membresía</h1>
-          <p>Configuración de suscripciones, periodicidades, tarifas y beneficios multi-sede (Módulo M1 / RF-02)</p>
+
+          <p>
+            Consultá y creá planes registrados en PostgreSQL.
+          </p>
         </div>
-        <div className="header-controls">
-          <button className="btn-primary" onClick={() => setShowModal(true)}>
+
+        <div
+          className="header-controls"
+          style={{
+            display: "flex",
+            gap: "0.75rem",
+            flexWrap: "wrap",
+          }}
+        >
+          <button
+            className="btn-secondary"
+            type="button"
+            onClick={actualizar}
+            disabled={cargando}
+          >
+            ↻ Actualizar
+          </button>
+
+          <button
+            className="btn-primary"
+            type="button"
+            onClick={() => {
+              setErrorFormulario(null);
+              setExito(null);
+              setShowModal(true);
+            }}
+          >
             + Nuevo Plan de Membresía
           </button>
         </div>
       </header>
 
-      {/* METRICAS */}
       <div className="sedes-metrics-grid">
         <div className="sede-metric-card">
           <div className="sede-metric-title">
-            <span>Planes Activos</span>
+            <span>Planes Registrados</span>
             <span>💳</span>
           </div>
-          <div className="sede-metric-val">{planes.length}</div>
-          <div className="sede-metric-sub">
-            <span>Anuales, Trimestrales y Mensuales</span>
-          </div>
-        </div>
 
-        <div className="sede-metric-card">
-          <div className="sede-metric-title">
-            <span>Socios Suscriptos</span>
-            <span>👥</span>
-          </div>
           <div className="sede-metric-val">
-            {planes.reduce((acc, p) => acc + p.sociosInscriptos, 0).toLocaleString()}
+            {planes.length}
           </div>
+
           <div className="sede-metric-sub">
-            <span>Distribución en toda la red</span>
+            Datos reales del backend
           </div>
         </div>
 
         <div className="sede-metric-card">
           <div className="sede-metric-title">
-            <span>Acceso Multi-Sede (RF-03)</span>
-            <span>🌐</span>
+            <span>Plan Más Económico</span>
+            <span>💰</span>
           </div>
-          <div className="sede-metric-val">100%</div>
+
+          <div className="sede-metric-val" style={{
+            fontSize: "1.5rem",
+          }}>
+            {planes.length ? dinero(menorPrecio) : "—"}
+          </div>
+
           <div className="sede-metric-sub">
-            <span>Interoperabilidad libre entre ciudades</span>
+            Precio registrado
+          </div>
+        </div>
+
+        <div className="sede-metric-card">
+          <div className="sede-metric-title">
+            <span>Mayor Duración</span>
+            <span>📅</span>
+          </div>
+
+          <div className="sede-metric-val">
+            {planes.length ? duracion(mayorDuracion) : "—"}
+          </div>
+
+          <div className="sede-metric-sub">
+            Período de contratación
           </div>
         </div>
       </div>
 
-      {/* FILTROS */}
+      {exito && (
+        <div
+          className="reserva-step-card"
+          role="status"
+          style={{
+            marginBottom: "1rem",
+            color: "var(--accent-green)",
+          }}
+        >
+          {exito}
+        </div>
+      )}
+
+      {error && (
+        <div className="reserva-step-card" role="alert">
+          <p>{error}</p>
+
+          <button
+            className="btn-secondary"
+            type="button"
+            onClick={actualizar}
+          >
+            Reintentar
+          </button>
+        </div>
+      )}
+
       <div className="action-bar">
         <div className="action-group-left">
           <select
             className="filter-select"
-            value={filterPeriodicidad}
-            onChange={(e) => setFilterPeriodicidad(e.target.value)}
+            value={filtroMeses}
+            onChange={e => setFiltroMeses(e.target.value)}
           >
-            <option value="Todas">Todas las Periodicidades</option>
-            <option value="Anual">Anual</option>
-            <option value="Trimestral">Trimestral</option>
-            <option value="Mensual">Mensual</option>
-            <option value="Diario">Pase Diario</option>
+            <option value="Todos">Todas las duraciones</option>
+
+            {duraciones.map(meses => (
+              <option key={meses} value={meses}>
+                {duracion(meses)}
+              </option>
+            ))}
           </select>
         </div>
       </div>
 
-      {/* GRILLA DE PLANES */}
-      <div className="catalog-grid">
-        {filtered.map((plan) => {
-          return (
+      {cargando && (
+        <div className="reserva-step-card">
+          Cargando planes desde PostgreSQL...
+        </div>
+      )}
+
+      {!cargando && !error && filtrados.length === 0 && (
+        <div className="reserva-step-card">
+          <h3>No hay planes para mostrar</h3>
+          <p>
+            Todavía no existen planes registrados o ninguno
+            coincide con la duración seleccionada.
+          </p>
+        </div>
+      )}
+
+      {!cargando && !error && filtrados.length > 0 && (
+        <div className="catalog-grid">
+          {filtrados.map(plan => (
             <div
               key={plan.id}
-              className={`catalog-card ${plan.popular ? "card-popular-border" : ""}`}
+              className="catalog-card"
             >
-              {plan.popular && <div className="popular-ribbon">MÁS POPULAR</div>}
-
               <div>
                 <div className="catalog-card-header">
                   <div>
-                    <span className="catalog-subtitle">Membresía {plan.periodicidad}</span>
-                    <h3 className="catalog-title" style={{ marginTop: "0.2rem" }}>{plan.nombre}</h3>
+                    <span className="catalog-subtitle">
+                      Plan #{plan.id}
+                    </span>
+
+                    <h3
+                      className="catalog-title"
+                      style={{ marginTop: "0.2rem" }}
+                    >
+                      {plan.nombre}
+                    </h3>
                   </div>
                 </div>
 
-                <div className="price-highlight-box" style={{ margin: "1rem 0" }}>
+                <div
+                  className="price-highlight-box"
+                  style={{ margin: "1rem 0" }}
+                >
                   <div>
-                    <span className="price-period-label">Inversión ({plan.periodicidad})</span>
-                    <div className="price-big-number">${plan.precio.toLocaleString()}</div>
+                    <span className="price-period-label">
+                      Precio del plan
+                    </span>
+
+                    <div className="price-big-number">
+                      {dinero(plan.precio)}
+                    </div>
                   </div>
-                  <span style={{ fontSize: "0.85rem", color: "var(--accent-green)", fontWeight: 700 }}>
-                    {plan.sedesAcceso}
-                  </span>
                 </div>
 
-                <div style={{ marginBottom: "1rem" }}>
-                  <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "0.5rem" }}>
-                    Beneficios & Cobertura:
-                  </div>
-                  <ul className="catalog-feature-list">
-                    {plan.beneficios.map((ben, idx) => (
-                      <li key={idx} className="catalog-feature-item">
-                        <span className="catalog-feature-bullet">✓</span>
-                        <span>{ben}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                <ul className="catalog-feature-list">
+                  <li className="catalog-feature-item">
+                    <span className="catalog-feature-bullet">
+                      ✓
+                    </span>
 
-                <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "0.6rem" }}>
-                  👥 <strong>{plan.sociosInscriptos.toLocaleString()} socios</strong> activos en este plan
-                </div>
+                    <span>
+                      Duración: {duracion(plan.duracion_meses)}
+                    </span>
+                  </li>
+
+                  <li className="catalog-feature-item">
+                    <span className="catalog-feature-bullet">
+                      ✓
+                    </span>
+
+                    <span>
+                      Identificador en PostgreSQL: {plan.id}
+                    </span>
+                  </li>
+                </ul>
+
+                <p style={{
+                  color: "var(--text-muted)",
+                  fontSize: "0.8rem",
+                  marginTop: "1rem",
+                }}>
+                  Los beneficios, descuentos y cantidad de
+                  socios requieren información adicional
+                  del backend.
+                </p>
               </div>
 
               <div className="catalog-card-footer">
                 <button
                   type="button"
                   className="btn-secondary"
-                  style={{ flex: 1, fontSize: "0.8rem" }}
+                  style={{ flex: 1 }}
                   onClick={() => setSelectedPlan(plan)}
                 >
-                  Configuración Comercial
+                  Ver Detalles
                 </button>
               </div>
             </div>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      )}
 
-      {/* MODAL DETALLE DE PLAN */}
       {selectedPlan && (
-        <div className="sede-modal-overlay" onClick={() => setSelectedPlan(null)}>
-          <div className="sede-modal-box" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="sede-modal-overlay"
+          onClick={() => setSelectedPlan(null)}
+        >
+          <div
+            className="sede-modal-box"
+            onClick={e => e.stopPropagation()}
+          >
             <div className="sede-modal-header">
-              <h3 className="sede-modal-title">Ficha Comercial: {selectedPlan.nombre}</h3>
-              <button className="sede-modal-close" onClick={() => setSelectedPlan(null)}>
+              <h3 className="sede-modal-title">
+                Detalle: {selectedPlan.nombre}
+              </h3>
+
+              <button
+                type="button"
+                className="sede-modal-close"
+                onClick={() => setSelectedPlan(null)}
+                aria-label="Cerrar detalle"
+              >
                 ✕
               </button>
             </div>
+
             <div className="sede-modal-body">
-              <span className="catalog-subtitle">Periodicidad: {selectedPlan.periodicidad}</span>
-              <div className="price-big-number" style={{ color: "var(--accent-orange)" }}>
-                ${selectedPlan.precio.toLocaleString()}
+              <span className="catalog-subtitle">
+                ID de plan: {selectedPlan.id}
+              </span>
+
+              <div
+                className="price-big-number"
+                style={{
+                  color: "var(--accent-orange)",
+                  marginTop: "1rem",
+                }}
+              >
+                {dinero(selectedPlan.precio)}
               </div>
 
-              <div className="sede-aforo-box">
-                <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Regla de Negocio RN-03:</span>
-                <p style={{ fontSize: "0.85rem", color: "var(--text-pure)", marginTop: "0.3rem" }}>
-                  Los socios activos con este plan acceden al 15% de descuento en alquiler de canchas. Si su cuota entra en mora/vencimiento, el sistema bloquea reservas con descuento y cobrará precio externo.
-                </p>
-              </div>
+              <p>
+                <strong>Nombre:</strong>{" "}
+                {selectedPlan.nombre}
+              </p>
 
-              <div>
-                <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", display: "block", marginBottom: "0.4rem" }}>
-                  Cobertura completa:
-                </span>
-                <ul className="catalog-feature-list">
-                  {selectedPlan.beneficios.map((b, i) => (
-                    <li key={i} className="catalog-feature-item">
-                      <span className="catalog-feature-bullet">✓</span>
-                      <span>{b}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              <p>
+                <strong>Duración:</strong>{" "}
+                {duracion(selectedPlan.duracion_meses)}
+              </p>
+
+              <p style={{
+                color: "var(--text-muted)",
+                fontSize: "0.85rem",
+              }}>
+                El backend todavía no permite editar
+                o eliminar planes existentes.
+              </p>
             </div>
+
             <div className="sede-modal-footer">
-              <button className="btn-secondary" onClick={() => setSelectedPlan(null)}>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setSelectedPlan(null)}
+              >
                 Cerrar
               </button>
             </div>
@@ -234,102 +475,115 @@ export default function AdminPlanes() {
         </div>
       )}
 
-      {/* MODAL NUEVO PLAN */}
       {showModal && (
-        <div className="sede-modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="sede-modal-box" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="sede-modal-overlay"
+          onClick={() => {
+            if (!guardando) setShowModal(false);
+          }}
+        >
+          <div
+            className="sede-modal-box"
+            onClick={e => e.stopPropagation()}
+          >
             <div className="sede-modal-header">
-              <h3 className="sede-modal-title">Crear Plan de Membresía (PL-01)</h3>
-              <button className="sede-modal-close" onClick={() => setShowModal(false)}>
+              <h3 className="sede-modal-title">
+                Crear Plan de Membresía
+              </h3>
+
+              <button
+                type="button"
+                className="sede-modal-close"
+                disabled={guardando}
+                onClick={() => setShowModal(false)}
+                aria-label="Cerrar formulario"
+              >
                 ✕
               </button>
             </div>
+
             <form onSubmit={handleCreatePlan}>
               <div className="sede-modal-body">
-                <div>
-                  <label style={{ display: "block", fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "0.3rem" }}>
-                    Nombre del Plan *
+                <div className="form-group">
+                  <label htmlFor="plan-nombre">
+                    Nombre del plan *
                   </label>
+
                   <input
+                    id="plan-nombre"
                     type="text"
-                    className="search-input"
-                    style={{ width: "100%", paddingLeft: "1rem" }}
-                    placeholder="Ej. Plan Semestral Full"
+                    className="form-control"
                     value={newNombre}
-                    onChange={(e) => setNewNombre(e.target.value)}
+                    onChange={e => setNewNombre(e.target.value)}
+                    maxLength={100}
+                    placeholder="Ej. Plan Semestral"
                     required
                   />
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-                  <div>
-                    <label style={{ display: "block", fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "0.3rem" }}>
-                      Periodicidad
-                    </label>
-                    <select
-                      className="filter-select"
-                      style={{ width: "100%" }}
-                      value={newPeriodicidad}
-                      onChange={(e) => setNewPeriodicidad(e.target.value as any)}
-                    >
-                      <option value="Mensual">Mensual</option>
-                      <option value="Trimestral">Trimestral</option>
-                      <option value="Anual">Anual</option>
-                      <option value="Diario">Diario</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label style={{ display: "block", fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "0.3rem" }}>
-                      Precio ($) *
-                    </label>
-                    <input
-                      type="number"
-                      className="search-input"
-                      style={{ width: "100%", paddingLeft: "1rem" }}
-                      value={newPrecio}
-                      onChange={(e) => setNewPrecio(Number(e.target.value))}
-                      step="500"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "0.3rem" }}>
-                    Descuento en Alquiler de Canchas (%)
+                <div className="form-group">
+                  <label htmlFor="plan-meses">
+                    Duración en meses *
                   </label>
+
                   <input
+                    id="plan-meses"
                     type="number"
-                    className="search-input"
-                    style={{ width: "100%", paddingLeft: "1rem" }}
-                    value={newDescuento}
-                    onChange={(e) => setNewDescuento(Number(e.target.value))}
-                    min="0"
-                    max="100"
+                    className="form-control"
+                    value={newMeses}
+                    onChange={e => setNewMeses(e.target.value)}
+                    min={1}
+                    step={1}
+                    required
                   />
                 </div>
 
-                <div>
-                  <label style={{ display: "block", fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "0.3rem" }}>
-                    Beneficio Destacado Adicional
+                <div className="form-group">
+                  <label htmlFor="plan-precio">
+                    Precio del plan (ARS) *
                   </label>
+
                   <input
-                    type="text"
-                    className="search-input"
-                    style={{ width: "100%", paddingLeft: "1rem" }}
-                    placeholder="Ej. Incluye toalla y casillero privado"
-                    value={newBeneficio}
-                    onChange={(e) => setNewBeneficio(e.target.value)}
+                    id="plan-precio"
+                    type="number"
+                    className="form-control"
+                    value={newPrecio}
+                    onChange={e => setNewPrecio(e.target.value)}
+                    min={0.01}
+                    step={0.01}
+                    placeholder="Ej. 65000"
+                    required
                   />
                 </div>
+
+                {errorFormulario && (
+                  <p
+                    role="alert"
+                    style={{ color: "var(--accent-red)" }}
+                  >
+                    {errorFormulario}
+                  </p>
+                )}
               </div>
 
               <div className="sede-modal-footer">
-                <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  disabled={guardando}
+                  onClick={() => setShowModal(false)}
+                >
                   Cancelar
                 </button>
-                <button type="submit" className="btn-primary">
-                  Guardar Plan
+
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  disabled={guardando}
+                >
+                  {guardando
+                    ? "Guardando..."
+                    : "Guardar Plan"}
                 </button>
               </div>
             </form>
