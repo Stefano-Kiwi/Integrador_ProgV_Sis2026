@@ -24,6 +24,7 @@ import { UsersService } from './users.service.js';
 import type { PublicUser } from './users.repository.js';
 import { APP_ROUTES } from '../routes/index.js';
 import { CurrentUser, type JwtPayload } from '../common/decorators/current-user.decorator.js';
+import { Public } from '../common/decorators/public.decorator.js';
 
 @ApiTags('usuarios')
 @ApiBearerAuth('access-token')
@@ -53,6 +54,7 @@ export class UsersController {
     return user;
   }
 
+  @Public()
   @Post()
   @ApiOperation({ summary: 'Crear usuario (RF-01)', description: 'Registra un nuevo usuario en la base de datos' })
   @ApiCreatedResponse({ description: 'Usuario creado exitosamente' })

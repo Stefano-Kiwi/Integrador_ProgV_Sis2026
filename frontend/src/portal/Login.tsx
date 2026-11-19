@@ -333,7 +333,7 @@ export default function Login() {
         <footer className="auth-card-footer">
           <p>
             ¿Todavía no eres miembro de El tremendo gym?{" "}
-            <Link to="#" className="register-cta">
+            <Link to="/register" className="register-cta">
               Registrate ahora
             </Link>
           </p>

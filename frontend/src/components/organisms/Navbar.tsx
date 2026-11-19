@@ -575,7 +575,27 @@ export default function Navbar() {
                             )}
                         </div>
                     ) : (
-                        <div className="profile-menu" id="profile-menu-wrapper">
+                        <div className="profile-menu" id="profile-menu-wrapper" style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                            <Link
+                                to="/register"
+                                className="profile-trigger"
+                                id="btn-nav-register"
+                                aria-label="Registrarse"
+                                style={{
+                                    textDecoration: "none",
+                                    padding: "0.5rem 1rem",
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "0.5rem",
+                                    cursor: "pointer",
+                                    border: "1px solid rgba(255, 255, 255, 0.2)",
+                                    borderRadius: "8px",
+                                }}
+                            >
+                                <span style={{ fontWeight: 600, fontSize: "0.85rem", color: "var(--text-pure)" }}>
+                                    Registrarse
+                                </span>
+                            </Link>
                             <Link
                                 to="/login"
                                 className="profile-trigger"
