@@ -17,7 +17,7 @@
     },
     "/usuarios": {
       "get": {
-        "description": "Retorna todos los usuarios registrados (sin hash de contraseña)",
+        "description": "Retorna todos los usuarios registrados (sin hash), indicando tipo_usuario (SOCIO / CLIENTE_EXTERNO).",
         "operationId": "UsersController_findAll",
         "parameters": [],
         "responses": {
@@ -25,7 +25,12 @@
             "description": "Listado de usuarios obtenido correctamente"
           }
         },
-        "summary": "Listar usuarios",
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Listar usuarios (RF-01)",
         "tags": [
           "usuarios"
         ]
@@ -49,9 +54,278 @@
             "description": "Usuario creado exitosamente"
           }
         },
-        "summary": "Crear usuario",
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Crear usuario (RF-01)",
         "tags": [
           "usuarios"
+        ]
+      }
+    },
+    "/usuarios/{id}": {
+      "get": {
+        "operationId": "UsersController_findById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Perfil del usuario con tipo_usuario (SOCIO / CLIENTE_EXTERNO)"
+          },
+          "404": {
+            "description": "Usuario no encontrado"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Obtener perfil de un usuario por ID (RF-01)",
+        "tags": [
+          "usuarios"
+        ]
+      },
+      "patch": {
+        "description": "Permite al propio usuario o a personal autorizado actualizar nombre, apellido, email, teléfono, foto o sede base.",
+        "operationId": "UsersController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Perfil actualizado correctamente"
+          },
+          "403": {
+            "description": "No tenés permiso para modificar otro perfil"
+          },
+          "404": {
+            "description": "Usuario no encontrado"
+          },
+          "409": {
+            "description": "El email ya está registrado"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Actualizar perfil de usuario (RF-01)",
+        "tags": [
+          "usuarios"
+        ]
+      }
+    },
+    "/membresias": {
+      "post": {
+        "description": "Crea una membresía en estado PENDIENTE_PAGO (se activa al confirmar el pago en /pagos/simular).",
+        "operationId": "MembresiasController_contratar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContratarMembresiaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Membresía contratada"
+          },
+          "404": {
+            "description": "Plan no encontrado"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Contratar un plan de membresía (RF-02)",
+        "tags": [
+          "membresias"
+        ]
+      }
+    },
+    "/membresias/mi-estado": {
+      "get": {
+        "operationId": "MembresiasController_miEstado",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Estado actual de la membresía y tipo_usuario"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Consultar el estado de mi membresía (RF-02)",
+        "tags": [
+          "membresias"
+        ]
+      }
+    },
+    "/membresias/usuario/{usuarioId}": {
+      "get": {
+        "operationId": "MembresiasController_estadoPorUsuario",
+        "parameters": [
+          {
+            "name": "usuarioId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Estado actual de la membresía del usuario"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Consultar el estado de membresía de un usuario (RF-02)",
+        "tags": [
+          "membresias"
+        ]
+      }
+    },
+    "/membresias/{id}/renovar": {
+      "patch": {
+        "description": "Activa o extiende la fecha de vencimiento de la membresía.",
+        "operationId": "MembresiasController_renovar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenovarMembresiaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Membresía renovada en estado ACTIVO"
+          },
+          "403": {
+            "description": "La membresía pertenece a otro usuario"
+          },
+          "404": {
+            "description": "Membresía o plan no encontrado"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Renovar membresía (manual o automática simulada) (RF-02)",
+        "tags": [
+          "membresias"
+        ]
+      }
+    },
+    "/membresias/{id}/suspender": {
+      "patch": {
+        "operationId": "MembresiasController_suspender",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Membresía suspendida"
+          },
+          "404": {
+            "description": "Membresía no encontrada"
+          },
+          "409": {
+            "description": "La membresía ya está suspendida"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Suspender una membresía (ACTIVO/VENCIDO → SUSPENDIDO) (RF-02)",
+        "tags": [
+          "membresias"
+        ]
+      }
+    },
+    "/membresias/procesar-vencimientos": {
+      "post": {
+        "description": "Marca como VENCIDO todas las membresías activas cuya fecha_fin ya pasó.",
+        "operationId": "MembresiasController_procesarVencimientos",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Cantidad de membresías pasadas a VENCIDO"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Disparar verificación de vencimientos (ACTIVO → VENCIDO) (RF-02)",
+        "tags": [
+          "membresias"
         ]
       }
     },
@@ -723,7 +997,45 @@
             "description": "Listado de pagos y sus comprobantes"
           }
         },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
         "summary": "Listar todos los pagos registrados",
+        "tags": [
+          "pagos"
+        ]
+      }
+    },
+    "/pagos/{id}/comprobante": {
+      "get": {
+        "description": "Devuelve el archivo PDF real generado al confirmar el pago.",
+        "operationId": "PagosController_descargarComprobante",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Archivo PDF del comprobante"
+          },
+          "404": {
+            "description": "Pago o comprobante no encontrado"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Descargar comprobante de pago en PDF (RF-14)",
         "tags": [
           "pagos"
         ]
@@ -750,6 +1062,11 @@
             "description": "Pago no encontrado"
           }
         },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
         "summary": "Obtener detalle de un pago por ID",
         "tags": [
           "pagos"
@@ -758,7 +1075,7 @@
     },
     "/pagos/simular": {
       "post": {
-        "description": "Procesa el pago de una cancha o membresía y genera el comprobante",
+        "description": "Procesa el pago de una cancha o membresía, guarda solo token_pasarela y genera el PDF real del comprobante.",
         "operationId": "PagosController_simularPago",
         "parameters": [],
         "requestBody": {
@@ -773,10 +1090,15 @@
         },
         "responses": {
           "201": {
-            "description": "Pago aprobado y comprobante emitido"
+            "description": "Pago aprobado y comprobante PDF emitido"
           }
         },
-        "summary": "Simular y registrar procesamiento de pago",
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Simular y registrar procesamiento de pago (RF-13, RF-14, RNF-02)",
         "tags": [
           "pagos"
         ]
@@ -1053,6 +1375,82 @@
           "id_rol",
           "password"
         ]
+      },
+      "UpdateUserDto": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 100,
+            "example": "Carlos"
+          },
+          "apellido": {
+            "type": "string",
+            "maxLength": 100,
+            "example": "Gómez"
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 150,
+            "format": "email",
+            "example": "carlos.nuevo@fitzone.com"
+          },
+          "telefono": {
+            "type": "string",
+            "maxLength": 30,
+            "example": "3454999999"
+          },
+          "foto_url": {
+            "type": "string",
+            "example": "https://fitzone.com/fotos/perfil-1.jpg"
+          },
+          "sede_base_id": {
+            "type": "number",
+            "minimum": 1,
+            "example": 2,
+            "description": "ID de la nueva sede base"
+          }
+        }
+      },
+      "ContratarMembresiaDto": {
+        "type": "object",
+        "properties": {
+          "plan_id": {
+            "type": "number",
+            "minimum": 1,
+            "example": 1,
+            "description": "ID del plan (Mensual, Trimestral o Anual)"
+          },
+          "usuario_id": {
+            "type": "number",
+            "minimum": 1,
+            "example": 3,
+            "description": "ID del usuario (opcional; solo personal puede contratar para terceros)"
+          },
+          "renovacion_automatica": {
+            "type": "boolean",
+            "example": true,
+            "default": false
+          }
+        },
+        "required": [
+          "plan_id"
+        ]
+      },
+      "RenovarMembresiaDto": {
+        "type": "object",
+        "properties": {
+          "plan_id": {
+            "type": "number",
+            "minimum": 1,
+            "example": 2,
+            "description": "Opcional: cambiar de plan al renovar"
+          },
+          "renovacion_automatica": {
+            "type": "boolean",
+            "example": true
+          }
+        }
       },
       "LoginDto": {
         "type": "object",

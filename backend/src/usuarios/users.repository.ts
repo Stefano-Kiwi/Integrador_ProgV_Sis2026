@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import type { usuario } from '@prisma/client';
+import type { estado_membresia, usuario } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
+import type { UpdateUserDto } from './dto/update-user.dto.js';
 
 export interface NewUserData {
   dni: string;
@@ -37,11 +38,25 @@ export const PUBLIC_USER_SELECT = {
       nombre: true,
     },
   },
+  membresia: {
+    select: {
+      id: true,
+      estado: true,
+      fecha_fin: true,
+    },
+    orderBy: { creada_at: 'desc' as const },
+    take: 1,
+  },
 } as const;
+
+export type TipoUsuario = 'SOCIO' | 'CLIENTE_EXTERNO';
 
 export type PublicUser = Omit<usuario, 'password_hash'> & {
   rol?: { id_rol: number; clase_rol: string };
   sede_base?: { id: number; nombre: string } | null;
+  membresia?: Array<{ id: number; estado: estado_membresia; fecha_fin: Date }>;
+  /** RF-01: SOCIO si posee al menos una membresía registrada; CLIENTE_EXTERNO en caso contrario. */
+  tipo_usuario?: TipoUsuario;
 };
 
 @Injectable()
@@ -70,6 +85,14 @@ export class UsersRepository {
         ...rest,
         password_hash: passwordHash,
       },
+      select: PUBLIC_USER_SELECT,
+    });
+  }
+
+  update(id: number, data: UpdateUserDto): Promise<PublicUser> {
+    return this.prisma.usuario.update({
+      where: { id },
+      data,
       select: PUBLIC_USER_SELECT,
     });
   }

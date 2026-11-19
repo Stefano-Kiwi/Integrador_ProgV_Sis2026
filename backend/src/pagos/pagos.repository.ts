@@ -2,17 +2,27 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { OrigenPagoTipo } from './dto/simular-pago.dto.js';
 
+const PAGO_INCLUDE = {
+  comprobante: true,
+  reserva_cancha: {
+    include: {
+      cancha: {
+        include: { sede: true, tipo_cancha: true },
+      },
+    },
+  },
+  membresia: {
+    include: { plan_membresia: true },
+  },
+} as const;
+
 @Injectable()
 export class PagosRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   findAll() {
     return this.prisma.pago.findMany({
-      include: {
-        comprobante: true,
-        reserva_cancha: true,
-        membresia: true,
-      },
+      include: PAGO_INCLUDE,
       orderBy: { creado_at: 'desc' },
     });
   }
@@ -20,20 +30,26 @@ export class PagosRepository {
   findById(id: number) {
     return this.prisma.pago.findUnique({
       where: { id },
-      include: {
-        comprobante: true,
-        reserva_cancha: true,
-        membresia: true,
-      },
+      include: PAGO_INCLUDE,
     });
   }
 
   findReservaCancha(id: number) {
-    return this.prisma.reserva_cancha.findUnique({ where: { id } });
+    return this.prisma.reserva_cancha.findUnique({
+      where: { id },
+      include: {
+        cancha: {
+          include: { sede: true, tipo_cancha: true },
+        },
+      },
+    });
   }
 
   findMembresia(id: number) {
-    return this.prisma.membresia.findUnique({ where: { id } });
+    return this.prisma.membresia.findUnique({
+      where: { id },
+      include: { plan_membresia: true },
+    });
   }
 
   async procesarPago(data: {
@@ -71,7 +87,7 @@ export class PagosRepository {
       const comprobante = await tx.comprobante.create({
         data: {
           pago_id: nuevoPago.id,
-          archivo_url: `https://fitzone.com/comprobantes/recibo-${nuevoPago.id}.pdf`,
+          archivo_url: `storage/comprobantes/recibo-${nuevoPago.id}.pdf`,
         },
       });
 

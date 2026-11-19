@@ -42,6 +42,15 @@ export const APP_ROUTES = {
     ROOT: 'pagos',
     BY_ID: ':id',
     SIMULAR: 'simular',
+    COMPROBANTE: ':id/comprobante',
+  },
+  MEMBRESIAS: {
+    ROOT: 'membresias',
+    MI_ESTADO: 'mi-estado',
+    BY_USUARIO: 'usuario/:usuarioId',
+    RENOVAR: ':id/renovar',
+    SUSPENDER: ':id/suspender',
+    PROCESAR_VENCIMIENTOS: 'procesar-vencimientos',
   },
   ACCESO: {
     ROOT: 'acceso',
