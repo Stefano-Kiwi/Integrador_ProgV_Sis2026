@@ -1,0 +1,15 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fitzone_frontend
+    ports:
+      # Puerto HTTP (5173 -> 80 interno): http://localhost:5173
+      - "5173:80"
+      # Puerto HTTPS (5174 -> 443 interno): https://localhost:5174 (útil para cámara/móvil en red local)
+      - "5174:443"
+    extra_hosts:
+      # Permite conectar con el backend que corre en tu PC anfitriona en el puerto 3000
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
