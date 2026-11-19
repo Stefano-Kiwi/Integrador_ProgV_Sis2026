@@ -4,7 +4,7 @@ FitZone Sports es una plataforma web monolítica modular que unifica la gestión
 
 ---
 
-## Integrantes
+## Integrantes (Grupo 12)
 
 | Integrante | Usuario Git |
 | :--- | :--- |
@@ -63,6 +63,8 @@ El seed ([`backend/prisma/seed.mjs`](backend/prisma/seed.mjs)) carga **26 sedes*
 
 | Sección | Enlace | Descripción |
 | :--- | :--- | :--- |
+| Dossier oficial (Anexo A) | [`docs/dossier/`](docs/dossier/anexo-a-portada-e-indice.md) | Portada académica formal, índice general paginado y resumen ejecutivo del dossier. |
+| Plan de proyecto (Anexo H) | [`docs/planificacion/`](docs/planificacion/plan-de-proyecto.md) | Planificación del proyecto, EDT, cronograma de 8 sprints, matriz de trazabilidad y riesgos. |
 | Decisiones de arquitectura (ADR) | [`docs/adr/`](docs/adr/) | Registro de decisiones técnicas y arquitectónicas (incl. ADR-008). |
 | Diagramas de arquitectura | [`docs/`](docs/) | [Contexto](docs/diagrama-contexto.png), [Containers](docs/diagrama-containers.png), [Componentes](docs/diagrama-componentes.png) (y `docs/diagramas/` si se añaden vistas adicionales). |
 | Manuales de usuario y operación | [`docs/manuales/`](docs/manuales/) | Guías de uso del portal del socio y la consola de administración. |
