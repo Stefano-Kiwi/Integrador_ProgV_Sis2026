@@ -1,0 +1,23 @@
+---
+title: Despliegue · FitZone Sports · Autor Stéfano · 2026-11-19 · v1.0
+---
+flowchart LR
+  subgraph Cliente["Dispositivo del socio"]
+    M["Navegador móvil<br/>Portal responsive<br/>QR cacheado"]
+  end
+  subgraph Sede["Sede (x 25 o más)"]
+    T["Terminal de sede<br/>Navegador + vista de control de acceso<br/>Snapshot local y cola de ingresos"]
+  end
+  subgraph Host["Servidor central · Docker Compose · red interna"]
+    N["fitzone_frontend<br/>Nginx 5173 / 5443<br/>sirve SPA y proxy /backend"]
+    A["fitzone_backend<br/>NestJS :3000<br/>Swagger UI en /api"]
+    D[("fitzone_postgres<br/>PostgreSQL 5432<br/>volumen persistente")]
+  end
+  P["Pasarela de pagos<br/>(simulada)"]
+  M -- "HTTPS" --> N
+  T -. "conexión principal<br/>(puede caerse)" .-> N
+  N -- "HTTP /backend" --> A
+  A -- "SQL (Prisma)" --> D
+  A -- "HTTPS" --> P
+  NOTA["Con la conexión principal caída:<br/>el terminal valida el QR con su copia local<br/>y encola los ingresos para resincronizar.<br/>Reservas y pagos requieren conexión."]
+  T -.- NOTA

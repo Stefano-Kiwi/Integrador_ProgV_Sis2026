@@ -1,0 +1,23 @@
+%% Autor: Stéfano | Fecha: 2026-11-19 | Versión: 1.1
+C4Component
+  title Componentes (C4-3) · Módulo Canchas M4 · Autor: Stéfano · 2026-11-19 · v1.1
+  Container(portal, "Portal del socio", "React", "Pantalla de reserva de canchas y pagos")
+  Container(admin, "Consola de administración", "React", "Alta y mantenimiento de canchas (RF-09, RF-12)")
+  Container_Boundary(api, "API backend · módulo Canchas (M4)") {
+    Component(ctrl, "CanchasController", "NestJS Controller", "GET /canchas/:id/disponibilidad, POST /canchas/reserva, PATCH cancelar y estado")
+    Component(svc, "CanchasService", "NestJS Provider", "Reglas de negocio: RN-02, RN-03, penalidad 24 h y mantenimiento")
+    Component(pricing, "PricingService", "NestJS Provider", "Context del patrón Strategy: compone estrategias y devuelve desglose")
+    Component(strat, "Estrategias de precio", "TarifaEstandar, DescuentoSocio (-15%), RecargoHorarioPico (+20%), TarifaExterno", "Implementan PricingStrategy (canchas/pricing/)")
+    Component(repo, "CanchasRepository", "Repository (Prisma)", "Acceso a cancha, reserva_cancha y estado de membresia dentro de $transaction")
+  }
+  Component_Ext(pagos, "Módulo Pagos (M5)", "NestJS Module", "POST /pagos/simular confirma la reserva y emite comprobante PDF")
+  ContainerDb(db, "PostgreSQL", "Base de datos", "Tablas cancha, reserva_cancha, membresia · índices ux_reserva_cancha_slot e ix_reserva_cancha_disponibilidad")
+  Rel(portal, ctrl, "Consulta grilla, reserva y cancela", "HTTPS/JSON")
+  Rel(portal, pagos, "Paga reserva y descarga PDF", "HTTPS/JSON")
+  Rel(admin, ctrl, "Alta y cambio de estado (mantenimiento)", "HTTPS/JSON")
+  Rel(ctrl, svc, "Delega")
+  Rel(svc, pricing, "Calcula precio dinámico")
+  Rel(pricing, strat, "Aplica estrategias en cadena")
+  Rel(svc, repo, "Verifica membresía (RN-03) e inserta en $transaction (P2002 → 409)")
+  Rel(repo, db, "Lee y escribe", "SQL vía Prisma")
+  Rel(pagos, db, "Actualiza estado a CONFIRMADA", "SQL vía Prisma")

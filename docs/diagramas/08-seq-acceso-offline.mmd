@@ -1,0 +1,31 @@
+---
+title: Secuencia · Validación de acceso offline (RNF-01, RF-04) · Autor Stéfano · 2026-11-19 · v1.1
+---
+sequenceDiagram
+  autonumber
+  actor S as Socio
+  participant PO as Portal (MiPaseQR)
+  participant T as Terminal (AdminControlAcceso)
+  participant L as Copia local (localStorage: snapshot y cola)
+  participant API as API central (AccesoController)
+  participant DB as PostgreSQL
+  Note over T,API: Con conexión: el terminal descarga y refresca su snapshot
+  T->>API: GET /acceso/sedes/:sedeId/snapshot
+  API-->>T: Lista mínima de socios con membresía ACTIVO
+  T->>L: Guarda snapshot local
+  S->>PO: Abre su pase digital
+  PO->>API: GET /acceso/qr
+  API-->>PO: Token QR firmado (HMAC-SHA256), vigencia 60 s
+  PO-->>S: Muestra QR rotativo (60 s) y lo cachea
+  Note over T,API: Se cae la conexión con el servidor central
+  S->>T: Presenta su QR
+  T->>L: Decodifica QR, verifica vigencia 60 s y busca socio en snapshot
+  L-->>T: Socio habilitado (ACTIVO)
+  T->>L: Encola {userId, sedeId, timestamp, qrToken} en cola persistente
+  T-->>S: Acceso permitido (Modo offline · N pendientes)
+  Note over T,API: Se restablece la conexión (evento online / reintento 30 s)
+  T->>API: POST /acceso/sincronizar (lote de ingresos offline)
+  API->>DB: Valida firma HMAC, idempotencia y RN-01 (ux_acceso_activo_por_usuario)
+  DB-->>API: Ingresos aceptados (duplicado true/false) o conflictos
+  API-->>T: {total, aceptados, conflictos}
+  T->>L: Limpia la cola y refresca snapshot y aforo

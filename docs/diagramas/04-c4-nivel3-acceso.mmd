@@ -1,0 +1,25 @@
+%% Autor: Stéfano | Fecha: 2026-11-19 | Versión: 1.0
+C4Component
+  title Componentes (C4-3) · Módulo Acceso M2 con camino offline · Autor: Stéfano · 2026-11-19 · v1.0
+  Container_Boundary(portal, "Portal del socio") {
+    Component(miqr, "MiPaseQR", "React", "Muestra el QR rotativo de 60 s y lo guarda en caché para uso offline")
+  }
+  Container_Boundary(term, "Terminal de sede") {
+    Component(ctrlacc, "Control de acceso", "React (AdminControlAcceso)", "Lee el QR, muestra resultado y aforo")
+    Component(offsvc, "controlAccesoService", "Servicio TypeScript", "Snapshot local, cola persistente de ingresos y resincronización automática")
+  }
+  Container_Boundary(api, "API backend · módulo Acceso (M2)") {
+    Component(ctrl, "AccesoController", "NestJS Controller", "Emisión de QR, validación y aforo por sede")
+    Component(svc, "AccesoService", "NestJS Provider", "Valida membresía, aplica RN-01 (una sede a la vez) y registra el ingreso")
+    Component(qr, "Servicio de QR rotativo", "HMAC, vigencia 60 s", "Emite y verifica el código dinámico")
+    Component(repo, "AccesoRepository", "Repository (Prisma)", "Accesos, credenciales y aforo")
+  }
+  ContainerDb(db, "PostgreSQL", "Base de datos", "Índice único parcial: un acceso activo por usuario")
+  Rel(miqr, ctrl, "Solicita QR", "HTTPS/JSON")
+  Rel(ctrlacc, ctrl, "Camino online: valida ingreso y consulta aforo", "HTTP/JSON")
+  Rel(ctrlacc, offsvc, "Camino offline: valida contra snapshot local")
+  Rel(offsvc, ctrl, "Descarga snapshot y envía ingresos diferidos al reconectar", "HTTP/JSON")
+  Rel(ctrl, svc, "Delega")
+  Rel(svc, qr, "Genera y verifica")
+  Rel(svc, repo, "Persiste")
+  Rel(repo, db, "Lee y escribe", "SQL vía Prisma")

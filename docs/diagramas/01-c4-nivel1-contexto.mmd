@@ -1,0 +1,14 @@
+%% Autor: Stéfano | Fecha: 2026-11-19 | Versión: 1.0
+C4Context
+  title Contexto (C4-1) · FitZone Sports · Autor: Stéfano · 2026-11-19 · v1.0
+  Person(socio, "Socio activo", "Ingresa a cualquier sede con QR, reserva clases y canchas")
+  Person(externo, "Cliente externo", "Sin membresía: reserva canchas y paga por uso")
+  Person(recep, "Recepcionista / Admin de sede", "Valida ingresos, gestiona agenda y canchas de su sede")
+  Person(gerente, "Gerente central", "Configura sedes y precios; consulta reportes consolidados")
+  System(fz, "FitZone Sports", "Plataforma web de gestión para una cadena de gimnasios de 25 o más sedes")
+  System_Ext(pasarela, "Pasarela de pagos", "Autoriza el pago y devuelve un token; simulada en esta versión")
+  Rel(socio, fz, "Obtiene su QR, reserva y paga", "HTTPS")
+  Rel(externo, fz, "Reserva canchas y paga", "HTTPS")
+  Rel(recep, fz, "Valida ingresos y administra su sede", "HTTPS")
+  Rel(gerente, fz, "Define precios, sedes y consulta reportes", "HTTPS")
+  Rel(fz, pasarela, "Solicita autorización de pago y recibe token", "HTTPS/JSON")

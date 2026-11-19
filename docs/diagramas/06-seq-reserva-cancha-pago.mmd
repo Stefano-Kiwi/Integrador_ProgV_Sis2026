@@ -1,0 +1,45 @@
+---
+title: Secuencia · Reserva de cancha con pago · Autor Stéfano · 2026-11-19 · v1.1
+---
+sequenceDiagram
+  autonumber
+  actor S as Socio
+  participant P as Portal (Canchas / Pagos)
+  participant C as CanchasController
+  participant SV as CanchasService
+  participant PR as PricingService
+  participant R as CanchasRepository
+  participant PG as PagosService
+  participant PDF as ComprobantePdfService
+  participant DB as PostgreSQL
+  S->>P: Elige sede, cancha y fecha
+  P->>C: GET /canchas/:id/disponibilidad?fecha=YYYY-MM-DD
+  C->>SV: disponibilidad(canchaId, fecha, userId)
+  SV->>R: findReservasActivasByFecha + usuarioEsSocioActivo
+  R->>DB: SELECT (índice ix_reserva_cancha_disponibilidad)
+  DB-->>R: turnos ocupados + estado membresía
+  SV->>PR: calcular(ctx) por franja horaria
+  PR-->>SV: precios calculados
+  SV-->>P: grilla con franjas LIBRE/OCUPADA y precios
+  S->>P: Selecciona un turno
+  P->>C: POST /canchas/reserva
+  C->>SV: reservar(dto)
+  SV->>PR: calcular(costoHora, horaInicio, esSocioActivo)
+  alt Socio con membresía ACTIVO
+    PR-->>SV: base - 15% (+ 20% si 19:00 a 21:00)
+  else Socio en mora (VENCIDO/SUSPENDIDO) o cliente externo
+    PR-->>SV: TarifaExterno (+ 20% si 19:00 a 21:00) (RN-03)
+  end
+  SV->>R: createReserva en estado PENDIENTE_PAGO
+  R->>DB: BEGIN + INSERT reserva_cancha + COMMIT
+  DB-->>R: reserva creada
+  SV-->>P: 201 Created (reserva_id, monto_total, precio)
+  S->>P: Confirma y paga
+  P->>PG: POST /pagos/simular (origen_tipo=cancha, origen_id, monto)
+  PG->>DB: $transaction: INSERT pago (token_pasarela) + UPDATE reserva_cancha=CONFIRMADA + INSERT comprobante
+  DB-->>PG: pago y comprobante creados
+  PG->>PDF: guardarPdf(datos)
+  PDF-->>PG: storage/comprobantes/recibo-{id}.pdf
+  PG-->>P: 201 Created (pago_id, token_pasarela, descarga_url)
+  P->>PG: GET /pagos/:id/comprobante
+  PG-->>P: 200 OK (application/pdf)

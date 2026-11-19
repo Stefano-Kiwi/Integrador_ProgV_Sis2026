@@ -1,0 +1,22 @@
+---
+title: Pipeline CI/CD · FitZone Sports · Autor Stéfano · 2026-11-19 · v1.0
+---
+flowchart LR
+  PR(["Pull Request<br/>hacia main"]) --> I["Instalar dependencias"]
+  subgraph CI["Integración continua"]
+    I --> L["Lint<br/>oxlint (backend y frontend)"]
+    L --> B["Build<br/>nest build · tsc -b + vite build"]
+    B --> U["Pruebas unitarias<br/>+ cobertura (umbral 70 %)"]
+    U --> E["E2E y concurrencia<br/>contra PostgreSQL real"]
+    E --> K["Build de imágenes Docker"]
+  end
+  K --> G{"¿Todo en verde?"}
+  G -- "No" --> X(["Merge bloqueado"])
+  G -- "Sí" --> M["Merge a main"]
+  subgraph CD["Entrega continua"]
+    M --> D["Despliegue en entorno de pruebas<br/>docker compose up --build"]
+    D --> S["Smoke test<br/>/backend/sedes y /api"]
+    S --> R{"¿Verificación OK?"}
+    R -- "No" --> RB(["Reversión a la imagen anterior"])
+    R -- "Sí" --> OK(["Entorno de pruebas actualizado"])
+  end

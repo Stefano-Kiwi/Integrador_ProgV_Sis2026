@@ -1,0 +1,21 @@
+---
+title: Actividad · Lista de espera de clases (RF-08, Observer) · Autor Stéfano · 2026-11-19 · v1.0
+---
+flowchart TD
+  subgraph Socio
+    A(["Inicio: cancela su reserva de clase"])
+  end
+  subgraph Sistema["Sistema (ClasesService y Observer)"]
+    B["Registra la cancelación y libera el cupo"]
+    C["CupoLiberadoSubject notifica a sus observadores"]
+    D["ListaEsperaObserver consulta la lista de la clase"]
+    E{"¿Hay socios en espera?"}
+    F["Toma al primero en orden de llegada (FIFO)"]
+    G["Lo promueve a reserva confirmada en la misma transacción"]
+    H["NotificacionesService avisa al socio promovido"]
+    I["El cupo queda disponible"]
+    J(["Fin"])
+  end
+  A --> B --> C --> D --> E
+  E -- Sí --> F --> G --> H --> J
+  E -- No --> I --> J

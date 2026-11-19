@@ -1,0 +1,16 @@
+---
+title: Estados · Membresía (RF-02) · Autor Stéfano · 2026-11-19 · v1.1
+---
+stateDiagram-v2
+  [*] --> PendientePago : contratación de plan (POST /membresias)
+  PendientePago --> Activo : pago aprobado (POST /pagos/simular)
+  PendientePago --> Suspendido : suspensión administrativa
+  Activo --> Vencido : pasa fecha_fin (POST /membresias/procesar-vencimientos)
+  Vencido --> Activo : renovación manual o automática (PATCH /membresias/:id/renovar)
+  Activo --> Suspendido : suspensión administrativa (PATCH /membresias/:id/suspender)
+  Vencido --> Suspendido : suspensión administrativa (PATCH /membresias/:id/suspender)
+  Suspendido --> Activo : reactivación / renovación
+  note right of Vencido
+    El socio en mora paga tarifa de externo (RN-03)
+    y no puede reservar clases (403)
+  end note

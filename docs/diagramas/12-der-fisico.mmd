@@ -1,0 +1,166 @@
+---
+title: DER físico · FitZone Sports · Autor Stéfano · 2026-11-19 · v1.1
+---
+%% Alineado 100% con backend/prisma/schema.prisma y migraciones SQL
+%% Índices únicos parciales (migración 20261118000000_indices_parciales_y_disponibilidad):
+%%   ux_reserva_cancha_slot (cancha_id, fecha, hora_inicio) UNIQUE WHERE estado <> 'CANCELADA' (RN-02)
+%%   ix_reserva_cancha_disponibilidad (cancha_id, fecha, hora_inicio) (RNF-03)
+%%   ux_acceso_activo_por_usuario (usuario_id) UNIQUE WHERE egreso_at IS NULL (RN-01)
+%%   ux_reserva_clase_activa (usuario_id, clase_id) UNIQUE WHERE estado = 'CONFIRMADA'
+%%   ux_lista_espera_activa (usuario_id, clase_id) UNIQUE WHERE estado = 'EN_ESPERA'
+erDiagram
+  ROL ||--o{ USUARIO : "asigna"
+  SEDE ||--o{ USUARIO : "sede_base"
+  USUARIO ||--o| CREDENCIAL_QR : "posee"
+  USUARIO ||--o| INSTRUCTOR : "perfil"
+  USUARIO ||--o{ MEMBRESIA : "contrata"
+  PLAN_MEMBRESIA ||--o{ MEMBRESIA : "define"
+  USUARIO ||--o{ ACCESO : "registra"
+  SEDE ||--o{ ACCESO : "recibe"
+  SEDE ||--o{ CLASE : "programa"
+  TIPO_CLASE ||--o{ CLASE : "clasifica"
+  INSTRUCTOR ||--o{ CLASE : "dicta"
+  CLASE ||--o{ RESERVA_CLASE : "tiene"
+  USUARIO ||--o{ RESERVA_CLASE : "realiza"
+  CLASE ||--o{ LISTA_ESPERA_CLASE : "tiene"
+  USUARIO ||--o{ LISTA_ESPERA_CLASE : "se anota"
+  SEDE ||--o{ CANCHA : "posee"
+  TIPO_CANCHA ||--o{ CANCHA : "clasifica"
+  CANCHA ||--o{ RESERVA_CANCHA : "tiene"
+  USUARIO ||--o{ RESERVA_CANCHA : "realiza"
+  RESERVA_CANCHA ||--o{ PAGO : "se paga con"
+  MEMBRESIA ||--o{ PAGO : "se paga con"
+  PAGO ||--o| COMPROBANTE : "emite"
+
+  ROL {
+    int id_rol PK
+    varchar clase_rol UK
+  }
+  SEDE {
+    int id PK
+    varchar nombre UK
+    varchar direccion
+    varchar localidad
+    int aforo_maximo
+    timestamptz creada_at
+  }
+  USUARIO {
+    int id PK
+    varchar dni UK
+    varchar nombre
+    varchar apellido
+    varchar email UK
+    varchar telefono
+    text foto_url
+    varchar password_hash
+    int id_rol FK "ix_usuario_id_rol"
+    int sede_base_id FK "ix_usuario_sede_base_id"
+    timestamptz creado_at
+  }
+  CREDENCIAL_QR {
+    int usuario_id PK, FK
+    varchar secreto
+    timestamptz creada_at
+    timestamptz rotada_at
+  }
+  PLAN_MEMBRESIA {
+    int id PK
+    varchar nombre UK
+    smallint duracion_meses
+    decimal precio
+  }
+  MEMBRESIA {
+    int id PK
+    int usuario_id FK "ix_membresia_usuario_id"
+    int plan_id FK "ix_membresia_plan_id"
+    date fecha_inicio
+    date fecha_fin
+    enum estado "PENDIENTE_PAGO|ACTIVO|VENCIDO|SUSPENDIDO"
+    boolean renovacion_automatica
+    timestamptz creada_at
+  }
+  ACCESO {
+    int id PK
+    int usuario_id FK "ux_acceso_activo_por_usuario (UNIQUE WHERE egreso_at IS NULL, RN-01)"
+    int sede_id FK "ix_acceso_sede_id"
+    timestamptz ingreso_at
+    timestamptz egreso_at
+  }
+  TIPO_CLASE {
+    int id PK
+    varchar nombre UK
+  }
+  INSTRUCTOR {
+    int id PK
+    int usuario_id FK, UK
+  }
+  CLASE {
+    int id PK
+    int sede_id FK "ix_clase_sede_id"
+    int tipo_clase_id FK "ix_clase_tipo_clase_id"
+    int instructor_id FK "ix_clase_instructor_id"
+    timestamptz inicio_at
+    timestamptz fin_at
+    smallint capacidad_maxima
+    smallint cupo_disponible
+  }
+  RESERVA_CLASE {
+    int id PK
+    int usuario_id FK "ux_reserva_clase_activa (UNIQUE WHERE estado=CONFIRMADA)"
+    int clase_id FK "ix_reserva_clase_clase_id"
+    enum estado "CONFIRMADA|CANCELADA"
+    timestamptz reservada_at
+    timestamptz cancelada_at
+    boolean con_penalidad
+  }
+  LISTA_ESPERA_CLASE {
+    int id PK
+    int usuario_id FK "ux_lista_espera_activa (UNIQUE WHERE estado=EN_ESPERA)"
+    int clase_id FK "ix_lista_espera_clase_id"
+    enum estado "EN_ESPERA|NOTIFICADO|CONVERTIDO|CANCELADO"
+    timestamptz creada_at
+    timestamptz notificada_at
+  }
+  TIPO_CANCHA {
+    int id PK
+    varchar nombre UK
+  }
+  CANCHA {
+    int id PK
+    int sede_id FK "UK(sede_id, nombre)"
+    int tipo_cancha_id FK "ix_cancha_tipo_cancha_id"
+    varchar nombre "UK(sede_id, nombre)"
+    decimal costo_hora
+    enum estado "HABILITADA|EN_MANTENIMIENTO"
+  }
+  RESERVA_CANCHA {
+    int id PK
+    int cancha_id FK "ux_reserva_cancha_slot (UNIQUE WHERE estado<>CANCELADA, RN-02)"
+    int usuario_id FK "ix_reserva_cancha_usuario_id"
+    date fecha "ix_reserva_cancha_disponibilidad (cancha_id, fecha, hora_inicio, RNF-03)"
+    smallint hora_inicio "0..23"
+    enum estado "PENDIENTE_PAGO|CONFIRMADA|CUMPLIDA|CANCELADA"
+    decimal precio_base
+    decimal descuento
+    decimal recargo
+    decimal penalidad
+    decimal monto_total
+    timestamptz creada_at
+    timestamptz cancelada_at
+  }
+  PAGO {
+    int id PK
+    int membresia_id FK "ix_pago_membresia_id"
+    int reserva_cancha_id FK "ix_pago_reserva_cancha_id"
+    decimal monto
+    enum estado "PENDIENTE|APROBADO|RECHAZADO"
+    varchar token_pasarela "RNF-02: solo token, sin tarjeta"
+    timestamptz creado_at
+    timestamptz pagado_at
+  }
+  COMPROBANTE {
+    int id PK
+    int pago_id FK, UK
+    timestamptz emitido_at
+    text archivo_url "storage/comprobantes/recibo-id.pdf"
+  }
