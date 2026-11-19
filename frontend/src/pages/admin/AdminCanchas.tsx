@@ -1,451 +1,436 @@
-import { useState } from "react";
+
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import {
+  obtenerCanchas,
+  type CanchaApi,
+} from "../../services/canchasService";
 import "../../admin.css";
 
-type SportType = "padel" | "futbol5" | "tenis";
-
-type SlotState = "libre" | "ocupado" | "mantenimiento" | "horario_pico";
-
-interface TimeSlot {
-  hora: string;
-  estado: SlotState;
-  precio: number;
-  reservadoPor?: string;
-  motivoMantenimiento?: string;
-}
-
-interface CourtData {
-  id: string;
-  nombre: string;
-  superficie: string;
-  enMantenimiento: boolean;
-  motivo?: string;
-  turnos: TimeSlot[];
-}
-
-const COURTS_DATA: Record<SportType, CourtData[]> = {
-  padel: [
-    {
-      id: "PAD-1",
-      nombre: "Cancha Pádel 1 (Vidrio Panorámico)",
-      superficie: "Césped Sintético Azul",
-      enMantenimiento: false,
-      turnos: [
-        { hora: "16:00", estado: "libre", precio: 12000 },
-        { hora: "17:30", estado: "ocupado", precio: 12000, reservadoPor: "Mateo Silva (Socio Activo)" },
-        { hora: "19:00", estado: "horario_pico", precio: 14400, reservadoPor: "Esteban Rojas (Tarifa Pico +20%)" },
-        { hora: "20:30", estado: "horario_pico", precio: 14400 },
-        { hora: "22:00", estado: "libre", precio: 12000 },
-      ],
-    },
-    {
-      id: "PAD-2",
-      nombre: "Cancha Pádel 2 (Vidrio Estándar)",
-      superficie: "Césped Sintético Verde",
-      enMantenimiento: true,
-      motivo: "Reemplazo de paño de red y ajuste de vidrio perimetral",
-      turnos: [
-        { hora: "16:00", estado: "mantenimiento", precio: 0, motivoMantenimiento: "Bloqueo técnico" },
-        { hora: "17:30", estado: "mantenimiento", precio: 0, motivoMantenimiento: "Bloqueo técnico" },
-        { hora: "19:00", estado: "mantenimiento", precio: 0, motivoMantenimiento: "Bloqueo técnico" },
-        { hora: "20:30", estado: "mantenimiento", precio: 0, motivoMantenimiento: "Bloqueo técnico" },
-        { hora: "22:00", estado: "mantenimiento", precio: 0, motivoMantenimiento: "Bloqueo técnico" },
-      ],
-    },
-    {
-      id: "PAD-3",
-      nombre: "Cancha Pádel 3 (Muro Tradicional)",
-      superficie: "Cemento Poroso",
-      enMantenimiento: false,
-      turnos: [
-        { hora: "16:00", estado: "ocupado", precio: 10000, reservadoPor: "Constanza Rivas" },
-        { hora: "17:30", estado: "libre", precio: 10000 },
-        { hora: "19:00", estado: "horario_pico", precio: 12000 },
-        { hora: "20:30", estado: "ocupado", precio: 12000, reservadoPor: "Torneo Interno FitZone" },
-        { hora: "22:00", estado: "libre", precio: 10000 },
-      ],
-    },
-  ],
-  futbol5: [
-    {
-      id: "FUT-1",
-      nombre: "Cancha Fútbol 5 - Estadio Central",
-      superficie: "Césped FIFA Pro con caucho",
-      enMantenimiento: false,
-      turnos: [
-        { hora: "17:00", estado: "libre", precio: 22000 },
-        { hora: "18:30", estado: "ocupado", precio: 22000, reservadoPor: "Equipo Los Galácticos" },
-        { hora: "20:00", estado: "horario_pico", precio: 26400, reservadoPor: "Torneo Empresarial (+20%)" },
-        { hora: "21:30", estado: "horario_pico", precio: 26400 },
-      ],
-    },
-    {
-      id: "FUT-2",
-      nombre: "Cancha Fútbol 5 - Auxiliar Techada",
-      superficie: "Césped Sintético 45mm",
-      enMantenimiento: false,
-      turnos: [
-        { hora: "17:00", estado: "libre", precio: 20000 },
-        { hora: "18:30", estado: "libre", precio: 20000 },
-        { hora: "20:00", estado: "horario_pico", precio: 24000 },
-        { hora: "21:30", estado: "ocupado", precio: 24000, reservadoPor: "Lucas Benítez (Externo)" },
-      ],
-    },
-  ],
-  tenis: [
-    {
-      id: "TEN-1",
-      nombre: "Cancha Tenis 1 - Polvo de Ladrillo",
-      superficie: "Tierra Batida Roja",
-      enMantenimiento: false,
-      turnos: [
-        { hora: "16:00", estado: "libre", precio: 15000 },
-        { hora: "17:30", estado: "ocupado", precio: 15000, reservadoPor: "Prof. Ricardo Garín" },
-        { hora: "19:00", estado: "horario_pico", precio: 18000 },
-        { hora: "20:30", estado: "libre", precio: 18000 },
-      ],
-    },
-  ],
-};
+const formatoPrecio = (valor: string) =>
+  Number(valor).toLocaleString("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    maximumFractionDigits: 0,
+  });
 
 export default function AdminCanchas() {
-  const [activeSport, setActiveSport] = useState<SportType>("padel");
-  const [courts, setCourts] = useState<Record<SportType, CourtData[]>>(COURTS_DATA);
+  const [canchas, setCanchas] = useState<CanchaApi[]>([]);
+  const [tipoActivoId, setTipoActivoId] = useState<number | null>(null);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [recarga, setRecarga] = useState(0);
 
-  // Modal Mantenimiento
-  const [showMantenimientoModal, setShowMantenimientoModal] = useState(false);
-  const [selectedCourtId, setSelectedCourtId] = useState("");
-  const [motivoMantenimiento, setMotivoMantenimiento] = useState("Ajuste de red y vidrio perimetral");
+  useEffect(() => {
+    let activo = true;
 
-  // Modal Detalle Turno
-  const [selectedSlot, setSelectedSlot] = useState<{ courtName: string; slot: TimeSlot } | null>(null);
+    async function cargarCanchas() {
+      try {
+        const datos = await obtenerCanchas();
 
-  const currentCourts = courts[activeSport];
+        if (!activo) return;
 
-  const handleToggleMantenimiento = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedCourtId) return;
+        setCanchas(datos);
+        setError(null);
+      } catch (err) {
+        if (activo) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "No se pudieron consultar las canchas."
+          );
+        }
+      } finally {
+        if (activo) setCargando(false);
+      }
+    }
 
-    setCourts((prev) => {
-      const updated = { ...prev };
-      updated[activeSport] = updated[activeSport].map((c) => {
-        if (c.id !== selectedCourtId) return c;
-        const newEnMant = !c.enMantenimiento;
-        return {
-          ...c,
-          enMantenimiento: newEnMant,
-          motivo: newEnMant ? motivoMantenimiento : undefined,
-          turnos: c.turnos.map((t) => ({
-            ...t,
-            estado: newEnMant ? ("mantenimiento" as SlotState) : ("libre" as SlotState),
-          })),
-        };
-      });
-      return updated;
-    });
+    void cargarCanchas();
 
-    setShowMantenimientoModal(false);
-  };
+    return () => {
+      activo = false;
+    };
+  }, [recarga]);
+
+  const tipos = Array.from(
+    new Map(
+      canchas.map(c => [
+        c.tipo_cancha.id,
+        c.tipo_cancha,
+      ])
+    ).values()
+  );
+
+  const idActivo =
+    tipos.some(t => t.id === tipoActivoId)
+      ? tipoActivoId
+      : tipos[0]?.id ?? null;
+
+  const canchasVisibles = canchas.filter(
+    c => c.tipo_cancha_id === idActivo
+  );
+
+  const operativas = canchas.filter(
+    c => c.estado === "HABILITADA"
+  ).length;
+
+  const mantenimiento = canchas.filter(
+    c => c.estado === "EN_MANTENIMIENTO"
+  ).length;
+
+  const totalSedes = new Set(
+    canchas.map(c => c.sede_id)
+  ).size;
+
+  function actualizar() {
+    setCargando(true);
+    setError(null);
+    setRecarga(v => v + 1);
+  }
 
   return (
     <>
-      {/* TOPBAR */}
       <header className="topbar">
         <div className="header-titles">
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <span style={{ fontSize: "0.8rem", color: "var(--accent-orange)", fontWeight: 700, textTransform: "uppercase" }}>
-              Módulos R-01 & CA-03
-            </span>
-          </div>
-          <h1>Control de Canchas Deportivas en Tiempo Real</h1>
-          <p>Grilla de disponibilidad con estados dinámicos, tarifas pico y mantenimiento preventivo</p>
+          <span style={{
+            fontSize: "0.8rem",
+            color: "var(--accent-orange)",
+            fontWeight: 700,
+          }}>
+            Módulos R-01 & CA-03
+          </span>
+
+          <h1>Control de Canchas Deportivas</h1>
+
+          <p>
+            Estado operativo, sedes y tarifas reales
+            del inventario FitZone Sports.
+          </p>
         </div>
-        <div className="header-controls" style={{ display: "flex", gap: "0.75rem" }}>
+
+        <div
+          className="header-controls"
+          style={{
+            display: "flex",
+            gap: "0.75rem",
+            flexWrap: "wrap",
+          }}
+        >
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={actualizar}
+            disabled={cargando}
+          >
+            ↻ Actualizar
+          </button>
+
           <Link
             to="/admin/canchas/listado"
             className="btn-secondary"
-            style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "0.4rem", whiteSpace: "nowrap" }}
+            style={{ textDecoration: "none" }}
           >
-            <span>🏟️</span> Inventario de Canchas (CA-01)
+            Inventario de Canchas
           </Link>
+
           <Link
-            to="/admin/reservas/nueva"
+            to="/admin/canchas/nueva"
             className="btn-primary"
-            style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "0.4rem", whiteSpace: "nowrap" }}
+            style={{ textDecoration: "none" }}
           >
-            <span>⚡</span> Crear Reserva (R-03)
+            + Nueva Cancha
           </Link>
         </div>
       </header>
 
-      {/* LEYENDA DE ESTADOS DE LA GRILLA */}
       <div className="grid-legend-bar">
-        <span className="legend-title">Estados de Turno:</span>
+        <span className="legend-title">
+          Estado del inventario:
+        </span>
+
         <div className="legend-item">
-          <span className="legend-badge badge-libre">● Libre ($12.000)</span>
-          <span className="legend-sub">Disponible reserva</span>
+          <span className="legend-badge badge-libre">
+            ● {operativas} habilitadas
+          </span>
         </div>
+
         <div className="legend-item">
-          <span className="legend-badge badge-pico">⚡ Horario Pico ($14.400)</span>
-          <span className="legend-sub">+20% Recargo (19-21h)</span>
+          <span className="legend-badge badge-mantenimiento">
+            ✕ {mantenimiento} en mantenimiento
+          </span>
         </div>
+
         <div className="legend-item">
-          <span className="legend-badge badge-ocupado">■ Ocupado</span>
-          <span className="legend-sub">Turno reservado</span>
-        </div>
-        <div className="legend-item">
-          <span className="legend-badge badge-mantenimiento">✕ Mantenimiento</span>
-          <span className="legend-sub">Bloqueo técnico</span>
+          <span className="legend-sub">
+            {canchas.length} canchas en {totalSedes} sedes
+          </span>
         </div>
       </div>
 
-      {/* LAYOUT: Grilla y Configuración */}
-      <div className="courts-layout">
-        {/* GRILLA DE TURNOS */}
-        <section className="grid-section">
-          <div className="grid-header">
-            <h2 className="config-title" style={{ margin: 0 }}>Grilla de Turnos por Cancha</h2>
-            <div className="tabs-group">
-              <button
-                className={`tab-btn ${activeSport === "padel" ? "active" : ""}`}
-                onClick={() => setActiveSport("padel")}
-              >
-                Pádel (3)
-              </button>
-              <button
-                className={`tab-btn ${activeSport === "futbol5" ? "active" : ""}`}
-                onClick={() => setActiveSport("futbol5")}
-              >
-                Fútbol 5 (2)
-              </button>
-              <button
-                className={`tab-btn ${activeSport === "tenis" ? "active" : ""}`}
-                onClick={() => setActiveSport("tenis")}
-              >
-                Tenis (1)
-              </button>
-            </div>
-            <span className="grid-date">Miércoles, 14 de Octubre</span>
-          </div>
-
-          <div className="courts-list">
-            {currentCourts.map((court) => (
-              <div key={court.id} className="court-row">
-                <div className="court-header">
-                  <div>
-                    <span className="court-title">{court.nombre}</span>
-                    <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.2rem" }}>
-                      Superficie: {court.superficie}
-                    </div>
-                  </div>
-                  {court.enMantenimiento ? (
-                    <span className="status-badge status-inactive">Mantenimiento</span>
-                  ) : (
-                    <span className="status-badge status-active">Operativa</span>
-                  )}
-                </div>
-
-                {court.enMantenimiento ? (
-                  <div className="maintenance-box">
-                    <div className="maintenance-icon">🔧</div>
-                    <div>
-                      <strong>Cancha bloqueada temporalmente:</strong>
-                      <p className="maintenance-msg" style={{ margin: 0 }}>{court.motivo}</p>
-                    </div>
-                    <button
-                      className="btn-secondary"
-                      style={{ marginLeft: "auto", fontSize: "0.75rem", padding: "0.4rem 0.8rem" }}
-                      onClick={() => {
-                        setSelectedCourtId(court.id);
-                        setShowMantenimientoModal(true);
-                      }}
-                    >
-                      Levantar Bloqueo
-                    </button>
-                  </div>
-                ) : (
-                  <div className="time-slots">
-                    {court.turnos.map((slot, index) => (
-                      <button
-                        key={index}
-                        type="button"
-                        className={`time-slot slot-${slot.estado}`}
-                        onClick={() => setSelectedSlot({ courtName: court.nombre, slot })}
-                      >
-                        <span className="slot-hour">{slot.hora}</span>
-                        {slot.estado === "libre" && (
-                          <span className="slot-info">${slot.precio.toLocaleString()}</span>
-                        )}
-                        {slot.estado === "horario_pico" && (
-                          <span className="slot-info">⚡ ${slot.precio.toLocaleString()}</span>
-                        )}
-                        {slot.estado === "ocupado" && (
-                          <span className="slot-info">Ocupado</span>
-                        )}
-                        {slot.estado === "mantenimiento" && (
-                          <span className="slot-info">En Pausa</span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* PANEL DE CONFIGURACIÓN Y MANTENIMIENTO */}
-        <aside className="config-section">
-          <h2 className="config-title" style={{ margin: 0 }}>Configuración de Canchas</h2>
-
-          {/* Esquema Tarifario */}
-          <div className="pricing-card">
-            <div className="pricing-header">Esquema Tarifario Activo</div>
-            <div className="pricing-row">
-              <span className="pricing-label">Tarifa Base (Pádel)</span>
-              <span className="pricing-val">$12,000 / h</span>
-            </div>
-            <div className="pricing-row">
-              <span className="pricing-label">Descuento Socio</span>
-              <span className="pricing-val val-green">- 15% ($10,200 / h)</span>
-            </div>
-            <div className="pricing-row">
-              <span className="pricing-label">Recargo Hora Pico</span>
-              <span className="pricing-val val-yellow">+ 20% ($14,400 / h)</span>
-            </div>
-            <div className="pricing-row">
-              <span className="pricing-label">Rango Pico Configurado</span>
-              <span className="pricing-val">19:00 - 21:30 h</span>
-            </div>
-          </div>
-
-          {/* Mantenimiento Preventivo */}
-          <div className="maintenance-block">
-            <div className="maintenance-header">Mantenimiento Preventivo</div>
-            <p className="maintenance-desc">
-              Utiliza este módulo para programar inspecciones o bloquear temporalmente turnos de juego por reparaciones de red o cristales.
-            </p>
-            <button
-              type="button"
-              className="btn-outline-red"
-              onClick={() => {
-                setSelectedCourtId(currentCourts[0]?.id || "");
-                setShowMantenimientoModal(true);
-              }}
-            >
-              Gestionar Bloqueo de Cancha
-            </button>
-          </div>
-        </aside>
-      </div>
-
-      {/* MODAL MANTENIMIENTO */}
-      {showMantenimientoModal && (
-        <div className="modal-backdrop" onClick={() => setShowMantenimientoModal(false)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Módulo de Mantenimiento</h2>
-              <button className="modal-close-btn" onClick={() => setShowMantenimientoModal(false)}>✕</button>
-            </div>
-            <form onSubmit={handleToggleMantenimiento}>
-              <div className="form-group">
-                <label>Seleccionar Cancha *</label>
-                <select
-                  className="form-control"
-                  value={selectedCourtId}
-                  onChange={(e) => setSelectedCourtId(e.target.value)}
-                >
-                  {currentCourts.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.nombre} {c.enMantenimiento ? "(Actualmente en Mantenimiento)" : "(Operativa)"}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Motivo Técnico / Trabajo a Realizar *</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  required
-                  value={motivoMantenimiento}
-                  onChange={(e) => setMotivoMantenimiento(e.target.value)}
-                  placeholder="ej. Reparación de red tensora o reposición de paño"
-                />
-              </div>
-              <div className="form-group">
-                <label>Tiempo Estimado de Indisponibilidad</label>
-                <select className="form-control">
-                  <option>Jornada Completa (Bloqueo Total)</option>
-                  <option>Turno de Mañana (08:00 - 14:00)</option>
-                  <option>Turno de Tarde (14:00 - 20:00)</option>
-                </select>
-              </div>
-              <div style={{ display: "flex", gap: "1rem", marginTop: "1.5rem", justifyContent: "flex-end" }}>
-                <button type="button" className="btn-secondary" onClick={() => setShowMantenimientoModal(false)}>
-                  Cancelar
-                </button>
-                <button type="submit" className="btn-primary" style={{ backgroundColor: "var(--accent-red)" }}>
-                  Aplicar Estado de Mantenimiento
-                </button>
-              </div>
-            </form>
-          </div>
+      {cargando && (
+        <div className="reserva-step-card">
+          Cargando canchas desde PostgreSQL...
         </div>
       )}
 
-      {/* MODAL DETALLE DE TURNO */}
-      {selectedSlot && (
-        <div className="modal-backdrop" onClick={() => setSelectedSlot(null)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Detalle de Turno — {selectedSlot.slot.hora} h</h2>
-              <button className="modal-close-btn" onClick={() => setSelectedSlot(null)}>✕</button>
+      {error && !cargando && (
+        <div className="reserva-step-card" role="alert">
+          <p>{error}</p>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={actualizar}
+          >
+            Reintentar
+          </button>
+        </div>
+      )}
+
+      {!cargando && !error && canchas.length === 0 && (
+        <div className="reserva-step-card">
+          <h2>No hay canchas registradas</h2>
+          <p>
+            Registrá una cancha desde el inventario
+            para comenzar a administrarla.
+          </p>
+          <Link
+            to="/admin/canchas/nueva"
+            className="btn-primary"
+          >
+            Crear cancha
+          </Link>
+        </div>
+      )}
+
+      {!cargando && !error && canchas.length > 0 && (
+        <div className="courts-layout">
+          <section className="grid-section">
+            <div className="grid-header">
+              <h2
+                className="config-title"
+                style={{ margin: 0 }}
+              >
+                Canchas por Disciplina
+              </h2>
+
+              <div
+                className="tabs-group"
+                style={{ flexWrap: "wrap" }}
+              >
+                {tipos.map(tipo => {
+                  const cantidad = canchas.filter(
+                    c => c.tipo_cancha_id === tipo.id
+                  ).length;
+
+                  return (
+                    <button
+                      type="button"
+                      key={tipo.id}
+                      className={`tab-btn ${
+                        idActivo === tipo.id ? "active" : ""
+                      }`}
+                      onClick={() => setTipoActivoId(tipo.id)}
+                    >
+                      {tipo.nombre} ({cantidad})
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginTop: "1rem" }}>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ color: "var(--text-muted)" }}>Cancha:</span>
-                <strong>{selectedSlot.courtName}</strong>
+
+            <div className="courts-list">
+              {canchasVisibles.map(cancha => {
+                const habilitada =
+                  cancha.estado === "HABILITADA";
+
+                return (
+                  <div
+                    className="court-row"
+                    key={cancha.id}
+                  >
+                    <div className="court-header">
+                      <div>
+                        <span className="court-title">
+                          {cancha.nombre}
+                        </span>
+
+                        <div style={{
+                          fontSize: "0.75rem",
+                          color: "var(--text-muted)",
+                          marginTop: "0.2rem",
+                        }}>
+                          {cancha.sede.nombre}
+                          {" • "}
+                          {cancha.sede.localidad}
+                        </div>
+                      </div>
+
+                      <span className={`status-badge ${
+                        habilitada
+                          ? "status-active"
+                          : "status-inactive"
+                      }`}>
+                        {habilitada
+                          ? "Operativa"
+                          : "Mantenimiento"}
+                      </span>
+                    </div>
+
+                    {!habilitada ? (
+                      <div className="maintenance-box">
+                        <div className="maintenance-icon">
+                          🔧
+                        </div>
+
+                        <div>
+                          <strong>
+                            Cancha no disponible
+                          </strong>
+                          <p
+                            className="maintenance-msg"
+                            style={{ margin: 0 }}
+                          >
+                            El backend informa que esta
+                            cancha está en mantenimiento.
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{
+                        padding: "1rem",
+                        border: "1px solid var(--border-color)",
+                        borderRadius: "var(--radius-md)",
+                        marginTop: "0.75rem",
+                      }}>
+                        <p style={{
+                          margin: 0,
+                          color: "var(--text-muted)",
+                          fontSize: "0.85rem",
+                        }}>
+                          Cancha habilitada para recibir
+                          reservas. La ocupación de cada
+                          horario todavía no se puede
+                          consultar desde la API.
+                        </p>
+                      </div>
+                    )}
+
+                    <div style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                      gap: "0.75rem",
+                      marginTop: "1rem",
+                    }}>
+                      <div>
+                        <span style={{
+                          color: "var(--text-muted)",
+                          fontSize: "0.8rem",
+                        }}>
+                          Tarifa base por hora
+                        </span>
+
+                        <div style={{
+                          color: "var(--accent-orange)",
+                          fontWeight: 800,
+                          fontSize: "1.15rem",
+                        }}>
+                          {formatoPrecio(cancha.costo_hora)}
+                        </div>
+                      </div>
+
+                      <Link
+                        to={`/admin/canchas/${cancha.id}`}
+                        className="btn-secondary"
+                        style={{ textDecoration: "none" }}
+                      >
+                        Ver ficha de cancha
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
+          <aside className="config-section">
+            <h2
+              className="config-title"
+              style={{ margin: 0 }}
+            >
+              Información Operativa
+            </h2>
+
+            <div className="pricing-card">
+              <div className="pricing-header">
+                Tarifas registradas
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ color: "var(--text-muted)" }}>Estado:</span>
-                <span className={`legend-badge badge-${selectedSlot.slot.estado}`}>
-                  {selectedSlot.slot.estado.toUpperCase()}
-                </span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ color: "var(--text-muted)" }}>Tarifa Hardcodeada:</span>
-                <strong>${selectedSlot.slot.precio.toLocaleString()}</strong>
-              </div>
-              {selectedSlot.slot.reservadoPor && (
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "var(--text-muted)" }}>Titular de Reserva:</span>
-                  <span style={{ color: "var(--accent-orange)", fontWeight: 700 }}>
-                    {selectedSlot.slot.reservadoPor}
+
+              {canchasVisibles.map(cancha => (
+                <div
+                  className="pricing-row"
+                  key={cancha.id}
+                >
+                  <span className="pricing-label">
+                    {cancha.nombre}
+                  </span>
+
+                  <span className="pricing-val">
+                    {formatoPrecio(cancha.costo_hora)}/h
                   </span>
                 </div>
-              )}
+              ))}
             </div>
-            <div style={{ marginTop: "1.5rem", display: "flex", gap: "1rem", justifyContent: "flex-end" }}>
-              <button className="btn-secondary" onClick={() => setSelectedSlot(null)}>
-                Cerrar
-              </button>
-              {selectedSlot.slot.estado === "libre" && (
-                <button
-                  className="btn-primary"
-                  onClick={() => {
-                    alert(`Turno de ${selectedSlot.slot.hora} reservado con éxito.`);
-                    setSelectedSlot(null);
-                  }}
-                >
-                  Confirmar Reserva Rápida
-                </button>
-              )}
+
+            <div className="maintenance-block">
+              <div className="maintenance-header">
+                Mantenimiento Preventivo
+              </div>
+
+              <p className="maintenance-desc">
+                Los estados operativos se consultan
+                directamente desde PostgreSQL.
+              </p>
+
+              <p className="maintenance-desc">
+                El cambio de estado está pendiente
+                porque el backend no ofrece todavía
+                un endpoint para habilitar o bloquear
+                canchas.
+              </p>
+
+              <Link
+                to="/admin/canchas/listado"
+                className="btn-secondary"
+                style={{
+                  textDecoration: "none",
+                  display: "inline-block",
+                }}
+              >
+                Consultar inventario
+              </Link>
             </div>
-          </div>
+
+            <div className="pricing-card">
+              <div className="pricing-header">
+                Disponibilidad por Horarios
+              </div>
+
+              <p style={{
+                color: "var(--text-muted)",
+                fontSize: "0.85rem",
+                padding: "1rem",
+                margin: 0,
+              }}>
+                Pendiente de integración con las reservas
+                reales. No se muestran turnos libres ni
+                ocupados hasta disponer de la API.
+              </p>
+            </div>
+          </aside>
         </div>
       )}
     </>
   );
 }
-

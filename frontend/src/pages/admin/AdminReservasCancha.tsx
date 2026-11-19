@@ -1,510 +1,455 @@
-import { useState } from "react";
+
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  getReservas,
-  cancelReserva,
-  registrarCobroSaldo,
-  type ReservaItem,
-} from "../../data/clasesCanchasData";
-import { getSedes } from "../../data/sedesData";
+  obtenerReservasAdmin,
+  type ReservaCanchaApi,
+} from "../../services/reservasAdminService";
 import "../../admin.css";
 
+function dinero(valor: string | number) {
+  return Number(valor).toLocaleString("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    maximumFractionDigits: 2,
+  });
+}
+
+function fechaArgentina(valor: string) {
+  const fecha = valor.slice(0, 10);
+  const [anio, mes, dia] = fecha.split("-");
+  return `${dia}/${mes}/${anio}`;
+}
+
+function estadoLegible(estado: ReservaCanchaApi["estado"]) {
+  switch (estado) {
+    case "PENDIENTE_PAGO":
+      return "Pendiente de pago";
+    case "CONFIRMADA":
+      return "Confirmada";
+    case "CANCELADA":
+      return "Cancelada";
+  }
+}
+
 export default function AdminReservasCancha() {
-  const [reservas, setReservas] = useState<ReservaItem[]>(() => getReservas());
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterSede, setFilterSede] = useState("Todas");
-  const [filterDeporte, setFilterDeporte] = useState("Todos");
-  const [filterEstadoPago, setFilterEstadoPago] = useState("Todos");
-  const [filterEstadoTurno, setFilterEstadoTurno] = useState("Todos");
+  const [reservas, setReservas] =
+    useState<ReservaCanchaApi[]>([]);
 
-  // Modal Cancelación
-  const [cancelTarget, setCancelTarget] = useState<ReservaItem | null>(null);
-  const [cancelMotivo, setCancelMotivo] = useState("Cancelación solicitada por el cliente con previo aviso");
+  const [busqueda, setBusqueda] = useState("");
+  const [filtroEstado, setFiltroEstado] = useState("Todos");
+  const [filtroDeporte, setFiltroDeporte] = useState("Todos");
 
-  // Modal Cobro Rápido
-  const [cobroTarget, setCobroTarget] = useState<ReservaItem | null>(null);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [recarga, setRecarga] = useState(0);
 
-  const sedes = getSedes();
+  useEffect(() => {
+    let activo = true;
 
-  // Filtrado
-  const filteredReservas = reservas.filter((r) => {
-    const matchSearch =
-      r.codigo.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.titular.nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.titular.dni.includes(searchQuery) ||
-      r.canchaNombre.toLowerCase().includes(searchQuery.toLowerCase());
+    async function cargar() {
+      try {
+        const datos = await obtenerReservasAdmin();
 
-    const matchSede = filterSede === "Todas" || r.sedeId === filterSede;
-    const matchDeporte = filterDeporte === "Todos" || r.deporte === filterDeporte;
-    const matchPago = filterEstadoPago === "Todos" || r.estadoPago === filterEstadoPago;
-    const matchTurno = filterEstadoTurno === "Todos" || r.estadoTurno === filterEstadoTurno;
+        if (!activo) return;
 
-    return matchSearch && matchSede && matchDeporte && matchPago && matchTurno;
+        setReservas(datos);
+        setError(null);
+      } catch (err) {
+        if (activo) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "No se pudieron cargar las reservas."
+          );
+        }
+      } finally {
+        if (activo) setCargando(false);
+      }
+    }
+
+    void cargar();
+
+    return () => {
+      activo = false;
+    };
+  }, [recarga]);
+
+  function actualizar() {
+    setCargando(true);
+    setError(null);
+    setRecarga(v => v + 1);
+  }
+
+  const deportes = Array.from(
+    new Set(
+      reservas.map(r => r.cancha.tipo_cancha.nombre)
+    )
+  );
+
+  const reservasFiltradas = reservas.filter(r => {
+    const texto = [
+      String(r.id),
+      r.usuario.nombre,
+      r.usuario.apellido,
+      r.usuario.dni,
+      r.usuario.email,
+      r.cancha.nombre,
+      r.cancha.sede.nombre,
+    ].join(" ").toLowerCase();
+
+    return (
+      texto.includes(busqueda.trim().toLowerCase()) &&
+      (filtroEstado === "Todos" ||
+        r.estado === filtroEstado) &&
+      (filtroDeporte === "Todos" ||
+        r.cancha.tipo_cancha.nombre === filtroDeporte)
+    );
   });
 
-  // Métricas
-  const totalReservas = reservas.length;
-  const recaudacionTotal = reservas.reduce((acc, curr) => acc + curr.montoAbonado, 0);
-  const saldoPorCobrar = reservas.reduce((acc, curr) => acc + curr.saldoPendiente, 0);
-  const confirmadasHoy = reservas.filter((r) => r.estadoTurno === "Confirmado" || r.estadoTurno === "En Juego").length;
+  const pendientes = reservas.filter(
+    r => r.estado === "PENDIENTE_PAGO"
+  ).length;
 
-  const handleConfirmCancel = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!cancelTarget) return;
+  const confirmadas = reservas.filter(
+    r => r.estado === "CONFIRMADA"
+  ).length;
 
-    cancelReserva(cancelTarget.id, cancelMotivo);
-    setReservas([...getReservas()]);
-    setCancelTarget(null);
-    alert(`Reserva ${cancelTarget.codigo} cancelada correctamente. Se actualizó el estado a Cancelado y Reembolsado.`);
-  };
+  const canceladas = reservas.filter(
+    r => r.estado === "CANCELADA"
+  ).length;
 
-  const handleConfirmCobro = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!cobroTarget) return;
-
-    registrarCobroSaldo(cobroTarget.id);
-    setReservas([...getReservas()]);
-    setCobroTarget(null);
-    alert(`Cobro de saldo registrado con éxito para ${cobroTarget.codigo}. Comprobante emitido.`);
-  };
+  const montoPendiente = reservas
+    .filter(r => r.estado === "PENDIENTE_PAGO")
+    .reduce((total, r) => total + Number(r.monto_total), 0);
 
   return (
-    <div style={{ maxWidth: "1280px", margin: "0 auto", paddingBottom: "3rem" }}>
-      {/* TOPBAR */}
-      <header className="topbar" style={{ marginBottom: "1.5rem" }}>
+    <div style={{
+      maxWidth: "1400px",
+      margin: "0 auto",
+      paddingBottom: "3rem",
+    }}>
+      <header className="topbar">
         <div className="header-titles">
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <span style={{ fontSize: "0.8rem", color: "var(--accent-orange)", fontWeight: 700, textTransform: "uppercase" }}>
-              Módulo R-02
-            </span>
-            <span style={{ color: "var(--text-muted)" }}>•</span>
-            <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Libro Maestro de Turnos</span>
-          </div>
-          <h1>Listado General de Reservas de Cancha</h1>
-          <p>Control de turnos agendados, saldos pendientes, jugadores registrados y estado de ocupación</p>
+          <span style={{
+            color: "var(--accent-orange)",
+            fontWeight: 700,
+            fontSize: "0.8rem",
+          }}>
+            Módulos R-02 & R-04
+          </span>
+
+          <h1>Gestión de Reservas Deportivas</h1>
+
+          <p>
+            Reservas registradas en PostgreSQL,
+            con sus socios y estados reales.
+          </p>
         </div>
-        <div className="header-controls" style={{ display: "flex", gap: "0.75rem" }}>
-          <Link
-            to="/admin/canchas"
+
+        <div
+          className="header-controls"
+          style={{
+            display: "flex",
+            gap: "0.75rem",
+          }}
+        >
+          <button
+            type="button"
             className="btn-secondary"
-            style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "0.4rem" }}
+            disabled={cargando}
+            onClick={actualizar}
           >
-            <span>📅</span> Grilla de Turnos (R-01)
-          </Link>
+            ↻ Actualizar
+          </button>
+
           <Link
             to="/admin/reservas/nueva"
             className="btn-primary"
-            style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "0.4rem" }}
+            style={{ textDecoration: "none" }}
           >
-            <span>+</span> Nueva Reserva (R-03)
+            + Nueva Reserva
           </Link>
         </div>
       </header>
 
-      {/* KPI METRIC CARDS */}
       <div className="fase4-metrics-grid">
-        <div className="fase4-metric-card">
-          <div className="fase4-metric-title">
-            <span>Total Reservas</span>
-            <span>📑</span>
-          </div>
-          <div className="fase4-metric-val">{totalReservas}</div>
-          <div className="fase4-metric-sub">Históricas y programadas</div>
-        </div>
+        {[
+          ["Total reservas", reservas.length],
+          ["Pendientes de pago", pendientes],
+          ["Confirmadas", confirmadas],
+          ["Canceladas", canceladas],
+        ].map(([titulo, valor]) => (
+          <div
+            key={String(titulo)}
+            className="fase4-metric-card"
+          >
+            <div className="fase4-metric-title">
+              <span>{titulo}</span>
+            </div>
 
-        <div className="fase4-metric-card">
-          <div className="fase4-metric-title">
-            <span>Turnos Activos Hoy</span>
-            <span>⚡</span>
-          </div>
-          <div className="fase4-metric-val" style={{ color: "var(--accent-orange)" }}>
-            {confirmadasHoy}
-          </div>
-          <div className="fase4-metric-sub">Confirmados y en juego</div>
-        </div>
+            <div className="fase4-metric-val">
+              {valor}
+            </div>
 
-        <div className="fase4-metric-card">
-          <div className="fase4-metric-title">
-            <span>Recaudado Total</span>
-            <span>💵</span>
+            <div className="fase4-metric-sub">
+              Datos del backend
+            </div>
           </div>
-          <div className="fase4-metric-val" style={{ color: "var(--accent-green)" }}>
-            ${recaudacionTotal.toLocaleString()}
-          </div>
-          <div className="fase4-metric-sub">Cobrado vía Mercado Pago y mostrador</div>
-        </div>
-
-        <div className="fase4-metric-card">
-          <div className="fase4-metric-title">
-            <span>Saldos por Cobrar</span>
-            <span>⏳</span>
-          </div>
-          <div className="fase4-metric-val" style={{ color: "var(--accent-yellow)" }}>
-            ${saldoPorCobrar.toLocaleString()}
-          </div>
-          <div className="fase4-metric-sub">Señas del 50% a liquidar en sede</div>
-        </div>
+        ))}
       </div>
 
-      {/* BARRA DE FILTROS */}
-      <div className="classes-filter-bar" style={{ marginBottom: "1.5rem" }}>
-        <div className="filter-group" style={{ flexGrow: 1, minWidth: "220px" }}>
-          <label className="filter-label">Buscar Titular / DNI / Reserva:</label>
+      <div className="reserva-step-card">
+        <p style={{
+          color: "var(--text-muted)",
+          margin: 0,
+        }}>
+          Importe total de reservas pendientes:
+        </p>
+
+        <h2 style={{
+          marginTop: "0.5rem",
+          color: "var(--accent-orange)",
+        }}>
+          {dinero(montoPendiente)}
+        </h2>
+
+        <p style={{
+          color: "var(--text-muted)",
+          fontSize: "0.8rem",
+        }}>
+          Este importe todavía no es dinero cobrado.
+        </p>
+      </div>
+
+      <div className="classes-filter-bar">
+        <div className="filter-group">
+          <label
+            className="filter-label"
+            htmlFor="buscar-reservas"
+          >
+            Buscar:
+          </label>
+
           <input
-            type="text"
+            id="buscar-reservas"
             className="form-control"
-            placeholder="ej. Mateo Silva, #RSV-081, 38.102..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Socio, cancha, DNI o ID..."
+            value={busqueda}
+            onChange={e => setBusqueda(e.target.value)}
           />
         </div>
 
         <div className="filter-group">
-          <label className="filter-label">Sede:</label>
-          <select
-            className="filter-select"
-            value={filterSede}
-            onChange={(e) => setFilterSede(e.target.value)}
+          <label
+            className="filter-label"
+            htmlFor="estado-reservas"
           >
-            <option value="Todas">Todas las Sedes</option>
-            {sedes.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.nombre}
+            Estado:
+          </label>
+
+          <select
+            id="estado-reservas"
+            className="filter-select"
+            value={filtroEstado}
+            onChange={e => setFiltroEstado(e.target.value)}
+          >
+            <option value="Todos">Todos</option>
+            <option value="PENDIENTE_PAGO">
+              Pendientes de pago
+            </option>
+            <option value="CONFIRMADA">
+              Confirmadas
+            </option>
+            <option value="CANCELADA">
+              Canceladas
+            </option>
+          </select>
+        </div>
+
+        <div className="filter-group">
+          <label
+            className="filter-label"
+            htmlFor="deporte-reservas"
+          >
+            Deporte:
+          </label>
+
+          <select
+            id="deporte-reservas"
+            className="filter-select"
+            value={filtroDeporte}
+            onChange={e => setFiltroDeporte(e.target.value)}
+          >
+            <option value="Todos">Todos</option>
+
+            {deportes.map(deporte => (
+              <option
+                key={deporte}
+                value={deporte}
+              >
+                {deporte}
               </option>
             ))}
           </select>
         </div>
-
-        <div className="filter-group">
-          <label className="filter-label">Deporte:</label>
-          <select
-            className="filter-select"
-            value={filterDeporte}
-            onChange={(e) => setFilterDeporte(e.target.value)}
-          >
-            <option value="Todos">Todos</option>
-            <option value="Pádel">Pádel</option>
-            <option value="Fútbol 5">Fútbol 5</option>
-            <option value="Tenis">Tenis</option>
-          </select>
-        </div>
-
-        <div className="filter-group">
-          <label className="filter-label">Estado Pago:</label>
-          <select
-            className="filter-select"
-            value={filterEstadoPago}
-            onChange={(e) => setFilterEstadoPago(e.target.value)}
-          >
-            <option value="Todos">Todos</option>
-            <option value="Pagado">Pagado Total</option>
-            <option value="Seña 50%">Seña 50%</option>
-            <option value="Pendiente">Pendiente</option>
-            <option value="Reembolsado">Reembolsado</option>
-          </select>
-        </div>
-
-        <div className="filter-group">
-          <label className="filter-label">Estado Turno:</label>
-          <select
-            className="filter-select"
-            value={filterEstadoTurno}
-            onChange={(e) => setFilterEstadoTurno(e.target.value)}
-          >
-            <option value="Todos">Todos</option>
-            <option value="Confirmado">Confirmado</option>
-            <option value="En Juego">En Juego</option>
-            <option value="Finalizado">Finalizado</option>
-            <option value="Cancelado">Cancelado</option>
-          </select>
-        </div>
       </div>
 
-      {/* TABLA DE RESERVAS */}
-      <div className="waitlist-table-container">
-        {filteredReservas.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "4rem 2rem", color: "var(--text-muted)" }}>
-            <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>📅</div>
-            <h3>No se encontraron reservas con los filtros aplicados</h3>
-            <p>Intenta restablecer los filtros para ver todos los turnos agendados.</p>
-          </div>
-        ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.88rem" }}>
+      {cargando && (
+        <div className="reserva-step-card">
+          Cargando reservas desde PostgreSQL...
+        </div>
+      )}
+
+      {!cargando && error && (
+        <div className="reserva-step-card" role="alert">
+          <h3>No se pudieron cargar las reservas</h3>
+          <p>{error}</p>
+
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={actualizar}
+          >
+            Reintentar
+          </button>
+        </div>
+      )}
+
+      {!cargando && !error && reservasFiltradas.length === 0 && (
+        <div className="reserva-step-card">
+          <h3>No hay reservas para mostrar</h3>
+          <p>
+            Todavía no existen reservas registradas
+            o ninguna coincide con los filtros.
+          </p>
+        </div>
+      )}
+
+      {!cargando && !error && reservasFiltradas.length > 0 && (
+        <div
+          className="reserva-step-card"
+          style={{ overflowX: "auto" }}
+        >
+          <h2 style={{ marginBottom: "1.25rem" }}>
+            Reservas registradas ({reservasFiltradas.length})
+          </h2>
+
+          <table style={{
+            width: "100%",
+            borderCollapse: "collapse",
+            textAlign: "left",
+            minWidth: "850px",
+          }}>
             <thead>
-              <tr style={{ borderBottom: "1px solid var(--border-color)", backgroundColor: "rgba(0,0,0,0.2)" }}>
-                <th style={{ padding: "1rem" }}>Código</th>
-                <th style={{ padding: "1rem" }}>Horario & Fecha</th>
-                <th style={{ padding: "1rem" }}>Cancha & Sede</th>
-                <th style={{ padding: "1rem" }}>Titular de Reserva</th>
-                <th style={{ padding: "1rem" }}>Total Facturado</th>
-                <th style={{ padding: "1rem" }}>Estado Pago</th>
-                <th style={{ padding: "1rem" }}>Estado Turno</th>
-                <th style={{ padding: "1rem", textAlign: "right" }}>Acciones</th>
+              <tr style={{
+                borderBottom: "1px solid var(--border-color)",
+              }}>
+                {[
+                  "ID",
+                  "Socio",
+                  "Cancha / Sede",
+                  "Fecha",
+                  "Hora",
+                  "Importe",
+                  "Estado",
+                  "Cancha",
+                ].map(c => (
+                  <th
+                    key={c}
+                    scope="col"
+                    style={{
+                      padding: "0.85rem 0.6rem",
+                      color: "var(--text-muted)",
+                    }}
+                  >
+                    {c}
+                  </th>
+                ))}
               </tr>
             </thead>
+
             <tbody>
-              {filteredReservas.map((r) => (
-                <tr key={r.id} style={{ borderBottom: "1px solid var(--border-color)" }}>
-                  {/* Código */}
-                  <td style={{ padding: "1rem" }}>
-                    <Link
-                      to={`/admin/reservas/${r.id}`}
-                      style={{ fontWeight: 800, color: "var(--accent-orange)", textDecoration: "none" }}
-                      title="Ver Ficha Detalle R-04"
-                    >
-                      {r.codigo}
-                    </Link>
+              {reservasFiltradas.map(reserva => (
+                <tr
+                  key={reserva.id}
+                  style={{
+                    borderBottom:
+                      "1px solid var(--border-color)",
+                  }}
+                >
+                  <td style={{ padding: "1rem 0.6rem" }}>
+                    <strong>
+                      RSV-{String(reserva.id).padStart(4, "0")}
+                    </strong>
                   </td>
 
-                  {/* Horario y Fecha */}
-                  <td style={{ padding: "1rem" }}>
-                    <div style={{ fontWeight: 700, color: "var(--text-pure)" }}>
-                      {r.horaInicio} - {r.horaFin} h
-                    </div>
-                    <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.15rem" }}>
-                      {r.fecha} {r.esHorarioPico && <span style={{ color: "var(--accent-yellow)", fontWeight: 700 }}>⚡ Pico (+20%)</span>}
+                  <td style={{ padding: "1rem 0.6rem" }}>
+                    <strong>
+                      {reserva.usuario.nombre}{" "}
+                      {reserva.usuario.apellido}
+                    </strong>
+
+                    <div style={{
+                      fontSize: "0.75rem",
+                      color: "var(--text-muted)",
+                    }}>
+                      DNI: {reserva.usuario.dni}
                     </div>
                   </td>
 
-                  {/* Cancha y Sede */}
-                  <td style={{ padding: "1rem" }}>
-                    <div style={{ fontWeight: 700, color: "var(--text-pure)" }}>{r.canchaNombre}</div>
-                    <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                      {r.sedeNombre}
+                  <td style={{ padding: "1rem 0.6rem" }}>
+                    <strong>{reserva.cancha.nombre}</strong>
+
+                    <div style={{
+                      color: "var(--text-muted)",
+                      fontSize: "0.75rem",
+                    }}>
+                      {reserva.cancha.tipo_cancha.nombre}
+                      {" • "}
+                      {reserva.cancha.sede.nombre}
                     </div>
-                    <span
-                      className={`sport-tag ${
-                        r.deporte === "Pádel"
-                          ? "sport-tag-padel"
-                          : r.deporte === "Fútbol 5"
-                          ? "sport-tag-futbol"
-                          : "sport-tag-tenis"
-                      }`}
-                      style={{ marginTop: "0.25rem", fontSize: "0.68rem" }}
-                    >
-                      {r.deporte}
+                  </td>
+
+                  <td style={{ padding: "1rem 0.6rem" }}>
+                    {fechaArgentina(reserva.fecha)}
+                  </td>
+
+                  <td style={{ padding: "1rem 0.6rem" }}>
+                    {String(reserva.hora_inicio).padStart(2, "0")}
+                    :00
+                  </td>
+
+                  <td style={{ padding: "1rem 0.6rem" }}>
+                    {dinero(reserva.monto_total)}
+                  </td>
+
+                  <td style={{ padding: "1rem 0.6rem" }}>
+                    <span className={`status-pill ${
+                      reserva.estado === "CONFIRMADA"
+                        ? "status-pill-operativa"
+                        : "status-pill-mantenimiento"
+                    }`}>
+                      {estadoLegible(reserva.estado)}
                     </span>
                   </td>
 
-                  {/* Titular */}
-                  <td style={{ padding: "1rem" }}>
-                    <div style={{ fontWeight: 700, color: "var(--text-pure)" }}>{r.titular.nombre}</div>
-                    <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                      DNI: {r.titular.dni} • {r.titular.telefono}
-                    </div>
-                    <span
+                  <td style={{ padding: "1rem 0.6rem" }}>
+                    <Link
+                      to={`/admin/canchas/${reserva.cancha.id}`}
+                      className="btn-secondary"
                       style={{
-                        fontSize: "0.7rem",
-                        color: r.titular.esSocio ? "var(--accent-green)" : "var(--text-muted)",
-                        fontWeight: 600,
+                        textDecoration: "none",
+                        fontSize: "0.8rem",
                       }}
                     >
-                      {r.titular.esSocio ? `✓ Socio Activo (-15%)` : "Cliente Particular"}
-                    </span>
-                  </td>
-
-                  {/* Total y Saldos */}
-                  <td style={{ padding: "1rem" }}>
-                    <div style={{ fontWeight: 800, color: "var(--accent-green)", fontSize: "0.95rem" }}>
-                      ${r.totalCalculado.toLocaleString()}
-                    </div>
-                    {r.saldoPendiente > 0 ? (
-                      <div style={{ fontSize: "0.75rem", color: "var(--accent-yellow)", fontWeight: 600 }}>
-                        Resta cobrar: ${r.saldoPendiente.toLocaleString()}
-                      </div>
-                    ) : (
-                      <div style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>Abonado 100%</div>
-                    )}
-                  </td>
-
-                  {/* Estado Pago */}
-                  <td style={{ padding: "1rem" }}>
-                    <span
-                      className={`status-pill ${
-                        r.estadoPago === "Pagado"
-                          ? "status-pill-pagado"
-                          : r.estadoPago === "Seña 50%"
-                          ? "status-pill-senia"
-                          : "status-pill-pendiente"
-                      }`}
-                    >
-                      {r.estadoPago}
-                    </span>
-                    <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "0.2rem" }}>
-                      {r.medioPago}
-                    </div>
-                  </td>
-
-                  {/* Estado Turno */}
-                  <td style={{ padding: "1rem" }}>
-                    <span
-                      className={`status-pill ${
-                        r.estadoTurno === "En Juego"
-                          ? "status-pill-pico"
-                          : r.estadoTurno === "Confirmado"
-                          ? "status-pill-operativa"
-                          : r.estadoTurno === "Cancelado"
-                          ? "status-pill-pendiente"
-                          : "status-pill-senia"
-                      }`}
-                    >
-                      {r.estadoTurno}
-                    </span>
-                  </td>
-
-                  {/* Acciones */}
-                  <td style={{ padding: "1rem", textAlign: "right" }}>
-                    <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.4rem", flexWrap: "wrap" }}>
-                      <Link
-                        to={`/admin/reservas/${r.id}`}
-                        className="btn-secondary"
-                        style={{ padding: "0.35rem 0.65rem", fontSize: "0.75rem", textDecoration: "none" }}
-                        title="Ver detalle completo"
-                      >
-                        Ficha (R-04)
-                      </Link>
-
-                      {r.saldoPendiente > 0 && r.estadoTurno !== "Cancelado" && (
-                        <button
-                          type="button"
-                          className="btn-primary"
-                          style={{ padding: "0.35rem 0.65rem", fontSize: "0.75rem", backgroundColor: "var(--accent-green)" }}
-                          title="Cobrar saldo pendiente de la seña"
-                          onClick={() => setCobroTarget(r)}
-                        >
-                          Cobrar Saldo
-                        </button>
-                      )}
-
-                      {r.estadoTurno !== "Cancelado" && r.estadoTurno !== "Finalizado" && (
-                        <button
-                          type="button"
-                          className="btn-outline-red"
-                          style={{ padding: "0.35rem 0.55rem", fontSize: "0.75rem" }}
-                          title="Cancelar turno"
-                          onClick={() => {
-                            setCancelTarget(r);
-                            setCancelMotivo("Solicitud de cancelación por parte del usuario");
-                          }}
-                        >
-                          ✕
-                        </button>
-                      )}
-                    </div>
+                      Ver cancha
+                    </Link>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        )}
-      </div>
-
-      {/* MODAL COBRO DE SALDO */}
-      {cobroTarget && (
-        <div className="modal-backdrop" onClick={() => setCobroTarget(null)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Registrar Cobro de Saldo — {cobroTarget.codigo}</h2>
-              <button className="modal-close-btn" onClick={() => setCobroTarget(null)}>✕</button>
-            </div>
-            <form onSubmit={handleConfirmCobro}>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", margin: "1rem 0" }}>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "var(--text-muted)" }}>Titular:</span>
-                  <strong>{cobroTarget.titular.nombre}</strong>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "var(--text-muted)" }}>Cancha y Turno:</span>
-                  <span>{cobroTarget.canchaNombre} ({cobroTarget.horaInicio} h)</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "var(--text-muted)" }}>Seña Ya Abonada:</span>
-                  <span>${cobroTarget.montoAbonado.toLocaleString()}</span>
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    padding: "0.75rem",
-                    background: "rgba(0, 255, 135, 0.1)",
-                    borderRadius: "var(--radius-md)",
-                    border: "1px solid rgba(0, 255, 135, 0.3)",
-                  }}
-                >
-                  <strong style={{ color: "var(--accent-green)" }}>Saldo a Liquidar Ahora:</strong>
-                  <strong style={{ color: "var(--accent-green)", fontSize: "1.2rem" }}>
-                    ${cobroTarget.saldoPendiente.toLocaleString()}
-                  </strong>
-                </div>
-              </div>
-
-              <div className="form-group" style={{ marginBottom: "1rem" }}>
-                <label>Medio de Pago del Saldo:</label>
-                <select className="form-control">
-                  <option>Efectivo en Mostrador</option>
-                  <option>Tarjeta de Débito / Crédito (POS)</option>
-                  <option>Transferencia Bancaria Inmediata</option>
-                  <option>QR Mercado Pago</option>
-                </select>
-              </div>
-
-              <div style={{ display: "flex", gap: "1rem", justifyContent: "flex-end", marginTop: "1.5rem" }}>
-                <button type="button" className="btn-secondary" onClick={() => setCobroTarget(null)}>
-                  Cancelar
-                </button>
-                <button type="submit" className="btn-primary" style={{ backgroundColor: "var(--accent-green)" }}>
-                  Confirmar Cobro y Emitir Recibo
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL CANCELAR RESERVA */}
-      {cancelTarget && (
-        <div className="modal-backdrop" onClick={() => setCancelTarget(null)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Cancelar Reserva {cancelTarget.codigo}</h2>
-              <button className="modal-close-btn" onClick={() => setCancelTarget(null)}>✕</button>
-            </div>
-            <form onSubmit={handleConfirmCancel}>
-              <div style={{ margin: "1rem 0", color: "var(--text-muted)", fontSize: "0.85rem" }}>
-                Estás a punto de cancelar la reserva de <strong>{cancelTarget.titular.nombre}</strong> para el turno{" "}
-                <strong>{cancelTarget.horaInicio} h</strong> en <strong>{cancelTarget.canchaNombre}</strong>.
-              </div>
-
-              <div className="form-group" style={{ marginBottom: "1rem" }}>
-                <label>Motivo de la Cancelación *</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  required
-                  value={cancelMotivo}
-                  onChange={(e) => setCancelMotivo(e.target.value)}
-                />
-              </div>
-
-              <div className="form-group" style={{ marginBottom: "1rem" }}>
-                <label>Política de Reembolso de Seña ($ {cancelTarget.montoAbonado.toLocaleString()}):</label>
-                <select className="form-control">
-                  <option>Crédito a favor en cuenta corriente del socio (Recomendado)</option>
-                  <option>Reembolso directo por el mismo medio de pago</option>
-                  <option>Sin reembolso (Cancelación fuera de término / Menos de 4 horas)</option>
-                </select>
-              </div>
-
-              <div style={{ display: "flex", gap: "1rem", justifyContent: "flex-end", marginTop: "1.5rem" }}>
-                <button type="button" className="btn-secondary" onClick={() => setCancelTarget(null)}>
-                  Volver
-                </button>
-                <button type="submit" className="btn-primary" style={{ backgroundColor: "var(--accent-red)" }}>
-                  Confirmar Cancelación de Turno
-                </button>
-              </div>
-            </form>
-          </div>
         </div>
       )}
     </div>
