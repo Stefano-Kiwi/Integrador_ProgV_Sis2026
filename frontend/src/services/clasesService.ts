@@ -88,6 +88,13 @@ export async function crearClase(datos: NuevaClase): Promise<ClaseApi> {
   });
 }
 
+export async function cancelarClase(claseId: number): Promise<{ mensaje: string; clase_id: number }> {
+  return apiRequest<{ mensaje: string; clase_id: number }>(`/clases/${claseId}`, {
+    method: "DELETE",
+    requireAuth: true,
+  });
+}
+
 export async function inscribirUsuarioClase(
   claseId: number,
   usuarioId: number

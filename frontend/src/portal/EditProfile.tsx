@@ -1,515 +1,295 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
+import { useAppStore } from "../store";
+
+// Estructura real devuelta por GET /usuarios/:id.
+interface PerfilApi {
+  id: number;
+  nombre: string;
+  apellido: string;
+  email: string;
+  dni: string;
+  telefono: string | null;
+  sede_base: { id: number; nombre: string } | null;
+}
+
+interface Formulario {
+  nombre: string;
+  apellido: string;
+  email: string;
+  telefono: string;
+}
+
+const FORMULARIO_VACIO: Formulario = {
+  nombre: "",
+  apellido: "",
+  email: "",
+  telefono: "",
+};
+
+function mensajeHttp(status: number): string {
+  switch (status) {
+    case 400:
+      return "Hay datos inválidos. Revisá los campos del formulario.";
+    case 401:
+      return "Tu sesión venció. Volvé a iniciar sesión.";
+    case 403:
+      return "No tenés permiso para modificar este perfil.";
+    case 404:
+      return "No encontramos el perfil solicitado.";
+    case 409:
+      return "Ese correo electrónico ya está registrado.";
+    default:
+      return `No se pudo completar la operación (HTTP ${status}).`;
+  }
+}
+
+function esPerfilApi(dato: unknown): dato is PerfilApi {
+  if (!dato || typeof dato !== "object") return false;
+  const usuario = dato as Record<string, unknown>;
+  return (
+    typeof usuario.id === "number" &&
+    typeof usuario.nombre === "string" &&
+    typeof usuario.apellido === "string" &&
+    typeof usuario.email === "string" &&
+    typeof usuario.dni === "string" &&
+    (usuario.telefono === null || typeof usuario.telefono === "string")
+  );
+}
 
 export default function EditProfile() {
-  const navigate = useNavigate();
+  const { usuario, token, cargandoSesion, refrescarSesion } = useAppStore();
+  const [perfil, setPerfil] = useState<PerfilApi | null>(null);
+  const [formulario, setFormulario] = useState<Formulario>(FORMULARIO_VACIO);
+  const [cargandoPerfil, setCargandoPerfil] = useState(false);
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [exito, setExito] = useState<string | null>(null);
 
-  // Estados de datos personales (estáticos con valores simulados)
-  const [personalData, setPersonalData] = useState({
-    nombreCompleto: "Lucas Benítez",
-    username: "lucas.benitez",
-    email: "lucas.benitez@eltremendo.com",
-    telefono: "+54 9 11 4523-9981",
-    dni: "40.892.112",
-    domicilio: "Av. Cabildo 2450, Piso 4 B, Ciudad Autónoma de Buenos Aires",
-  });
+  const usuarioId = usuario?.id;
 
-  // Estados de cambio de contraseña
-  const [passwordData, setPasswordData] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
+  useEffect(() => {
+    if (!usuarioId || !token) return;
 
-  // Feedback visual simulado
-  const [profileSuccessMsg, setProfileSuccessMsg] = useState("");
-  const [passwordSuccessMsg, setPasswordSuccessMsg] = useState("");
+    const controlador = new AbortController();
 
-  const handlePersonalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setPersonalData((prev) => ({ ...prev, [name]: value }));
-  };
+    async function cargarPerfil(id: number, jwt: string) {
+      setCargandoPerfil(true);
+      setError(null);
+      setExito(null);
+      try {
+        const respuesta = await fetch(`/backend/usuarios/${id}`, {
+          headers: { Authorization: `Bearer ${jwt}` },
+          signal: controlador.signal,
+        });
 
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setPasswordData((prev) => ({ ...prev, [name]: value }));
-  };
+        if (!respuesta.ok) throw new Error(mensajeHttp(respuesta.status));
+        const datos: unknown = await respuesta.json();
+        if (!esPerfilApi(datos)) {
+          throw new Error("La API devolvió datos de perfil incorrectos.");
+        }
+        if (controlador.signal.aborted) return;
 
-  const handleSavePersonal = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Simulación visual estática para el usuario
-    setProfileSuccessMsg("Datos personales actualizados correctamente (Simulación visual estática).");
-    setTimeout(() => setProfileSuccessMsg(""), 4000);
-  };
+        setPerfil(datos);
+        setFormulario({
+          nombre: datos.nombre,
+          apellido: datos.apellido,
+          email: datos.email,
+          telefono: datos.telefono ?? "",
+        });
+      } catch (e) {
+        if (!controlador.signal.aborted) {
+          setPerfil(null);
+          setError(e instanceof Error ? e.message : "No se pudo cargar tu perfil.");
+        }
+      } finally {
+        if (!controlador.signal.aborted) setCargandoPerfil(false);
+      }
+    }
 
-  const handleCancelPersonal = () => {
-    navigate("/perfil");
-  };
+    void cargarPerfil(usuarioId, token);
+    return () => controlador.abort();
+  }, [usuarioId, token]);
 
-  const handleChangePassword = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Simulación visual estática
-    setPasswordSuccessMsg("Contraseña cambiada con éxito (Simulación visual estática).");
-    setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
-    setTimeout(() => setPasswordSuccessMsg(""), 4000);
-  };
+  function actualizarCampo(campo: keyof Formulario, valor: string) {
+    setFormulario((actual) => ({ ...actual, [campo]: valor }));
+    setExito(null);
+  }
 
-  const handleCancelPassword = () => {
-    setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
-    navigate("/perfil");
-  };
+  async function guardarCambios(evento: FormEvent<HTMLFormElement>) {
+    evento.preventDefault();
+    if (!perfil || !token || guardando) return;
+
+    const cambios: Formulario = {
+      nombre: formulario.nombre.trim(),
+      apellido: formulario.apellido.trim(),
+      email: formulario.email.trim(),
+      telefono: formulario.telefono.trim(),
+    };
+
+    if (!cambios.nombre || !cambios.apellido || !cambios.email) {
+      setError("Nombre, apellido y correo son obligatorios.");
+      return;
+    }
+
+    setGuardando(true);
+    setError(null);
+    setExito(null);
+
+    try {
+      const respuesta = await fetch(`/backend/usuarios/${perfil.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(cambios),
+      });
+      if (!respuesta.ok) throw new Error(mensajeHttp(respuesta.status));
+
+      const datos: unknown = await respuesta.json();
+      if (!esPerfilApi(datos)) {
+        throw new Error("La API guardó los cambios, pero devolvió una respuesta inesperada.");
+      }
+
+      setPerfil(datos);
+      setFormulario({
+        nombre: datos.nombre,
+        apellido: datos.apellido,
+        email: datos.email,
+        telefono: datos.telefono ?? "",
+      });
+      await refrescarSesion();
+      setExito("Los cambios se guardaron correctamente en la base de datos.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudieron guardar los datos.");
+    } finally {
+      setGuardando(false);
+    }
+  }
 
   return (
     <div className="edit-profile-wrapper">
       <main className="edit-profile-container">
-        {/* Encabezado Principal */}
         <header className="edit-profile-header">
           <div>
             <h1 className="edit-profile-title">
               EDITAR <span className="highlight">DATOS PERSONALES</span>
             </h1>
             <p className="edit-profile-subtitle">
-              Gestiona tu información de contacto de socio y las credenciales de tu cuenta.
+              Consultá tus datos reales y actualizá tu información de contacto.
             </p>
           </div>
-
           <Link to="/perfil" className="back-to-profile-btn">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-            <span>Volver a Mi Perfil</span>
+            Volver a Mi Perfil
           </Link>
         </header>
 
-        <div className="edit-profile-grid">
-          {/* SECCIÓN 1: FORMULARIO DE DATOS PERSONALES */}
-          <section className="edit-section-card" aria-labelledby="heading-personal-data">
-            <div className="card-title-group">
-              <div className="card-title-left">
-                <svg
-                  className="card-title-icon"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-                <h2 id="heading-personal-data">INFORMACIÓN GENERAL Y DE CONTACTO</h2>
-              </div>
-              <span className="card-title-badge">Socio Activo</span>
-            </div>
+        {error && (
+          <p role="alert" style={{ color: "#ff9199", margin: "1rem 0" }}>
+            {error}
+          </p>
+        )}
+        {exito && (
+          <p role="status" style={{ color: "#00e68a", margin: "1rem 0" }}>
+            {exito}
+          </p>
+        )}
 
-            {profileSuccessMsg && (
-              <div
-                style={{
-                  marginTop: "1rem",
-                  padding: "0.85rem 1rem",
-                  borderRadius: "var(--radius-md)",
-                  background: "rgba(0, 255, 135, 0.12)",
-                  border: "1px solid rgba(0, 255, 135, 0.3)",
-                  color: "var(--accent-neon)",
-                  fontSize: "0.88rem",
-                  fontWeight: 600,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                }}
-              >
-                <span>✓ {profileSuccessMsg}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleSavePersonal} className="edit-form-grid" autoComplete="off">
-              {/* Nombre y Apellido */}
-              <div className="form-group">
-                <label htmlFor="nombreCompleto" className="input-label">
-                  Nombre y Apellido
-                </label>
-                <div className="input-container">
-                  <svg
-                    className="field-icon"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
-                  </svg>
-                  <input
-                    type="text"
-                    id="nombreCompleto"
-                    name="nombreCompleto"
-                    className="form-input"
-                    value={personalData.nombreCompleto}
-                    onChange={handlePersonalChange}
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Nombre de Usuario */}
-              <div className="form-group">
-                <label htmlFor="username" className="input-label">
-                  Nombre de Usuario
-                </label>
-                <div className="input-container">
-                  <svg
-                    className="field-icon"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <circle cx="12" cy="12" r="4" />
-                    <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94" />
-                  </svg>
-                  <input
-                    type="text"
-                    id="username"
-                    name="username"
-                    className="form-input"
-                    value={personalData.username}
-                    onChange={handlePersonalChange}
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Correo Electrónico */}
-              <div className="form-group">
-                <label htmlFor="email" className="input-label">
-                  Correo Electrónico
-                </label>
-                <div className="input-container">
-                  <svg
-                    className="field-icon"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                    <polyline points="22,6 12,13 2,6" />
-                  </svg>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    className="form-input"
-                    value={personalData.email}
-                    onChange={handlePersonalChange}
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Teléfono */}
-              <div className="form-group">
-                <label htmlFor="telefono" className="input-label">
-                  Teléfono de Contacto
-                </label>
-                <div className="input-container">
-                  <svg
-                    className="field-icon"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                  </svg>
-                  <input
-                    type="tel"
-                    id="telefono"
-                    name="telefono"
-                    className="form-input"
-                    value={personalData.telefono}
-                    onChange={handlePersonalChange}
-                  />
-                </div>
-              </div>
-
-              {/* DNI / Documento */}
-              <div className="form-group">
-                <label htmlFor="dni" className="input-label">
-                  DNI / Documento de Identidad
-                </label>
-                <div className="input-container">
-                  <svg
-                    className="field-icon"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                    <line x1="7" y1="8" x2="17" y2="8" />
-                    <line x1="7" y1="12" x2="17" y2="12" />
-                  </svg>
-                  <input
-                    type="text"
-                    id="dni"
-                    name="dni"
-                    className="form-input"
-                    value={personalData.dni}
-                    onChange={handlePersonalChange}
-                  />
-                </div>
-              </div>
-
-              {/* Domicilio */}
-              <div className="form-group full-span">
-                <label htmlFor="domicilio" className="input-label">
-                  Domicilio Habitual
-                </label>
-                <div className="input-container">
-                  <svg
-                    className="field-icon"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                    <polyline points="9 22 9 12 15 12 15 22" />
-                  </svg>
-                  <input
-                    type="text"
-                    id="domicilio"
-                    name="domicilio"
-                    className="form-input"
-                    value={personalData.domicilio}
-                    onChange={handlePersonalChange}
-                  />
-                </div>
-              </div>
-
-              {/* Botones de Acción */}
-              <div className="edit-form-actions full-span">
-                <button
-                  type="button"
-                  className="btn-edit-cancel"
-                  onClick={handleCancelPersonal}
-                >
-                  Cancelar
-                </button>
-                <button type="submit" className="btn-edit-save" id="btn-save-personal">
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                  <span>Guardar Cambios</span>
-                </button>
-              </div>
-            </form>
+        {!cargandoSesion && (!usuario || !token) ? (
+          <section className="edit-section-card">
+            <p>Iniciá sesión para consultar y modificar tu perfil.</p>
+            <Link to="/login" className="back-to-profile-btn">
+              Ir al inicio de sesión
+            </Link>
           </section>
-
-          {/* SECCIÓN 2: FORMULARIO DE CAMBIO DE CONTRASEÑA */}
-          <section className="edit-section-card" aria-labelledby="heading-password-section">
-            <div className="card-title-group">
-              <div className="card-title-left">
-                <svg
-                  className="card-title-icon"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                </svg>
-                <h2 id="heading-password-section">SEGURIDAD Y CAMBIO DE CONTRASEÑA</h2>
-              </div>
-              <span className="card-title-badge">Credenciales</span>
-            </div>
-
-            {passwordSuccessMsg && (
-              <div
-                style={{
-                  marginTop: "1rem",
-                  padding: "0.85rem 1rem",
-                  borderRadius: "var(--radius-md)",
-                  background: "rgba(0, 255, 135, 0.12)",
-                  border: "1px solid rgba(0, 255, 135, 0.3)",
-                  color: "var(--accent-neon)",
-                  fontSize: "0.88rem",
-                  fontWeight: 600,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                }}
-              >
-                <span>✓ {passwordSuccessMsg}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleChangePassword} className="edit-form-grid" autoComplete="off">
-              {/* Contraseña Actual */}
-              <div className="form-group full-span">
-                <label htmlFor="currentPassword" className="input-label">
-                  Contraseña Actual
-                </label>
-                <div className="input-container">
-                  <svg
-                    className="field-icon"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                  </svg>
-                  <input
-                    type="password"
-                    id="currentPassword"
-                    name="currentPassword"
-                    className="form-input"
-                    placeholder="Ingresa tu contraseña actual"
-                    value={passwordData.currentPassword}
-                    onChange={handlePasswordChange}
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Nueva Contraseña */}
-              <div className="form-group">
-                <label htmlFor="newPassword" className="input-label">
-                  Nueva Contraseña
-                </label>
-                <div className="input-container">
-                  <svg
-                    className="field-icon"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M21 2l-2 2m-1.5 1.5L12 11l4 4 5.5-5.5a2.12 2.12 0 0 0 0-3L19 4" />
-                    <path d="M9 14l-4 4v4h4l4-4" />
-                  </svg>
-                  <input
-                    type="password"
-                    id="newPassword"
-                    name="newPassword"
-                    className="form-input"
-                    placeholder="Mínimo 8 caracteres"
-                    value={passwordData.newPassword}
-                    onChange={handlePasswordChange}
-                    required
-                    minLength={8}
-                  />
-                </div>
-              </div>
-
-              {/* Confirmación de Nueva Contraseña */}
-              <div className="form-group">
-                <label htmlFor="confirmPassword" className="input-label">
-                  Confirmación de la Nueva Contraseña
-                </label>
-                <div className="input-container">
-                  <svg
-                    className="field-icon"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                  <input
-                    type="password"
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    className="form-input"
-                    placeholder="Repite la nueva contraseña"
-                    value={passwordData.confirmPassword}
-                    onChange={handlePasswordChange}
-                    required
-                    minLength={8}
-                  />
-                </div>
-              </div>
-
-              {/* Requisitos visuales de seguridad */}
-              <div className="password-requirements full-span">
-                <div className="req-title">Requisitos de seguridad recomendados</div>
-                <ul className="req-list">
-                  <li className="req-item">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                    <span>Mínimo 8 caracteres de longitud</span>
-                  </li>
-                  <li className="req-item">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                    <span>Al menos una letra mayúscula</span>
-                  </li>
-                  <li className="req-item">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                    <span>Al menos un número o símbolo especial</span>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Botones de Acción */}
-              <div className="edit-form-actions full-span">
-                <button
-                  type="button"
-                  className="btn-edit-cancel"
-                  onClick={handleCancelPassword}
-                >
-                  Cancelar
-                </button>
-                <button type="submit" className="btn-edit-save" id="btn-change-password">
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                  </svg>
-                  <span>Cambiar Contraseña</span>
-                </button>
-              </div>
-            </form>
+        ) : cargandoSesion || cargandoPerfil ? (
+          <section className="edit-section-card">
+            <p>Cargando tu perfil...</p>
           </section>
-        </div>
+        ) : perfil ? (
+          <div className="edit-profile-grid">
+            <section className="edit-section-card" aria-labelledby="heading-personal-data">
+              <div className="card-title-group">
+                <div className="card-title-left">
+                  <h2 id="heading-personal-data">INFORMACIÓN GENERAL Y DE CONTACTO</h2>
+                </div>
+                <span className="card-title-badge">Datos reales</span>
+              </div>
+
+              <form onSubmit={(e) => void guardarCambios(e)} className="edit-form-grid">
+                <div className="form-group">
+                  <label className="input-label" htmlFor="editar-nombre">Nombre</label>
+                  <div className="input-container">
+                    <input id="editar-nombre" className="form-input" type="text" autoComplete="given-name"
+                      maxLength={100} required value={formulario.nombre}
+                      onChange={(e) => actualizarCampo("nombre", e.target.value)}
+                      style={{ paddingLeft: "1rem" }} />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="input-label" htmlFor="editar-apellido">Apellido</label>
+                  <div className="input-container">
+                    <input id="editar-apellido" className="form-input" type="text" autoComplete="family-name"
+                      maxLength={100} required value={formulario.apellido}
+                      onChange={(e) => actualizarCampo("apellido", e.target.value)}
+                      style={{ paddingLeft: "1rem" }} />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="input-label" htmlFor="editar-email">Correo electrónico</label>
+                  <div className="input-container">
+                    <input id="editar-email" className="form-input" type="email" autoComplete="email"
+                      maxLength={150} required value={formulario.email}
+                      onChange={(e) => actualizarCampo("email", e.target.value)}
+                      style={{ paddingLeft: "1rem" }} />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="input-label" htmlFor="editar-telefono">Teléfono</label>
+                  <div className="input-container">
+                    <input id="editar-telefono" className="form-input" type="tel" autoComplete="tel"
+                      maxLength={30} value={formulario.telefono}
+                      onChange={(e) => actualizarCampo("telefono", e.target.value)}
+                      style={{ paddingLeft: "1rem" }} />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="input-label" htmlFor="editar-dni">DNI (no editable)</label>
+                  <div className="input-container">
+                    <input id="editar-dni" className="form-input" type="text" readOnly
+                      value={perfil.dni} style={{ paddingLeft: "1rem", opacity: 0.65 }} />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="input-label" htmlFor="editar-sede">Sede base (no editable)</label>
+                  <div className="input-container">
+                    <input id="editar-sede" className="form-input" type="text" readOnly
+                      value={perfil.sede_base?.nombre ?? "Sin sede asignada"}
+                      style={{ paddingLeft: "1rem", opacity: 0.65 }} />
+                  </div>
+                </div>
+
+                <div className="edit-form-actions full-span">
+                  <Link to="/perfil" className="btn-edit-cancel">Cancelar</Link>
+                  <button type="submit" className="btn-edit-save" id="btn-save-personal"
+                    disabled={guardando}>
+                    {guardando ? "Guardando..." : "Guardar cambios"}
+                  </button>
+                </div>
+              </form>
+            </section>
+          </div>
+        ) : (
+          <section className="edit-section-card">
+            <p>No fue posible obtener tus datos. Revisá el mensaje de error o volvé a Mi Perfil.</p>
+          </section>
+        )}
       </main>
     </div>
   );
