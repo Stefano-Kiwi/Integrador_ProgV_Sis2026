@@ -3,13 +3,13 @@ import type { estado_reserva_cancha } from '@prisma/client';
 /** Transiciones válidas del ciclo de vida de una reserva de cancha (RF-10). */
 export const TRANSICIONES_RESERVA: Record<estado_reserva_cancha, estado_reserva_cancha[]> = {
   PENDIENTE_PAGO: ['CONFIRMADA', 'CANCELADA'],
-  CONFIRMADA: ['CUMPLIDA', 'CANCELADA'],
+  CONFIRMADA: ['CONFIRMADA', 'CUMPLIDA', 'CANCELADA'],
   CUMPLIDA: [],
   CANCELADA: [],
 };
 
 export const puedeTransicionar = (desde: estado_reserva_cancha, hacia: estado_reserva_cancha): boolean =>
-  TRANSICIONES_RESERVA[desde].includes(hacia);
+  TRANSICIONES_RESERVA[desde]?.includes(hacia) ?? false;
 
 /** Cancelación sin penalidad hasta 24 h antes del turno; con menos antelación se retiene el 50% si ya estaba pagada. */
 export const HORAS_SIN_PENALIDAD = 24;

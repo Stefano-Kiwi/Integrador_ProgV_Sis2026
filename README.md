@@ -6,13 +6,14 @@ FitZone Sports es una plataforma web monolítica modular que unifica la gestión
 
 ## Integrantes (Grupo 12)
 
-| Rol | Integrante | Usuario Git |
-| :--- | :--- | :--- |
-| **Líder / Backend** | Matías Serantes | `@matiasfs99` |
-| **Líder / Backend** | Stéfano Carbajal | `@Stefano-Kiwi` |
-| **Líder / Frontend** | Ian Caraballo | `@iancarab` |
-| **Líder / Mobile-QA** | Denis Chang | `@Sined108` |
-| **Líder / Frontend-QA** | Lautaro Polo | `@politen22` |
+| Integrante | Usuario Git |
+| :--- | :--- |
+| *Caraballo Ian* | `@IanCarab` |
+| *Carbajal Budón Stéfano* | `@Stefano-Kiwi` |
+| *Chang Denis* | `@Sined108` |
+| *Polo Lautaro* | `@politen22` |
+| *Serantes Matías* | `@MatiasFS99` |
+
 
 ---
 

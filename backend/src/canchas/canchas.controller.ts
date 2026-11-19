@@ -41,6 +41,14 @@ export class CanchasController {
     return this.canchasService.findAllReservas();
   }
 
+  @Get(APP_ROUTES.CANCHAS.MIS_RESERVAS)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Listar mis reservas de canchas' })
+  @ApiOkResponse({ description: 'Listado de reservas del usuario autenticado' })
+  findMisReservas(@CurrentUser('sub') usuarioId: number) {
+    return this.canchasService.findReservasByUsuario(usuarioId);
+  }
+
   @Get(APP_ROUTES.CANCHAS.DISPONIBILIDAD)
   @ApiBearerAuth('access-token')
   @ApiOperation({

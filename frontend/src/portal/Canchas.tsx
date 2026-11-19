@@ -17,24 +17,17 @@ import {
   cancelarReservaCancha,
   obtenerCanchas,
   obtenerDisponibilidadCancha,
+  obtenerMisReservasCancha,
   reservarCancha,
   type CanchaApi,
   type DisponibilidadCanchaApi,
+  type MiReservaCanchaApi,
 } from "../services/canchasService";
-import { obtenerSedes, type SedeApi } from "../services/sedesService";
 import {
   obtenerMiEstadoMembresia,
   type EstadoMembresiaRespuesta,
 } from "../services/membresiasService";
-
-interface ReservaPropia {
-  reserva_id: number;
-  canchaNombre: string;
-  fecha: string;
-  hora_inicio: number;
-  monto_total: number;
-  estado: string;
-}
+import { siteConfig } from "../config/siteConfig";
 
 function fechaMananaIso(): string {
   const d = new Date();
@@ -43,9 +36,8 @@ function fechaMananaIso(): string {
 }
 
 export default function Canchas() {
-  const { usuario, token, sedeSeleccionadaId, seleccionarSede } = useAppStore();
+  const { usuario, token } = useAppStore();
 
-  const [sedes, setSedes] = useState<SedeApi[]>([]);
   const [canchas, setCanchas] = useState<CanchaApi[]>([]);
   const [canchaId, setCanchaId] = useState<number | null>(null);
   const [fecha, setFecha] = useState<string>(fechaMananaIso());
@@ -58,32 +50,34 @@ export default function Canchas() {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [exito, setExito] = useState<string | null>(null);
-  const [reservasPropias, setReservasPropias] = useState<ReservaPropia[]>([]);
+  const [reservasPropias, setReservasPropias] = useState<MiReservaCanchaApi[]>([]);
 
-  // Cargar sedes, canchas y estado de membresía
+  const cargarReservasUsuario = useCallback(async () => {
+    if (!token) return;
+    try {
+      const datos = await obtenerMisReservasCancha();
+      setReservasPropias(datos);
+    } catch {
+      // ignore
+    }
+  }, [token]);
+
+  // Cargar canchas y estado de membresía
   useEffect(() => {
     let activo = true;
     async function cargar() {
       setCargandoInicial(true);
       setError(null);
       try {
-        const [listaSedes, listaCanchas] = await Promise.all([
-          obtenerSedes(),
-          obtenerCanchas(),
-        ]);
+        const listaCanchas = await obtenerCanchas();
         if (!activo) return;
-        setSedes(listaSedes);
         setCanchas(listaCanchas);
-
-        const sedeInicial = sedeSeleccionadaId ?? listaSedes[0]?.id ?? null;
-        if (sedeInicial && sedeSeleccionadaId === null) {
-          seleccionarSede(sedeInicial);
-        }
 
         if (token) {
           obtenerMiEstadoMembresia()
             .then((est) => activo && setEstadoMembresia(est))
-            .catch(() => {});
+            .catch(() => { });
+          void cargarReservasUsuario();
         }
       } catch (err) {
         if (activo) {
@@ -97,11 +91,9 @@ export default function Canchas() {
     return () => {
       activo = false;
     };
-  }, [token, sedeSeleccionadaId, seleccionarSede]);
+  }, [token, cargarReservasUsuario]);
 
-  const canchasDeSede = sedeSeleccionadaId
-    ? canchas.filter((c) => c.sede_id === sedeSeleccionadaId)
-    : canchas;
+  const canchasDeSede = canchas.filter((c) => c.sede_id === siteConfig.sedeId);
 
   const canchaActual =
     canchasDeSede.find((c) => c.id === canchaId) ?? canchasDeSede[0] ?? null;
@@ -141,21 +133,10 @@ export default function Canchas() {
         usuario?.id
       );
       const monto = Number(res.monto_total);
-      setReservasPropias((prev) => [
-        {
-          reserva_id: res.reserva_id,
-          canchaNombre: canchaActual.nombre,
-          fecha,
-          hora_inicio: franjaSel.hora_inicio,
-          monto_total: monto,
-          estado: res.estado,
-        },
-        ...prev,
-      ]);
       setExito(
         `Reserva #${res.reserva_id} creada ($${monto.toLocaleString("es-AR")}). Podés pagarla para confirmarla.`
       );
-      await cargarGrilla(canchaActual.id, fecha);
+      await Promise.all([cargarGrilla(canchaActual.id, fecha), cargarReservasUsuario()]);
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
         setError("Ese horario ya fue reservado");
@@ -173,15 +154,13 @@ export default function Canchas() {
     setExito(null);
     try {
       const res = await cancelarReservaCancha(reservaId);
-      setReservasPropias((prev) =>
-        prev.map((r) => (r.reserva_id === reservaId ? { ...r, estado: "CANCELADA" } : r))
-      );
       setExito(
         `${res.mensaje}${res.con_penalidad ? ` Penalidad: $${res.penalidad}.` : ""}`
       );
-      if (canchaActual) {
-        await cargarGrilla(canchaActual.id, fecha);
-      }
+      await Promise.all([
+        canchaActual ? cargarGrilla(canchaActual.id, fecha) : Promise.resolve(),
+        cargarReservasUsuario(),
+      ]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo cancelar la reserva.");
     }
@@ -236,29 +215,11 @@ export default function Canchas() {
                   gap: "0.75rem",
                 }}
               >
-                <FormField label="Sede" htmlFor="sel-sede">
-                  <select
-                    id="sel-sede"
-                    value={sedeSeleccionadaId ?? ""}
-                    onChange={(e) => {
-                      seleccionarSede(Number(e.target.value) || null);
-                      setCanchaId(null);
-                    }}
-                    style={{
-                      width: "100%",
-                      padding: "0.65rem",
-                      borderRadius: "8px",
-                      background: "#0f1524",
-                      color: "#fff",
-                      border: "1px solid var(--border-color, #222b40)",
-                    }}
-                  >
-                    {sedes.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.nombre} ({s.localidad})
-                      </option>
-                    ))}
-                  </select>
+                <FormField label="Sede">
+                  <p style={{ color: "var(--text-muted, #8b95a5)", margin: "0.5rem 0" }}>
+                    Mostrando canchas disponibles en:{" "}
+                    <strong style={{ color: "#fff" }}>{siteConfig.sedeNombre}</strong>
+                  </p>
                 </FormField>
 
                 <FormField label="Cancha" htmlFor="sel-cancha">
@@ -369,54 +330,60 @@ export default function Canchas() {
             )}
 
             {reservasPropias.length > 0 && (
-              <Card title="Tus reservas de esta sesión">
+              <Card title="Tus reservas de canchas">
                 <div style={{ display: "grid", gap: "0.75rem" }}>
-                  {reservasPropias.map((r) => (
-                    <div
-                      key={r.reserva_id}
-                      style={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        gap: "0.75rem",
-                        padding: "0.85rem",
-                        borderRadius: "10px",
-                        background: "rgba(255, 255, 255, 0.03)",
-                        border: "1px solid var(--border-color, #222b40)",
-                      }}
-                    >
-                      <div>
-                        <strong style={{ color: "#fff" }}>
-                          #{r.reserva_id} · {r.canchaNombre}
-                        </strong>
-                        <div style={{ fontSize: "0.82rem", color: "#94a3b8" }}>
-                          {r.fecha} · {String(r.hora_inicio).padStart(2, "0")}:00 hs · $
-                          {r.monto_total.toLocaleString("es-AR")}
+                  {reservasPropias.map((r) => {
+                    const monto = typeof r.monto_total === "number" ? r.monto_total : Number(r.monto_total);
+                    const fechaTexto = new Date(r.fecha).toISOString().slice(0, 10);
+                    return (
+                      <div
+                        key={r.id}
+                        style={{
+                          display: "flex",
+                          flexWrap: "wrap",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          gap: "0.75rem",
+                          padding: "0.85rem",
+                          borderRadius: "10px",
+                          background: "rgba(255, 255, 255, 0.03)",
+                          border: "1px solid var(--border-color, #222b40)",
+                        }}
+                      >
+                        <div>
+                          <strong style={{ color: "#fff" }}>
+                            #{r.id} · {r.cancha.nombre} ({r.cancha.tipo_cancha.nombre})
+                          </strong>
+                          <div style={{ fontSize: "0.82rem", color: "#94a3b8" }}>
+                            {fechaTexto} · {String(r.hora_inicio).padStart(2, "0")}:00 hs · $
+                            {monto.toLocaleString("es-AR")}
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
+                          <Badge variant={r.estado === "CANCELADA" ? "danger" : r.estado === "CONFIRMADA" ? "success" : "warning"}>
+                            {r.estado}
+                          </Badge>
+                          {r.estado !== "CANCELADA" && r.estado !== "CUMPLIDA" && (
+                            <>
+                              {r.estado === "PENDIENTE_PAGO" && (
+                                <Link
+                                  to={`/pagos?tipo=cancha&id=${r.id}&monto=${monto}`}
+                                >
+                                  <Button variant="primary">Pagar</Button>
+                                </Link>
+                              )}
+                              <Button
+                                variant="danger"
+                                onClick={() => manejarCancelar(r.id)}
+                              >
+                                Cancelar
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </div>
-                      <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
-                        <Badge variant={r.estado === "CANCELADA" ? "danger" : "warning"}>
-                          {r.estado}
-                        </Badge>
-                        {r.estado !== "CANCELADA" && (
-                          <>
-                            <Link
-                              to={`/pagos?tipo=cancha&id=${r.reserva_id}&monto=${r.monto_total}`}
-                            >
-                              <Button variant="primary">Pagar</Button>
-                            </Link>
-                            <Button
-                              variant="danger"
-                              onClick={() => manejarCancelar(r.reserva_id)}
-                            >
-                              Cancelar
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </Card>
             )}

@@ -42,6 +42,14 @@ export class ClasesController {
     return this.clasesService.miListaEspera(usuarioId);
   }
 
+  @Get(APP_ROUTES.CLASES.MIS_RESERVAS)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Consultar mis reservas de clases (RF-07)' })
+  @ApiOkResponse({ description: 'Listado de reservas de clase del usuario autenticado' })
+  findMisReservas(@CurrentUser('sub') usuarioId: number) {
+    return this.clasesService.findReservasByUsuario(usuarioId);
+  }
+
   @Public()
   @Get(APP_ROUTES.CLASES.BY_ID)
   @ApiOperation({ summary: 'Obtener detalle de una clase' })

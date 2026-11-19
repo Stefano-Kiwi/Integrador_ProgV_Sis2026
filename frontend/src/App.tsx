@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom
 import MainLayout from "./layouts/MainLayout";
 import Home from "./portal/Home";
 import Login from "./portal/Login";
+import Register from "./portal/Register";
 import Profile from "./portal/Profile";
 import EditProfile from "./portal/EditProfile";
 import Pagos from "./portal/Pagos";
@@ -63,6 +64,8 @@ export default function App() {
         <Route element={<MainLayout><Outlet /></MainLayout>}>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/registro" element={<Register />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/perfil" element={<Profile />} />
           <Route path="/perfil/editar" element={<EditProfile />} />

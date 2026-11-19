@@ -200,4 +200,14 @@ export class ClasesRepository {
       }),
     );
   }
+
+  findReservasByUsuario(usuarioId: number) {
+    return this.prisma.reserva_clase.findMany({
+      where: { usuario_id: usuarioId },
+      include: {
+        clase: { include: CLASE_INCLUDE },
+      },
+      orderBy: { id: 'desc' },
+    });
+  }
 }

@@ -98,3 +98,50 @@ export async function obtenerUsuarioPorId(
 
   return usuario;
 }
+
+export interface RegistrarUsuarioPayload {
+  dni: string;
+  nombre: string;
+  apellido: string;
+  email: string;
+  password: string;
+  telefono?: string;
+  sede_base_id?: number;
+  id_rol?: number;
+}
+
+export async function registrarUsuario(
+  datos: RegistrarUsuarioPayload,
+): Promise<UsuarioApi> {
+  const respuesta = await fetch("/backend/usuarios", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      ...datos,
+      id_rol: datos.id_rol ?? 1, // Siempre rol 1 (Cliente) por defecto
+    }),
+  });
+
+  if (respuesta.status === 409) {
+    throw new Error("El email o el DNI ya se encuentran registrados en el sistema.");
+  }
+
+  if (respuesta.status === 400) {
+    const errorBody = await respuesta.json().catch(() => null);
+    const mensaje = Array.isArray(errorBody?.message)
+      ? errorBody.message.join(", ")
+      : errorBody?.message || "Los datos ingresados son inválidos. Revisa el formulario.";
+    throw new Error(mensaje);
+  }
+
+  if (!respuesta.ok) {
+    throw new Error(
+      `No se pudo completar el registro. Código: ${respuesta.status}`,
+    );
+  }
+
+  const nuevoUsuario: unknown = await respuesta.json();
+  return nuevoUsuario as UsuarioApi;
+}

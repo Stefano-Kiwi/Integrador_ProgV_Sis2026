@@ -631,6 +631,26 @@
         ]
       }
     },
+    "/clases/reservas/mias": {
+      "get": {
+        "operationId": "ClasesController_findMisReservas",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Listado de reservas de clase del usuario autenticado"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Consultar mis reservas de clases (RF-07)",
+        "tags": [
+          "clases"
+        ]
+      }
+    },
     "/clases/{id}": {
       "get": {
         "operationId": "ClasesController_findById",
@@ -788,6 +808,26 @@
           }
         },
         "summary": "Listar todas las reservas de canchas",
+        "tags": [
+          "canchas"
+        ]
+      }
+    },
+    "/canchas/reservas/mias": {
+      "get": {
+        "operationId": "CanchasController_findMisReservas",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Listado de reservas del usuario autenticado"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Listar mis reservas de canchas",
         "tags": [
           "canchas"
         ]

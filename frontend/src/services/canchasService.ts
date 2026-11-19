@@ -139,3 +139,30 @@ export async function cambiarEstadoCancha(
     requireAuth: true,
   });
 }
+
+export interface MiReservaCanchaApi {
+  id: number;
+  fecha: string;
+  hora_inicio: number;
+  estado: string;
+  monto_total: string | number;
+  cancha: {
+    id: number;
+    nombre: string;
+    tipo_cancha: {
+      id: number;
+      nombre: string;
+    };
+    sede: {
+      id: number;
+      nombre: string;
+      localidad: string;
+    };
+  };
+}
+
+export async function obtenerMisReservasCancha(): Promise<MiReservaCanchaApi[]> {
+  return apiRequest<MiReservaCanchaApi[]>("/canchas/reservas/mias", {
+    requireAuth: true,
+  });
+}

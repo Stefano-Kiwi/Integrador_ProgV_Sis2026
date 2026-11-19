@@ -1,30 +1,25 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { AlertMessage, Badge, Button, Card, FormField, Spinner } from "../components";
+import { AlertMessage, Badge, Button, Card, Spinner } from "../components";
 import { useAppStore } from "../store";
 import {
   cancelarReservaClase,
   inscribirUsuarioClase,
   obtenerClases,
   obtenerMiListaEspera,
+  obtenerMisReservasClase,
   type ClaseApi,
   type EntradaListaEsperaApi,
+  type MiReservaClaseApi,
 } from "../services/clasesService";
-import { obtenerSedes, type SedeApi } from "../services/sedesService";
-
-interface ReservaClaseLocal {
-  reserva_id: number;
-  clase: ClaseApi;
-  estado: string;
-}
+import { siteConfig } from "../config/siteConfig";
 
 export default function Clases() {
-  const { usuario, token, sedeSeleccionadaId, seleccionarSede } = useAppStore();
+  const { usuario, token } = useAppStore();
 
-  const [sedes, setSedes] = useState<SedeApi[]>([]);
   const [clases, setClases] = useState<ClaseApi[]>([]);
   const [listaEspera, setListaEspera] = useState<EntradaListaEsperaApi[]>([]);
-  const [misReservas, setMisReservas] = useState<ReservaClaseLocal[]>([]);
+  const [misReservas, setMisReservas] = useState<MiReservaClaseApi[]>([]);
 
   const [cargando, setCargando] = useState(true);
   const [procesandoId, setProcesandoId] = useState<number | null>(null);
@@ -35,13 +30,16 @@ export default function Clases() {
     setCargando(true);
     setError(null);
     try {
-      const [listaSedes, listaClases] = await Promise.all([obtenerSedes(), obtenerClases()]);
-      setSedes(listaSedes);
+      const listaClases = await obtenerClases();
       setClases(listaClases);
 
       if (token) {
-        const espera = await obtenerMiListaEspera().catch(() => []);
+        const [espera, reservas] = await Promise.all([
+          obtenerMiListaEspera().catch(() => []),
+          obtenerMisReservasClase().catch(() => []),
+        ]);
         setListaEspera(espera);
+        setMisReservas(reservas);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudieron cargar las clases.");
@@ -54,9 +52,7 @@ export default function Clases() {
     void cargarDatos();
   }, [cargarDatos]);
 
-  const clasesFiltradas = sedeSeleccionadaId
-    ? clases.filter((c) => c.sede_id === sedeSeleccionadaId)
-    : clases;
+  const clasesFiltradas = clases.filter((c) => c.sede_id === siteConfig.sedeId);
 
   const manejarInscribir = async (clase: ClaseApi) => {
     if (!usuario) {
@@ -69,12 +65,6 @@ export default function Clases() {
     try {
       const res = await inscribirUsuarioClase(clase.id, usuario.id);
       setExito(res.mensaje);
-      if (res.estado === "CONFIRMADA" && res.reserva_id) {
-        setMisReservas((prev) => [
-          { reserva_id: res.reserva_id!, clase, estado: "CONFIRMADA" },
-          ...prev,
-        ]);
-      }
       await cargarDatos();
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo realizar la inscripción.");
@@ -83,7 +73,7 @@ export default function Clases() {
     }
   };
 
-  const manejarCancelar = async (item: ReservaClaseLocal) => {
+  const manejarCancelar = async (item: MiReservaClaseApi) => {
     const horasRestantes = (new Date(item.clase.inicio_at).getTime() - Date.now()) / 3_600_000;
     if (horasRestantes < 2) {
       const confirmar = window.confirm(
@@ -95,10 +85,7 @@ export default function Clases() {
     setError(null);
     setExito(null);
     try {
-      const res = await cancelarReservaClase(item.reserva_id);
-      setMisReservas((prev) =>
-        prev.map((r) => (r.reserva_id === item.reserva_id ? { ...r, estado: "CANCELADA" } : r))
-      );
+      const res = await cancelarReservaClase(item.id);
       const extra = res.promovido_desde_lista_espera
         ? ` Se promovió automáticamente al usuario #${res.promovido_desde_lista_espera.usuarioId} desde lista de espera.`
         : "";
@@ -126,29 +113,13 @@ export default function Clases() {
 
         <div style={{ display: "grid", gap: "1.25rem" }}>
           <Card>
-            <FormField label="Filtrar por sede" htmlFor="clases-sede">
-              <select
-                id="clases-sede"
-                value={sedeSeleccionadaId ?? ""}
-                onChange={(e) => seleccionarSede(Number(e.target.value) || null)}
-                style={{
-                  width: "100%",
-                  maxWidth: "360px",
-                  padding: "0.65rem",
-                  borderRadius: "8px",
-                  background: "#0f1524",
-                  color: "#fff",
-                  border: "1px solid var(--border-color, #222b40)",
-                }}
-              >
-                <option value="">Todas las sedes</option>
-                {sedes.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.nombre} ({s.localidad})
-                  </option>
-                ))}
-              </select>
-            </FormField>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <span style={{ color: "var(--text-muted, #8b95a5)", fontSize: "0.85rem" }}>Sede actual</span>
+                <h3 style={{ margin: "0.25rem 0 0 0", color: "#fff" }}>{siteConfig.sedeNombre} ({siteConfig.sedeLocalidad})</h3>
+              </div>
+              <Badge variant="info">Sede Activa</Badge>
+            </div>
           </Card>
 
           {cargando ? (
@@ -249,13 +220,13 @@ export default function Clases() {
           )}
 
           {misReservas.length > 0 && (
-            <Card title="Tus reservas de clases de esta sesión">
+            <Card title="Tus reservas de clases">
               <div style={{ display: "grid", gap: "0.65rem" }}>
                 {misReservas.map((r) => {
                   const horas = (new Date(r.clase.inicio_at).getTime() - Date.now()) / 3_600_000;
                   return (
                     <div
-                      key={r.reserva_id}
+                      key={r.id}
                       style={{
                         display: "flex",
                         flexWrap: "wrap",
@@ -270,7 +241,7 @@ export default function Clases() {
                     >
                       <div>
                         <strong style={{ color: "#fff" }}>
-                          #{r.reserva_id} · {r.clase.tipo_clase.nombre}
+                          #{r.id} · {r.clase.tipo_clase.nombre}
                         </strong>
                         <div style={{ fontSize: "0.82rem", color: "#94a3b8" }}>
                           {new Date(r.clase.inicio_at).toLocaleString("es-AR")}
