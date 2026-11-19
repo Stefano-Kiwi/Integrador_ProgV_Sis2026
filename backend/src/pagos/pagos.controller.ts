@@ -3,7 +3,7 @@ import { ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, A
 import { SimularPagoDto } from './dto/simular-pago.dto.js';
 import { PagosService } from './pagos.service.js';
 import { APP_ROUTES } from '../routes/index.js';
-import { Roles } from '../auth/decorators/roles.decorator.js';
+import { Roles } from '../common/decorators/roles.decorator.js';
 
 @ApiTags('pagos')
 @Controller(APP_ROUTES.PAGOS.ROOT)

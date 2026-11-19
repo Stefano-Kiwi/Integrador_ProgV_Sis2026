@@ -3,7 +3,7 @@ import { ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, A
 import { CreatePlanDto } from './dto/create-plan.dto.js';
 import { PlanesService } from './planes.service.js';
 import { APP_ROUTES } from '../routes/index.js';
-import { Public } from '../auth/decorators/public.decorator.js';
+import { Public } from '../common/decorators/public.decorator.js';
 
 @ApiTags('planes')
 @Controller(APP_ROUTES.PLANES.ROOT)

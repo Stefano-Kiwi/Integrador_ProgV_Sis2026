@@ -12,8 +12,8 @@ import {
 import { AuthService } from './auth.service.js';
 import { LoginDto, LoginResponseDto } from './dto/login.dto.js';
 import { MeResponseDto, VerifyRolDto, VerifyResponseDto } from './dto/verify.dto.js';
-import { Public } from './decorators/public.decorator.js';
-import { CurrentUser, type JwtPayload } from './decorators/current-user.decorator.js';
+import { Public } from '../common/decorators/public.decorator.js';
+import { CurrentUser, type JwtPayload } from '../common/decorators/current-user.decorator.js';
 import { APP_ROUTES } from '../routes/index.js';
 
 @ApiTags('auth')

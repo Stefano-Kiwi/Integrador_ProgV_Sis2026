@@ -3,7 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import { UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service.js';
-import { UsersService } from '../users/users.service.js';
+import { UsersService } from '../usuarios/users.service.js';
 import bcrypt from 'bcryptjs';
 
 // ─── Mocks ───────────────────────────────────────────────────────────────────

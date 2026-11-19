@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsArray, IsIn, ArrayNotEmpty } from 'class-validator';
-import { APP_ROLES, type AppRole } from '../decorators/roles.decorator.js';
+import { APP_ROLES, type AppRole } from '../../common/decorators/roles.decorator.js';
 
 export class VerifyRolDto {
   @ApiProperty({

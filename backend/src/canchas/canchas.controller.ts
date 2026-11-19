@@ -4,8 +4,8 @@ import { CreateCanchaDto } from './dto/create-cancha.dto.js';
 import { ReservaCanchaDto } from './dto/reserva-cancha.dto.js';
 import { CanchasService } from './canchas.service.js';
 import { APP_ROUTES } from '../routes/index.js';
-import { Public } from '../auth/decorators/public.decorator.js';
-import { Roles } from '../auth/decorators/roles.decorator.js';
+import { Public } from '../common/decorators/public.decorator.js';
+import { Roles } from '../common/decorators/roles.decorator.js';
 
 @ApiTags('canchas')
 @Controller(APP_ROUTES.CANCHAS.ROOT)

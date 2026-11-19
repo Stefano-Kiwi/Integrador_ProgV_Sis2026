@@ -4,7 +4,7 @@ import { CreateClaseDto } from './dto/create-clase.dto.js';
 import { ReservaClaseDto } from './dto/reserva-clase.dto.js';
 import { ClasesService } from './clases.service.js';
 import { APP_ROUTES } from '../routes/index.js';
-import { Public } from '../auth/decorators/public.decorator.js';
+import { Public } from '../common/decorators/public.decorator.js';
 
 @ApiTags('clases')
 @Controller(APP_ROUTES.CLASES.ROOT)

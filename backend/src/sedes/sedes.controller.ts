@@ -3,8 +3,8 @@ import { ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, A
 import { CreateSedeDto } from './dto/create-sede.dto.js';
 import { SedesService } from './sedes.service.js';
 import { APP_ROUTES } from '../routes/index.js';
-import { Public } from '../auth/decorators/public.decorator.js';
-import { Roles } from '../auth/decorators/roles.decorator.js';
+import { Public } from '../common/decorators/public.decorator.js';
+import { Roles } from '../common/decorators/roles.decorator.js';
 
 @ApiTags('sedes')
 @Controller(APP_ROUTES.SEDES.ROOT)

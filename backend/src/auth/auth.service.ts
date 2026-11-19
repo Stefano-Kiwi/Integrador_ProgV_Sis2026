@@ -1,10 +1,10 @@
 import { ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import bcrypt from 'bcryptjs';
-import { UsersService } from '../users/users.service.js';
+import { UsersService } from '../usuarios/users.service.js';
 import type { LoginDto, LoginResponseDto } from './dto/login.dto.js';
 import type { VerifyRolDto, VerifyResponseDto, MeResponseDto } from './dto/verify.dto.js';
-import type { AppRole } from './decorators/roles.decorator.js';
+import type { AppRole } from '../common/decorators/roles.decorator.js';
 
 /** Mapa id_rol → nombre de rol (igual que en roles.guard.ts) */
 const ROLE_NAME_MAP: Record<number, AppRole> = {

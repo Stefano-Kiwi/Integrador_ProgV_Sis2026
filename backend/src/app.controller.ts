@@ -1,7 +1,7 @@
 import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service.js';
 import { ApiResponse } from '@nestjs/swagger';
-import { Public } from './auth/decorators/public.decorator.js';
+import { Public } from './common/decorators/public.decorator.js';
 
 @Controller("/")
 export class AppController {
