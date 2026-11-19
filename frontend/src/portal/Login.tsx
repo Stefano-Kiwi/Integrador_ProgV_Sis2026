@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { iniciarSesion } from "../services/authService";
+import { iniciarSesion, obtenerUsuarioActual } from "../services/authService";
+import { useAppStore } from "../store";
 
 export default function Login() {
   const navigate = useNavigate();
+  const { refrescarSesion } = useAppStore();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,7 +26,21 @@ export default function Login() {
 
     try {
       await iniciarSesion(email, password);
-      navigate("/profile");
+      await refrescarSesion();
+      const usuario = obtenerUsuarioActual();
+      const idRol = typeof usuario?.id_rol === "number" ? usuario.id_rol : null;
+      const rolTexto = String(usuario?.clase_rol ?? usuario?.rol ?? usuario?.role ?? "").toLowerCase();
+      const esAdminOGerente =
+        idRol === 3 ||
+        idRol === 4 ||
+        rolTexto === "gerente" ||
+        rolTexto === "admin" ||
+        rolTexto === "administrador";
+      if (esAdminOGerente) {
+        navigate("/admin", { replace: true });
+      } else {
+        navigate("/profile", { replace: true });
+      }
     } catch (err) {
       setError(
         err instanceof TypeError

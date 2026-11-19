@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
+import { siteConfig } from "../../config/siteConfig";
 import {
     obtenerToken,
     obtenerUsuarioActual,
@@ -8,7 +9,7 @@ import {
     type UsuarioSesion,
 } from "../../services/authService";
 
-const LOCALIDADES = ["Concordia", "Federación", "Chajarí"] as const;
+const LOCALIDADES = [siteConfig.sedeLocalidad] as const;
 type Localidad = (typeof LOCALIDADES)[number];
 
 function obtenerIniciales(nombre?: string, apellido?: string): string {
@@ -61,8 +62,8 @@ export default function Navbar() {
                 const apellidoPayload = typeof payload.apellido === "string" ? payload.apellido : "";
                 const emailPayload = typeof payload.email === "string" ? payload.email : "";
                 const rolPayload = (typeof payload.rol === "string" && payload.rol) ||
-                                   (typeof payload.role === "string" && payload.role) ||
-                                   "Socio";
+                    (typeof payload.role === "string" && payload.role) ||
+                    "Socio";
 
                 setUsuario({
                     id: typeof payload.sub === "number" ? payload.sub : 0,
@@ -193,7 +194,7 @@ export default function Navbar() {
                         <path d="M6 5v14M18 5v14M2 9h4M18 9h4M2 15h4M18 15h4M6 12h12" />
                     </svg>
                     <span className="brand-text">
-                        EL TREMENDO<span className="highlight"> GYM</span>
+                        {siteConfig.clubName}<span className="highlight"> GYM</span>
                     </span>
                 </Link>
 

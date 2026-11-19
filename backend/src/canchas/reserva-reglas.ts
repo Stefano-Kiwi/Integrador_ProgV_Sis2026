@@ -3,8 +3,7 @@ import type { estado_reserva_cancha } from '@prisma/client';
 /** Transiciones válidas del ciclo de vida de una reserva de cancha (RF-10). */
 export const TRANSICIONES_RESERVA: Record<estado_reserva_cancha, estado_reserva_cancha[]> = {
   PENDIENTE_PAGO: ['CONFIRMADA', 'CANCELADA'],
-  CONFIRMADA: ['CUMPLIDA', 'CANCELADA'],
-  CUMPLIDA: [],
+  CONFIRMADA: ['CONFIRMADA', 'CANCELADA'],
   CANCELADA: [],
 };
 
