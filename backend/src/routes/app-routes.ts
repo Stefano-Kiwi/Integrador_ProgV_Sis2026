@@ -43,6 +43,15 @@ export const APP_ROUTES = {
     BY_ID: ':id',
     SIMULAR: 'simular',
   },
+  ACCESO: {
+    ROOT: 'acceso',
+    QR: 'qr',
+    VALIDAR: 'validar',
+    EGRESO: 'egreso',
+    AFORO: 'aforo/:sedeId',
+    SINCRONIZAR: 'sincronizar',
+    SNAPSHOT: 'sedes/:sedeId/snapshot',
+  },
 } as const;
 
 /**
