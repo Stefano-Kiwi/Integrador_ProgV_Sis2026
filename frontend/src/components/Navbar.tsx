@@ -1,19 +1,109 @@
 import { useState, useEffect, useRef } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
+import {
+    obtenerToken,
+    obtenerUsuarioActual,
+    obtenerMiPerfil,
+    cerrarSesion,
+    type UsuarioSesion,
+} from "../services/authService";
 
 const LOCALIDADES = ["Concordia", "Federación", "Chajarí"] as const;
 type Localidad = (typeof LOCALIDADES)[number];
 
+function obtenerIniciales(nombre?: string, apellido?: string): string {
+    const n = (nombre || "").trim();
+    const a = (apellido || "").trim();
+    if (n && a) {
+        return `${n.charAt(0)}${a.charAt(0)}`.toUpperCase();
+    }
+    if (n) {
+        return n.slice(0, 2).toUpperCase();
+    }
+    return "FZ";
+}
+
 export default function Navbar() {
     const navigate = useNavigate();
-    const [locality, setLocality] = useState<Localidad>("Concordia");
+    const location = useLocation();
 
+    const [locality, setLocality] = useState<Localidad>("Concordia");
     const [isScrolled, setIsScrolled] = useState(false);
     const [isLocalityOpen, setIsLocalityOpen] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
 
+    const [usuario, setUsuario] = useState<UsuarioSesion | {
+        id: number;
+        nombre: string;
+        apellido?: string;
+        email: string;
+        rol?: { id_rol: number; clase_rol: string };
+    } | null>(null);
+
     const localityRef = useRef<HTMLDivElement>(null);
     const profileRef = useRef<HTMLDivElement>(null);
+
+    // Cargar y sincronizar datos del usuario actual
+    useEffect(() => {
+        let isMounted = true;
+
+        const sincronizarUsuario = async () => {
+            const token = obtenerToken();
+            if (!token) {
+                if (isMounted) setUsuario(null);
+                return;
+            }
+
+            // Datos inmediatos desde el token para evitar esperas y parpadeos
+            const payload = obtenerUsuarioActual();
+            if (payload && isMounted) {
+                const nombrePayload = typeof payload.nombre === "string" ? payload.nombre : "";
+                const apellidoPayload = typeof payload.apellido === "string" ? payload.apellido : "";
+                const emailPayload = typeof payload.email === "string" ? payload.email : "";
+                const rolPayload = (typeof payload.rol === "string" && payload.rol) ||
+                                   (typeof payload.role === "string" && payload.role) ||
+                                   "Socio";
+
+                setUsuario({
+                    id: typeof payload.sub === "number" ? payload.sub : 0,
+                    nombre: nombrePayload || (emailPayload ? emailPayload.split("@")[0] : "Usuario"),
+                    apellido: apellidoPayload,
+                    email: emailPayload,
+                    rol: {
+                        id_rol: 0,
+                        clase_rol: rolPayload,
+                    },
+                });
+            }
+
+            // Consulta de perfil actualizado al backend
+            try {
+                const perfil = await obtenerMiPerfil();
+                if (isMounted) {
+                    setUsuario(perfil);
+                }
+            } catch {
+                if (isMounted) {
+                    const tokenActual = obtenerToken();
+                    if (!tokenActual) {
+                        setUsuario(null);
+                    }
+                }
+            }
+        };
+
+        sincronizarUsuario();
+
+        const handleStorageChange = () => {
+            sincronizarUsuario();
+        };
+
+        window.addEventListener("storage", handleStorageChange);
+        return () => {
+            isMounted = false;
+            window.removeEventListener("storage", handleStorageChange);
+        };
+    }, [location.pathname]);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -66,12 +156,17 @@ export default function Navbar() {
     };
 
     const handleLogout = () => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        sessionStorage.clear();
+        cerrarSesion();
+        setUsuario(null);
         setIsProfileOpen(false);
         navigate("/login");
     };
+
+    const nombreCompleto = usuario
+        ? `${usuario.nombre}${usuario.apellido ? ` ${usuario.apellido}` : ""}`.trim()
+        : "";
+    const iniciales = usuario ? obtenerIniciales(usuario.nombre, usuario.apellido) : "US";
+    const rolEtiqueta = usuario?.rol?.clase_rol || "Socio";
 
     return (
         <header
@@ -105,27 +200,55 @@ export default function Navbar() {
                 {/* 2. Menú de Navegación Principal (Escritorio) */}
                 <nav className="nav-menu" aria-label="Navegación principal">
                     <ul className="nav-links">
-                        {/* Enlace: Login */}
-                        <li className="nav-item">
-                            <NavLink
-                                to="/login"
-                                end
-                                className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
-                                id="nav-gym"
-                            >
-                                <svg
-                                    className="nav-icon"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
+                        {/* Enlace Condicional: Mi Pase QR (si inició sesión) o Login */}
+                        {usuario ? (
+                            <li className="nav-item">
+                                <NavLink
+                                    to="/mi-pase-qr"
+                                    className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
+                                    id="nav-pase-qr"
                                 >
-                                    <path d="M6 5v14M18 5v14M2 9h4M18 9h4M2 15h4M18 15h4M6 12h12" />
-                                </svg>
-                                <span>Login</span>
-                            </NavLink>
-                        </li>
+                                    <svg
+                                        className="nav-icon"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                    >
+                                        <rect x="3" y="3" width="7" height="7" />
+                                        <rect x="14" y="3" width="7" height="7" />
+                                        <rect x="14" y="14" width="7" height="7" />
+                                        <rect x="3" y="14" width="7" height="7" />
+                                    </svg>
+                                    <span>Mi Pase QR</span>
+                                </NavLink>
+                            </li>
+                        ) : (
+                            <li className="nav-item">
+                                <NavLink
+                                    to="/login"
+                                    end
+                                    className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
+                                    id="nav-gym"
+                                >
+                                    <svg
+                                        className="nav-icon"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                    >
+                                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                                        <polyline points="10 17 15 12 10 7" />
+                                        <line x1="15" y1="12" x2="3" y2="12" />
+                                    </svg>
+                                    <span>Login</span>
+                                </NavLink>
+                            </li>
+                        )}
 
                         {/* Enlace: CLASES GRUPALES */}
                         <li className="nav-item">
@@ -301,127 +424,192 @@ export default function Navbar() {
                         )}
                     </div>
 
-                    {/* Menú Desplegable: PERFIL */}
-                    <div className="profile-menu" id="profile-menu-wrapper" ref={profileRef}>
-                        <button
-                            type="button"
-                            className={`profile-trigger ${isProfileOpen ? "active" : ""}`}
-                            id="profile-trigger"
-                            aria-label="Abrir menú de usuario y perfil"
-                            aria-haspopup="true"
-                            aria-expanded={isProfileOpen}
-                            onClick={() => {
-                                setIsProfileOpen((prev) => !prev);
-                                setIsLocalityOpen(false);
-                            }}
-                        >
-                            <div className="profile-avatar-wrap">
-                                <div className="profile-avatar">Gym</div>
-                                <span className="online-indicator" title="Conectado" />
-                            </div>
-                            <div className="profile-meta">
-                                <span className="profile-name">Lucas Benítez</span>
-                                <span className="profile-role">El Tremendo Plan</span>
-                            </div>
-                            <svg
-                                className={`profile-chevron ${isProfileOpen ? "open" : ""}`}
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
+                    {/* Menú Desplegable: PERFIL si está logueado / Botón INICIAR SESIÓN si no */}
+                    {usuario ? (
+                        <div className="profile-menu" id="profile-menu-wrapper" ref={profileRef}>
+                            <button
+                                type="button"
+                                className={`profile-trigger ${isProfileOpen ? "active" : ""}`}
+                                id="profile-trigger"
+                                aria-label="Abrir menú de usuario y perfil"
+                                aria-haspopup="true"
+                                aria-expanded={isProfileOpen}
+                                onClick={() => {
+                                    setIsProfileOpen((prev) => !prev);
+                                    setIsLocalityOpen(false);
+                                }}
                             >
-                                <polyline points="6 9 12 15 18 9" />
-                            </svg>
-                        </button>
+                                <div className="profile-avatar-wrap">
+                                    <div className="profile-avatar">{iniciales}</div>
+                                    <span className="online-indicator" title="Conectado" />
+                                </div>
+                                <div className="profile-meta">
+                                    <span className="profile-name">{nombreCompleto || usuario.email}</span>
+                                    <span className="profile-role">{rolEtiqueta}</span>
+                                </div>
+                                <svg
+                                    className={`profile-chevron ${isProfileOpen ? "open" : ""}`}
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                >
+                                    <polyline points="6 9 12 15 18 9" />
+                                </svg>
+                            </button>
 
-                        {/* Desplegable de Perfil: Ir a perfil y Cerrar sesión */}
-                        {isProfileOpen && (
-                            <div
-                                className="nav-dropdown-menu profile-dropdown"
-                                role="menu"
-                                aria-label="Opciones de perfil de usuario"
+                            {/* Desplegable de Perfil */}
+                            {isProfileOpen && (
+                                <div
+                                    className="nav-dropdown-menu profile-dropdown"
+                                    role="menu"
+                                    aria-label="Opciones de perfil de usuario"
+                                >
+                                    <button
+                                        type="button"
+                                        role="menuitem"
+                                        className="dropdown-item"
+                                        id="btn-nav-ir-perfil"
+                                        onClick={handleGoToProfile}
+                                    >
+                                        <div className="dropdown-item-left">
+                                            <svg
+                                                className="dropdown-item-icon"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                strokeWidth="2"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                            >
+                                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                                <circle cx="12" cy="7" r="4" />
+                                            </svg>
+                                            <span>Mi perfil</span>
+                                        </div>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        role="menuitem"
+                                        className="dropdown-item"
+                                        id="btn-nav-pase-qr"
+                                        onClick={() => {
+                                            setIsProfileOpen(false);
+                                            navigate("/mi-pase-qr");
+                                        }}
+                                    >
+                                        <div className="dropdown-item-left">
+                                            <svg
+                                                className="dropdown-item-icon"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                strokeWidth="2"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                            >
+                                                <rect x="3" y="3" width="7" height="7" />
+                                                <rect x="14" y="3" width="7" height="7" />
+                                                <rect x="14" y="14" width="7" height="7" />
+                                                <rect x="3" y="14" width="7" height="7" />
+                                            </svg>
+                                            <span>Mi pase QR</span>
+                                        </div>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        role="menuitem"
+                                        className="dropdown-item"
+                                        id="btn-nav-editar-perfil"
+                                        onClick={handleGoToEditProfile}
+                                    >
+                                        <div className="dropdown-item-left">
+                                            <svg
+                                                className="dropdown-item-icon"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                strokeWidth="2"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                            >
+                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                            </svg>
+                                            <span>Editar datos personales</span>
+                                        </div>
+                                    </button>
+
+                                    <div className="dropdown-divider" />
+
+                                    <button
+                                        type="button"
+                                        role="menuitem"
+                                        className="dropdown-item dropdown-item-danger"
+                                        id="btn-nav-cerrar-sesion"
+                                        onClick={handleLogout}
+                                    >
+                                        <div className="dropdown-item-left">
+                                            <svg
+                                                className="dropdown-item-icon"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                strokeWidth="2"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                            >
+                                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                                                <polyline points="16 17 21 12 16 7" />
+                                                <line x1="21" y1="12" x2="9" y2="12" />
+                                            </svg>
+                                            <span>Cerrar sesión</span>
+                                        </div>
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="profile-menu" id="profile-menu-wrapper">
+                            <Link
+                                to="/login"
+                                className="profile-trigger"
+                                id="btn-nav-login"
+                                aria-label="Iniciar sesión"
+                                style={{
+                                    textDecoration: "none",
+                                    padding: "0.5rem 1.15rem",
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "0.6rem",
+                                    cursor: "pointer",
+                                }}
                             >
-
-
-                                <button
-                                    type="button"
-                                    role="menuitem"
-                                    className="dropdown-item"
-                                    id="btn-nav-ir-perfil"
-                                    onClick={handleGoToProfile}
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    width="18"
+                                    height="18"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2.2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    style={{ color: "var(--accent-neon)" }}
                                 >
-                                    <div className="dropdown-item-left">
-                                        <svg
-                                            className="dropdown-item-icon"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            strokeWidth="2"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                        >
-                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                                            <circle cx="12" cy="7" r="4" />
-                                        </svg>
-                                        <span>Mi perfil</span>
-                                    </div>
-                                </button>
-
-                                <button
-                                    type="button"
-                                    role="menuitem"
-                                    className="dropdown-item"
-                                    id="btn-nav-editar-perfil"
-                                    onClick={handleGoToEditProfile}
-                                >
-                                    <div className="dropdown-item-left">
-                                        <svg
-                                            className="dropdown-item-icon"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            strokeWidth="2"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                        >
-                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                        </svg>
-                                        <span>Editar datos personales</span>
-                                    </div>
-                                </button>
-
-                                <div className="dropdown-divider" />
-
-                                <button
-                                    type="button"
-                                    role="menuitem"
-                                    className="dropdown-item dropdown-item-danger"
-                                    id="btn-nav-cerrar-sesion"
-                                    onClick={handleLogout}
-                                >
-                                    <div className="dropdown-item-left">
-                                        <svg
-                                            className="dropdown-item-icon"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            strokeWidth="2"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                        >
-                                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                                            <polyline points="16 17 21 12 16 7" />
-                                            <line x1="21" y1="12" x2="9" y2="12" />
-                                        </svg>
-                                        <span>Cerrar sesión</span>
-                                    </div>
-                                </button>
-                            </div>
-                        )}
-                    </div>
+                                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                                    <polyline points="10 17 15 12 10 7" />
+                                    <line x1="15" y1="12" x2="3" y2="12" />
+                                </svg>
+                                <span style={{ fontWeight: 700, fontSize: "0.85rem", color: "var(--text-pure)" }}>
+                                    Iniciar sesión
+                                </span>
+                            </Link>
+                        </div>
+                    )}
                 </div>
             </div>
         </header>
