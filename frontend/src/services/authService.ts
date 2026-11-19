@@ -128,6 +128,9 @@ export interface UsuarioSesion {
     id: number;
     nombre: string;
   } | null;
+  instructor?: {
+    id: number;
+  } | null;
 }
 
 export async function obtenerMiPerfil(): Promise<UsuarioSesion> {

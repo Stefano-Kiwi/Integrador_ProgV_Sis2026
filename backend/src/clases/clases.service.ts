@@ -161,4 +161,25 @@ export class ClasesService {
   findReservasByUsuario(usuarioId: number) {
     return this.clasesRepository.findReservasByUsuario(usuarioId);
   }
+
+  async cancelarClase(claseId: number, user: JwtPayload) {
+    const clase = await this.findById(claseId);
+    if (!clase) {
+      throw new NotFoundException(`Clase con ID ${claseId} no encontrada`);
+    }
+
+    const esPersonal = ID_ROLES_PERSONAL.includes(user.id_rol);
+    const esInstructorDeClase = clase.instructor?.usuario_id === user.sub;
+
+    if (!esInstructorDeClase && !esPersonal) {
+      throw new ForbiddenException('Solo el instructor de la clase o administradores pueden cancelarla.');
+    }
+
+    await this.clasesRepository.cancelarClase(claseId);
+
+    return {
+      mensaje: 'Clase cancelada exitosamente.',
+      clase_id: claseId,
+    };
+  }
 }

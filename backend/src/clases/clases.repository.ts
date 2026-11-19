@@ -210,4 +210,12 @@ export class ClasesRepository {
       orderBy: { id: 'desc' },
     });
   }
+
+  async cancelarClase(claseId: number): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      await tx.reserva_clase.deleteMany({ where: { clase_id: claseId } });
+      await tx.lista_espera_clase.deleteMany({ where: { clase_id: claseId } });
+      await tx.clase.delete({ where: { id: claseId } });
+    });
+  }
 }
