@@ -4,14 +4,15 @@ FitZone Sports es una plataforma web monolítica modular que unifica la gestión
 
 ---
 
-## Integrantes
+## Integrantes (Grupo 12)
 
 | Rol | Integrante | Usuario Git |
 | :--- | :--- | :--- |
-| **P1** | *(Completar nombre y apellido)* | `@usuario-p1` |
-| **P2** | *(Completar nombre y apellido)* | `@usuario-p2` |
-| **P3** | *(Completar nombre y apellido)* | `@usuario-p3` |
-| **P4** | *(Completar nombre y apellido)* | `@usuario-p4` |
+| **Líder / Backend** | Matías Serantes | `@matiasfs99` |
+| **Líder / Backend** | Stéfano Carbajal | `@Stefano-Kiwi` |
+| **Líder / Frontend** | Ian Caraballo | `@iancarab` |
+| **Líder / Mobile-QA** | Denis Chang | `@Sined108` |
+| **Líder / Frontend-QA** | Lautaro Polo | `@politen22` |
 
 ---
 
@@ -61,6 +62,8 @@ El seed ([`backend/prisma/seed.mjs`](backend/prisma/seed.mjs)) carga **26 sedes*
 
 | Sección | Enlace | Descripción |
 | :--- | :--- | :--- |
+| Dossier oficial (Anexo A) | [`docs/dossier/`](docs/dossier/anexo-a-portada-e-indice.md) | Portada académica formal, índice general paginado y resumen ejecutivo del dossier. |
+| Plan de proyecto (Anexo H) | [`docs/planificacion/`](docs/planificacion/plan-de-proyecto.md) | Planificación del proyecto, EDT, cronograma de 8 sprints, matriz de trazabilidad y riesgos. |
 | Decisiones de arquitectura (ADR) | [`docs/adr/`](docs/adr/) | Registro de decisiones técnicas y arquitectónicas (incl. ADR-008). |
 | Diagramas de arquitectura | [`docs/`](docs/) | [Contexto](docs/diagrama-contexto.png), [Containers](docs/diagrama-containers.png), [Componentes](docs/diagrama-componentes.png) (y `docs/diagramas/` si se añaden vistas adicionales). |
 | Manuales de usuario y operación | [`docs/manuales/`](docs/manuales/) | Guías de uso del portal del socio y la consola de administración. |
