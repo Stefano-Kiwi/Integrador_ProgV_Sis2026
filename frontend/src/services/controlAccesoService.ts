@@ -1,206 +1,281 @@
-import { obtenerToken } from "./authService";
-import { INITIAL_MEMBRESIAS } from "../data/membresiasData";
+import { apiRequest } from "./apiClient";
 
-export interface QrPasePayload {
-  sub: string;
-  email?: string;
-  emitido: number;
-  expira: number;
-  codigoUnico: string;
+export interface QrDinamicoRespuesta {
+  qr: string;
+  userId: number;
+  emitido_at: string;
+  expira_at: string;
+  validez_segundos: number;
 }
 
-export interface DatosSocioValidacion {
-  id: string;
+export interface ValidacionAccesoRespuesta {
+  autorizado: boolean;
+  acceso_id: number;
+  usuario_id: number;
+  sede_id: number;
+  sede_nombre: string;
+  ingreso_at: string;
+  mensaje: string;
+}
+
+export interface EgresoRespuesta {
+  acceso_id: number;
+  usuario_id: number;
+  sede_id: number;
+  ingreso_at: string;
+  egreso_at: string;
+  mensaje: string;
+}
+
+export interface AforoSedeRespuesta {
+  sede_id: number;
+  sede_nombre: string;
+  aforo_actual: number;
+  aforo_maximo: number;
+  porcentaje_ocupacion: number;
+}
+
+export interface SocioSnapshot {
+  userId: number;
+  dni: string;
   nombre: string;
   apellido: string;
-  dni: string;
-  email: string;
-  tipo: string;
-  estadoMembresia: "Activa" | "Vencida" | "Suspendida" | "Sin Membresía";
-  planNombre: string;
-  vencimientoMembresia?: string;
-  avatar?: string;
-  autorizado: boolean;
-  motivo?: string;
+  membresia_estado: string;
+  fecha_fin: string;
 }
 
-/**
- * Genera el contenido del QR con validez de 5 minutos (300.000 ms)
- */
-export function generarPayloadQr(sub: string, email?: string): string {
-  const ahora = Date.now();
-  const cincoMinutos = 5 * 60 * 1000;
-  
-  const payload: QrPasePayload = {
-    sub,
-    email: email || "",
-    emitido: ahora,
-    expira: ahora + cincoMinutos,
-    codigoUnico: Math.random().toString(36).substring(2, 10).toUpperCase(),
-  };
-
-  return JSON.stringify(payload);
+export interface SnapshotSedeRespuesta {
+  sede_id: number;
+  sede_nombre: string;
+  aforo_maximo: number;
+  generado_at: string;
+  total_socios_activos: number;
+  socios: SocioSnapshot[];
 }
 
-/**
- * Valida la estructura y expiración del código QR escaneado
- */
-export function verificarQr(textoQr: string): {
-  valido: boolean;
-  sub?: string;
-  error?: string;
-  expirado?: boolean;
-  payload?: QrPasePayload;
-} {
+export interface IngresoOfflineItem {
+  userId: number;
+  sedeId: number;
+  timestamp: string;
+  qrToken: string;
+}
+
+export interface SincronizacionRespuesta {
+  total: number;
+  aceptados: Array<{
+    userId: number;
+    sedeId: number;
+    timestamp: string;
+    acceso_id: number;
+    duplicado: boolean;
+  }>;
+  conflictos: Array<{
+    userId: number;
+    sedeId: number;
+    timestamp: string;
+    motivo: string;
+  }>;
+}
+
+export interface QrPayloadDecodificado {
+  userId: number;
+  win: number;
+  iat: number;
+  exp: number;
+}
+
+const ULTIMO_QR_KEY = "fitzone_ultimo_qr";
+const COLA_OFFLINE_KEY = "fitzone_cola_accesos_offline";
+const snapshotKey = (sedeId: number) => `fitzone_snapshot_sede_${sedeId}`;
+
+/** RF-04: pide un QR rotativo de 60 s al backend y lo cachea localmente para fallback offline. */
+export async function obtenerQrDinamico(): Promise<QrDinamicoRespuesta> {
+  const data = await apiRequest<QrDinamicoRespuesta>("/acceso/qr", { requireAuth: true });
   try {
-    const trimmed = textoQr.trim();
-    if (!trimmed) {
-      return { valido: false, error: "El código QR escaneado está vacío." };
-    }
-
-    // 1. Si es un JSON estructurado de pase digital
-    if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
-      const payload = JSON.parse(trimmed) as Record<string, unknown>;
-
-      // Aceptar sub, id, userId o socioId (sea string o número)
-      const rawSub = payload.sub ?? payload.id ?? payload.userId ?? payload.socioId;
-      if (rawSub === undefined || rawSub === null || String(rawSub).trim() === "") {
-        return { valido: false, error: "El código QR no contiene un identificador de usuario válido." };
-      }
-
-      const subString = String(rawSub).trim();
-
-      // Validar fecha de expiración si existe
-      const expira = typeof payload.expira === "number"
-        ? payload.expira
-        : (typeof payload.exp === "number" ? payload.exp * 1000 : null);
-
-      if (expira) {
-        const ahora = Date.now();
-        if (ahora > expira) {
-          const segundosAtras = Math.round((ahora - expira) / 1000);
-          return {
-            valido: false,
-            expirado: true,
-            sub: subString,
-            error: `Código QR expirado hace ${segundosAtras} segundos. Posible captura de pantalla. Solicite al socio regenerar el código en su teléfono.`,
-          };
-        }
-      }
-
-      return {
-        valido: true,
-        sub: subString,
-        payload: {
-          sub: subString,
-          email: String(payload.email || ""),
-          emitido: typeof payload.emitido === "number" ? payload.emitido : Date.now(),
-          expira: expira || Date.now() + 5 * 60 * 1000,
-          codigoUnico: String(payload.codigoUnico || "VALID"),
-        },
-      };
-    }
-
-    // 2. Si el código QR contiene un texto plano o identificador directo (ej: "SOC-101", DNI o UUID)
-    if (trimmed.length > 0 && trimmed.length < 200) {
-      return {
-        valido: true,
-        sub: trimmed,
-        payload: {
-          sub: trimmed,
-          emitido: Date.now(),
-          expira: Date.now() + 5 * 60 * 1000,
-          codigoUnico: "MANUAL",
-        },
-      };
-    }
-
-    return { valido: false, error: "Formato de código QR no reconocido como credencial FitZone." };
+    localStorage.setItem(ULTIMO_QR_KEY, JSON.stringify(data));
   } catch {
-    return { valido: false, error: "Error al interpretar el contenido del código QR." };
+    // ignora errores de cuota en storage
+  }
+  return data;
+}
+
+export function leerUltimoQrLocal(): QrDinamicoRespuesta | null {
+  try {
+    const raw = localStorage.getItem(ULTIMO_QR_KEY);
+    return raw ? (JSON.parse(raw) as QrDinamicoRespuesta) : null;
+  } catch {
+    return null;
   }
 }
 
-/**
- * Consulta al backend por el usuario usando el valor `sub`.
- * Si el backend falla o no está disponible, utiliza datos locales de respaldo.
- */
-export async function consultarSocioPorSub(sub: string): Promise<DatosSocioValidacion> {
-  const token = obtenerToken();
+/** RF-03 + RF-04 + RN-01: valida el QR contra el servidor central y registra ingreso. */
+export async function validarAccesoOnline(
+  qr: string,
+  sedeId: number
+): Promise<ValidacionAccesoRespuesta> {
+  return apiRequest<ValidacionAccesoRespuesta>("/acceso/validar", {
+    method: "POST",
+    body: { qr, sedeId },
+    requireAuth: true,
+  });
+}
 
+/** Registra egreso de un socio cerrando su acceso abierto. */
+export async function registrarEgreso(userId?: number): Promise<EgresoRespuesta> {
+  return apiRequest<EgresoRespuesta>("/acceso/egreso", {
+    method: "POST",
+    body: userId ? { userId } : {},
+    requireAuth: true,
+  });
+}
+
+/** RF-05: consulta aforo actual y máximo de una sede. */
+export async function obtenerAforoSede(sedeId: number): Promise<AforoSedeRespuesta> {
+  return apiRequest<AforoSedeRespuesta>(`/acceso/aforo/${sedeId}`, { requireAuth: true });
+}
+
+/** RNF-01: descarga el snapshot de socios activos y lo persiste en localStorage. */
+export async function descargarSnapshotSede(sedeId: number): Promise<SnapshotSedeRespuesta> {
+  const snapshot = await apiRequest<SnapshotSedeRespuesta>(`/acceso/sedes/${sedeId}/snapshot`, {
+    requireAuth: true,
+  });
   try {
-    // 1. Intento de consulta al Backend central
-    const respuesta = await fetch(`/backend/usuarios/${encodeURIComponent(sub)}`, {
-      headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        "Content-Type": "application/json",
-      },
-    });
+    localStorage.setItem(snapshotKey(sedeId), JSON.stringify(snapshot));
+  } catch {
+    // ignora errores de storage
+  }
+  return snapshot;
+}
 
-    if (respuesta.ok) {
-      const datos = await respuesta.json();
-      const estado = (datos.estado_membresia || datos.estadoMembresia || "Activa") as DatosSocioValidacion["estadoMembresia"];
-      const autorizado = estado === "Activa";
+export function leerSnapshotLocal(sedeId: number): SnapshotSedeRespuesta | null {
+  try {
+    const raw = localStorage.getItem(snapshotKey(sedeId));
+    return raw ? (JSON.parse(raw) as SnapshotSedeRespuesta) : null;
+  } catch {
+    return null;
+  }
+}
 
-      return {
-        id: String(datos.id || sub),
-        nombre: datos.nombre || "Socio",
-        apellido: datos.apellido || "",
-        dni: datos.dni || datos.documento || "S/D",
-        email: datos.email || "",
-        tipo: datos.tipo || datos.rol || "CLIENTE",
-        estadoMembresia: estado,
-        planNombre: datos.plan_nombre || datos.plan || "Plan FitZone",
-        vencimientoMembresia: datos.vencimiento || datos.fecha_vencimiento,
-        avatar: datos.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(datos.nombre || "Socio")}&background=151b2b&color=00ff87`,
-        autorizado,
-        motivo: autorizado ? "Membresía al día" : `Membresía ${estado}`,
-      };
+/** Decodifica la parte payload de un token QR `<base64url(payload)>.<sig>`. */
+export function decodificarQrHmac(token: string): QrPayloadDecodificado | null {
+  try {
+    const partes = token.trim().split(".");
+    if (partes.length !== 2 || !partes[0]) return null;
+    const base64 = partes[0].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
+    const parsed = JSON.parse(atob(padded)) as Partial<QrPayloadDecodificado>;
+    if (
+      typeof parsed.userId !== "number" ||
+      typeof parsed.exp !== "number" ||
+      typeof parsed.iat !== "number"
+    ) {
+      return null;
     }
-  } catch (err) {
-    console.warn("No se pudo conectar con el backend central, buscando en datos locales de respaldo:", err);
+    return {
+      userId: parsed.userId,
+      win: typeof parsed.win === "number" ? parsed.win : 0,
+      iat: parsed.iat,
+      exp: parsed.exp,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** RNF-01: valida un QR contra el snapshot local cuando no hay conexión al servidor. */
+export function validarAccesoOffline(
+  qr: string,
+  sedeId: number
+): {
+  autorizado: boolean;
+  socio?: SocioSnapshot;
+  motivo: string;
+  itemCola?: IngresoOfflineItem;
+} {
+  const payload = decodificarQrHmac(qr);
+  if (!payload) {
+    return { autorizado: false, motivo: "Formato de código QR inválido." };
   }
 
-  // 2. Respaldo local / Mock en caso de desconexión o fallo
-  const membresiaLocal = INITIAL_MEMBRESIAS.find(
-    (m) => m.socioId.toLowerCase() === sub.toLowerCase() || m.id.toLowerCase() === sub.toLowerCase() || m.socioEmail.toLowerCase() === sub.toLowerCase(),
-  );
-
-  if (membresiaLocal) {
-    const partes = membresiaLocal.socioNombre.split(" ");
-    const nombre = partes[0] || membresiaLocal.socioNombre;
-    const apellido = partes.slice(1).join(" ") || "";
-    const autorizado = membresiaLocal.estado === "Activa";
-
+  const ahoraSeg = Math.floor(Date.now() / 1000);
+  if (ahoraSeg >= payload.exp) {
     return {
-      id: membresiaLocal.socioId,
-      nombre,
-      apellido,
-      dni: membresiaLocal.socioDni,
-      email: membresiaLocal.socioEmail,
-      tipo: "CLIENTE",
-      estadoMembresia: membresiaLocal.estado,
-      planNombre: membresiaLocal.planId === "PLAN-01" ? "Plan Anual Black VIP" : "Plan Mensual FitZone",
-      vencimientoMembresia: membresiaLocal.fechaVencimiento,
-      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(membresiaLocal.socioNombre)}&background=151b2b&color=${autorizado ? "00ff87" : "ff4b72"}`,
-      autorizado,
-      motivo: autorizado ? "Membresía activa y al día" : `Acceso denegado: Membresía ${membresiaLocal.estado}`,
+      autorizado: false,
+      motivo: "Código QR vencido (validez 60 s). Solicitá un nuevo código al socio.",
     };
   }
 
-  // 3. Fallback genérico para sub reconocido de usuario
-  return {
-    id: sub,
-    nombre: "Usuario Registrado",
-    apellido: `(ID: ${sub})`,
-    dni: "34.502.911",
-    email: `${sub}@fitzone.com`,
-    tipo: "CLIENTE",
-    estadoMembresia: "Activa",
-    planNombre: "Plan Mensual Estándar",
-    vencimientoMembresia: "2026-12-31",
-    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(sub)}&background=151b2b&color=00ff87`,
-    autorizado: true,
-    motivo: "Acceso autorizado por ID de socio",
+  const snapshot = leerSnapshotLocal(sedeId);
+  if (!snapshot) {
+    return {
+      autorizado: false,
+      motivo: "No hay copia local (snapshot) descargada para esta sede.",
+    };
+  }
+
+  const socio = snapshot.socios.find((s) => s.userId === payload.userId);
+  if (!socio || socio.membresia_estado !== "ACTIVO") {
+    return {
+      autorizado: false,
+      motivo: "Socio no encontrado o sin membresía ACTIVA en la copia local.",
+    };
+  }
+
+  const itemCola: IngresoOfflineItem = {
+    userId: socio.userId,
+    sedeId,
+    timestamp: new Date().toISOString(),
+    qrToken: qr.trim(),
   };
+
+  encolarIngresoOffline(itemCola);
+  return {
+    autorizado: true,
+    socio,
+    motivo: "Validado contra copia local (pendiente de sincronización).",
+    itemCola,
+  };
+}
+
+/** Lee la cola persistente de ingresos offline desde localStorage. */
+export function leerColaOffline(): IngresoOfflineItem[] {
+  try {
+    const raw = localStorage.getItem(COLA_OFFLINE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as IngresoOfflineItem[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function guardarColaOffline(cola: IngresoOfflineItem[]): void {
+  try {
+    localStorage.setItem(COLA_OFFLINE_KEY, JSON.stringify(cola));
+  } catch {
+    // ignora errores de storage
+  }
+}
+
+export function encolarIngresoOffline(item: IngresoOfflineItem): IngresoOfflineItem[] {
+  const actual = leerColaOffline();
+  const actualizada = [...actual, item];
+  guardarColaOffline(actualizada);
+  return actualizada;
+}
+
+/** RNF-01: envía los ingresos pendientes a POST /acceso/sincronizar y limpia la cola local. */
+export async function sincronizarColaOffline(): Promise<SincronizacionRespuesta | null> {
+  const cola = leerColaOffline();
+  if (cola.length === 0) return null;
+
+  const resultado = await apiRequest<SincronizacionRespuesta>("/acceso/sincronizar", {
+    method: "POST",
+    body: { ingresos: cola },
+    requireAuth: true,
+  });
+
+  // Limpiamos los eventos procesados (tanto aceptados como conflictos ya reportados al operador)
+  guardarColaOffline([]);
+  return resultado;
 }
