@@ -451,7 +451,7 @@
             "description": "Listado de sedes disponibles"
           }
         },
-        "summary": "Listar sedes (un Gerente solo recibe su sede asignada)",
+        "summary": "Listar todas las sedes",
         "tags": [
           "sedes"
         ]
@@ -474,7 +474,7 @@
             "description": "Sede creada exitosamente"
           }
         },
-        "summary": "Crear una nueva sede (solo Administrador)",
+        "summary": "Crear una nueva sede",
         "tags": [
           "sedes"
         ]
@@ -497,14 +497,42 @@
           "200": {
             "description": "Detalle de la sede"
           },
-          "403": {
-            "description": "El gerente solo puede consultar su propia sede"
-          },
           "404": {
             "description": "Sede no encontrada"
           }
         },
-        "summary": "Obtener sede por ID (403 si un Gerente consulta otra sede)",
+        "summary": "Obtener sede por ID",
+        "tags": [
+          "sedes"
+        ]
+      },
+      "patch": {
+        "operationId": "SedesController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSedeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
         "tags": [
           "sedes"
         ]
@@ -584,7 +612,7 @@
             "description": "Listado de clases"
           }
         },
-        "summary": "Listar clases programadas (un Gerente solo ve las de su sede)",
+        "summary": "Listar clases programadas",
         "tags": [
           "clases"
         ]
@@ -605,17 +633,9 @@
         "responses": {
           "201": {
             "description": "Clase programada exitosamente"
-          },
-          "403": {
-            "description": "Sin permisos o sede distinta a la del Gerente"
           }
         },
-        "security": [
-          {
-            "access-token": []
-          }
-        ],
-        "summary": "Crear una nueva clase (RF-06; Gerente solo en su sede)",
+        "summary": "Crear una nueva clase (RF-06)",
         "tags": [
           "clases"
         ]
@@ -642,6 +662,26 @@
         ]
       }
     },
+    "/clases/reservas/mias": {
+      "get": {
+        "operationId": "ClasesController_findMisReservas",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Listado de reservas de clase del usuario autenticado"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Consultar mis reservas de clases (RF-07)",
+        "tags": [
+          "clases"
+        ]
+      }
+    },
     "/clases/{id}": {
       "get": {
         "operationId": "ClasesController_findById",
@@ -659,19 +699,16 @@
           "200": {
             "description": "Detalle de la clase"
           },
-          "403": {
-            "description": "La clase pertenece a otra sede"
-          },
           "404": {
             "description": "Clase no encontrada"
           }
         },
-        "summary": "Obtener detalle de una clase (403 si un Gerente consulta otra sede)",
+        "summary": "Obtener detalle de una clase",
         "tags": [
           "clases"
         ]
       },
-      "patch": {
+      "put": {
         "operationId": "ClasesController_update",
         "parameters": [
           {
@@ -695,21 +732,9 @@
         },
         "responses": {
           "200": {
-            "description": "Clase actualizada correctamente"
-          },
-          "403": {
-            "description": "Sin permisos o clase perteneciente a otra sede"
-          },
-          "404": {
-            "description": "Clase no encontrada"
+            "description": ""
           }
         },
-        "security": [
-          {
-            "access-token": []
-          }
-        ],
-        "summary": "Modificar una clase (Gerente solo las de su sede)",
         "tags": [
           "clases"
         ]
@@ -728,21 +753,40 @@
         ],
         "responses": {
           "200": {
-            "description": "Clase eliminada correctamente"
-          },
-          "403": {
-            "description": "Los Gerentes no tienen permiso para eliminar clases"
-          },
-          "404": {
-            "description": "Clase no encontrada"
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
           }
         },
-        "security": [
+        "tags": [
+          "clases"
+        ]
+      }
+    },
+    "/clases/{id}/cancelar": {
+      "patch": {
+        "operationId": "ClasesController_cancelarClase",
+        "parameters": [
           {
-            "access-token": []
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
           }
         ],
-        "summary": "Eliminar una clase (reservado exclusivamente a Administrador)",
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Cancelar una clase dictada por el instructor",
         "tags": [
           "clases"
         ]
@@ -1827,6 +1871,32 @@
           "aforo_maximo"
         ]
       },
+      "UpdateSedeDto": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 150,
+            "example": "FitZone Concordia Centro"
+          },
+          "direccion": {
+            "type": "string",
+            "maxLength": 200,
+            "example": "Av. Siempre Viva 123"
+          },
+          "localidad": {
+            "type": "string",
+            "maxLength": 100,
+            "example": "Concordia"
+          },
+          "aforo_maximo": {
+            "type": "number",
+            "minimum": 1,
+            "example": 80,
+            "description": "Capacidad de aforo máximo permitido"
+          }
+        }
+      },
       "CreatePlanDto": {
         "type": "object",
         "properties": {
@@ -1907,30 +1977,36 @@
           "sede_id": {
             "type": "number",
             "minimum": 1,
-            "example": 1
+            "example": 1,
+            "description": "ID de la sede donde se dictará la clase"
           },
           "tipo_clase_id": {
             "type": "number",
             "minimum": 1,
-            "example": 1
+            "example": 1,
+            "description": "ID del tipo de clase (Spinning, Yoga, etc.)"
           },
           "instructor_id": {
             "type": "number",
             "minimum": 1,
-            "example": 1
+            "example": 1,
+            "description": "ID del instructor que dicta la clase"
           },
           "inicio_at": {
             "type": "string",
-            "example": "2026-12-01T18:00:00.000Z"
+            "example": "2026-09-29T18:00:00Z",
+            "description": "Fecha y hora de inicio"
           },
           "fin_at": {
             "type": "string",
-            "example": "2026-12-01T19:00:00.000Z"
+            "example": "2026-09-29T19:00:00Z",
+            "description": "Fecha y hora de finalización"
           },
           "capacidad_maxima": {
             "type": "number",
             "minimum": 1,
-            "example": 25
+            "example": 20,
+            "description": "Capacidad máxima de alumnos"
           }
         }
       },
@@ -2100,25 +2176,28 @@
       "UpdateCanchaDto": {
         "type": "object",
         "properties": {
+          "tipo_cancha_id": {
+            "type": "number",
+            "minimum": 1,
+            "example": 1,
+            "description": "ID del tipo de cancha (paddle, fútbol, etc.)"
+          },
+          "sede_id": {
+            "type": "number",
+            "minimum": 1,
+            "example": 1,
+            "description": "ID de la sede donde se ubica"
+          },
           "nombre": {
             "type": "string",
             "maxLength": 100,
             "example": "Cancha 1 (Paddle)"
           },
-          "sede_id": {
-            "type": "number",
-            "minimum": 1,
-            "example": 1
-          },
-          "tipo_cancha_id": {
-            "type": "number",
-            "minimum": 1,
-            "example": 1
-          },
           "costo_hora": {
             "type": "number",
-            "minimum": 0,
-            "example": 9500
+            "minimum": 1,
+            "example": 8000,
+            "description": "Costo por hora de alquiler"
           }
         }
       },
