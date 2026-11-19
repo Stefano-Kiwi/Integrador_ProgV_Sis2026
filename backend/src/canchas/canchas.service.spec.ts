@@ -8,6 +8,7 @@ import { CanchasRepository } from './canchas.repository.js';
 
 const mockCanchasRepository = {
   findAll: vi.fn(),
+  findAllReservas: vi.fn(),
   findById: vi.fn(),
   create: vi.fn(),
   findReservaByTurno: vi.fn(),
@@ -54,6 +55,42 @@ describe('CanchasService', () => {
     }).compile();
 
     service = module.get(CanchasService);
+  });
+
+  // ── findAllReservas ────────────────────────────────────────────────────────
+
+  describe('findAllReservas()', () => {
+    it('debería devolver todas las reservas de canchas con usuarios y canchas asociadas', async () => {
+      const mockReservas = [
+        {
+          id: 1,
+          fecha: new Date('2026-11-20'),
+          hora_inicio: 18,
+          estado: 'PENDIENTE_PAGO',
+          monto_total: '8000.00',
+          usuario: {
+            id: 3,
+            nombre: 'Carlos',
+            apellido: 'Gómez',
+            email: 'carlos@fitzone.com',
+            dni: '30000003',
+          },
+          cancha: {
+            id: 1,
+            nombre: 'Cancha 1 (Paddle)',
+            tipo_cancha: { id: 1, nombre: 'Paddle' },
+            sede: { id: 1, nombre: 'FitZone Concordia Centro' },
+          },
+        },
+      ];
+
+      mockCanchasRepository.findAllReservas.mockResolvedValue(mockReservas);
+
+      const result = await service.findAllReservas();
+
+      expect(result).toEqual(mockReservas);
+      expect(mockCanchasRepository.findAllReservas).toHaveBeenCalledOnce();
+    });
   });
 
   // ── findById ───────────────────────────────────────────────────────────────

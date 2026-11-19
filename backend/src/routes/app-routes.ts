@@ -31,6 +31,7 @@ export const APP_ROUTES = {
     ROOT: 'canchas',
     BY_ID: ':id',
     RESERVA: 'reserva',
+    RESERVAS: 'reservas',
   },
   PAGOS: {
     ROOT: 'pagos',

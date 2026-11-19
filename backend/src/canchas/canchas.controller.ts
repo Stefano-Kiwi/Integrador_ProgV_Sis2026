@@ -5,6 +5,7 @@ import { ReservaCanchaDto } from './dto/reserva-cancha.dto.js';
 import { CanchasService } from './canchas.service.js';
 import { APP_ROUTES } from '../routes/index.js';
 import { Public } from '../auth/decorators/public.decorator.js';
+import { Roles } from '../auth/decorators/roles.decorator.js';
 
 @ApiTags('canchas')
 @Controller(APP_ROUTES.CANCHAS.ROOT)
@@ -17,6 +18,14 @@ export class CanchasController {
   @ApiOkResponse({ description: 'Listado de canchas disponibles' })
   findAll() {
     return this.canchasService.findAll();
+  }
+
+  @Get(APP_ROUTES.CANCHAS.RESERVAS)
+  @Roles('Gerente', 'Administrador')
+  @ApiOperation({ summary: 'Listar todas las reservas de canchas' })
+  @ApiOkResponse({ description: 'Listado de reservas con datos del usuario y la cancha' })
+  findAllReservas() {
+    return this.canchasService.findAllReservas();
   }
 
   @Public()
