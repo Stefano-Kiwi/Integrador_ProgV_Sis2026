@@ -1,0 +1,1727 @@
+# ADR-010 — Tratamiento de medios de pago mediante tokenización simulada y no persistencia de datos de tarjetas
+
+**Estado:** Aceptado  
+**Fecha:** 2026-11-19  
+**Autor:** [Completar con apellido y nombre del responsable]  
+**Sprint:** [Completar según el sprint en que se adoptó la decisión, del 1 al 8]  
+**Proyecto:** FitZone Sports — Trabajo Integrador Final  
+**Equipo:** 12  
+**Unidad temática:** Seguridad de aplicaciones, integración de servicios y persistencia  
+**Requisito principal:** RNF-02 — Seguridad en pagos  
+**Requisitos relacionados:** RF-02, RF-10, RF-11, RF-13 y RF-14  
+**Decisiones relacionadas:** ADR-001, ADR-002, ADR-005 y ADR-008
+
+---
+
+## 1. Contexto
+
+FitZone Sports es una plataforma de gestión integral para una cadena de gimnasios y complejos deportivos con múltiples sedes.
+
+El sistema permite que los usuarios contraten membresías, reserven canchas deportivas y administren sus operaciones mediante una aplicación web.
+
+Estas funcionalidades generan transacciones económicas que deben registrarse dentro de la plataforma.
+
+Por ejemplo, cuando un usuario contrata un plan de membresía, el sistema debe asociar el pago con la contratación correspondiente.
+
+De manera similar, cuando reserva una cancha, el sistema debe registrar el pago y actualizar el estado de la reserva.
+
+Además, el proyecto exige la generación de comprobantes PDF que permitan consultar el detalle de cada operación.
+
+Durante el diseño del módulo Pagos fue necesario determinar cómo representar los medios de pago y qué información debía conservarse en PostgreSQL.
+
+### 1.1 Problema identificado
+
+La gestión de pagos puede involucrar información financiera sensible.
+
+En una integración real con tarjetas de crédito o débito, podrían intervenir datos como:
+
+- Número completo de tarjeta, conocido como PAN.
+- Fecha de vencimiento.
+- Código de seguridad CVV o CVC.
+- Nombre del titular.
+- Identificadores de autorización.
+- Información de la operación comercial.
+
+Almacenar datos sensibles de tarjetas dentro de la aplicación introduciría riesgos importantes.
+
+Una filtración de la base de datos podría exponer información que no es necesaria para administrar las membresías y reservas.
+
+Además, procesar directamente los datos de las tarjetas requeriría implementar medidas de seguridad especializadas, controles adicionales y procedimientos de cumplimiento normativo.
+
+Por otra parte, el Trabajo Integrador Final no necesitaba realizar cobros económicos reales.
+
+Su objetivo era demostrar el funcionamiento de la lógica de pagos y la relación con los demás módulos del sistema.
+
+### 1.2 Requisito RNF-02
+
+El requisito no funcional **RNF-02 — Seguridad en pagos** establece que la aplicación no debe almacenar datos de tarjetas bancarias.
+
+En particular, deben evitarse los siguientes datos:
+
+- PAN completo.
+- CVV o CVC.
+- Fecha de vencimiento.
+
+La información persistida debe limitarse a la necesaria para identificar y administrar una operación de pago.
+
+En una integración real, este enfoque se implementaría mediante un proveedor de pagos que tokeniza los datos de la tarjeta y entrega una referencia de la operación.
+
+Para el alcance académico, se necesitaba representar ese comportamiento sin conectarse necesariamente a una pasarela externa.
+
+### 1.3 Objetivos de la decisión
+
+Se establecieron los siguientes objetivos:
+
+1. Evitar el almacenamiento de información sensible de tarjetas.
+2. Permitir el registro de pagos asociados con membresías.
+3. Permitir el registro de pagos asociados con reservas de canchas.
+4. Representar una operación de pago mediante un token.
+5. Registrar el monto, estado y fecha de la transacción.
+6. Mantener las relaciones entre pagos y operaciones de negocio.
+7. Generar comprobantes PDF.
+8. Facilitar las pruebas automatizadas.
+9. Mantener compatibilidad con NestJS, Prisma y PostgreSQL.
+10. Evitar incorporar una integración financiera real innecesaria para la demostración académica.
+
+---
+
+## 2. Alternativas consideradas
+
+Se evaluaron diferentes posibilidades para implementar el tratamiento de los medios de pago.
+
+### 2.1 Alternativa A — Almacenamiento directo de datos de tarjeta
+
+Consiste en solicitar los datos de la tarjeta desde el frontend y conservarlos dentro de la base de datos de la aplicación.
+
+Una implementación de este tipo podría registrar el número de tarjeta, fecha de vencimiento y otros atributos.
+
+**Ventajas:**
+
+- Proporcionaría acceso directo a los datos capturados.
+- Permitiría construir ciertos flujos sin depender inicialmente de un proveedor externo.
+- Facilitaría reproducir algunas operaciones de demostración mediante datos ficticios.
+
+**Desventajas:**
+
+- Aumenta significativamente la exposición de información sensible.
+- Introduce riesgos de filtración.
+- Requiere controles de seguridad especializados.
+- Incrementa las responsabilidades de almacenamiento y protección.
+- Almacenar el CVV después de la autorización está prohibido por los estándares aplicables a datos de tarjeta.
+- No resulta necesario para gestionar las funcionalidades de FitZone Sports.
+- Contradice el requisito RNF-02.
+
+**Motivo de descarte:**
+
+Se descartó porque la aplicación no necesita conservar información financiera sensible para administrar pagos, membresías y reservas.
+
+Además, esta alternativa incumpliría la decisión de minimizar la información almacenada.
+
+### 2.2 Alternativa B — Integración real con una pasarela externa
+
+Consiste en utilizar un proveedor especializado de pagos, como Mercado Pago, MODO u otra solución compatible.
+
+El usuario proporcionaría la información de su medio de pago mediante un formulario seguro o una interfaz administrada por el proveedor.
+
+La pasarela procesaría la transacción y devolvería un identificador o token para que FitZone Sports registrara su resultado.
+
+**Ventajas:**
+
+- Permitiría ejecutar cobros reales.
+- Evitaría que FitZone Sports necesitara almacenar directamente los datos completos de la tarjeta.
+- Delegaría parte del procesamiento financiero en un proveedor especializado.
+- Permitiría recibir estados de autorización.
+- Facilitaría incorporar notificaciones y mecanismos de conciliación.
+- Sería una solución más adecuada para una operación comercial real.
+
+**Desventajas para el proyecto:**
+
+- Requeriría configurar cuentas de proveedor.
+- Exigiría administrar credenciales de integración.
+- Introduciría dependencias externas.
+- Podría requerir pruebas mediante un entorno sandbox.
+- Sería necesario implementar webhooks y verificación de notificaciones.
+- Aumentaría el trabajo de integración.
+- Introduciría una complejidad superior a la necesaria para demostrar las reglas de negocio académicas.
+
+**Motivo de descarte:**
+
+Se consideró que el Trabajo Integrador Final no necesitaba procesar cobros reales.
+
+Por lo tanto, se priorizó una implementación simulada que permitiera comprobar la lógica de pagos, las transiciones de estado y la emisión de comprobantes.
+
+Esta alternativa se conserva como posibilidad de evolución futura.
+
+### 2.3 Alternativa C — Simulación sin tokenización
+
+Consiste en registrar directamente el resultado simulado del pago, sin generar un identificador especial asociado con la transacción.
+
+Por ejemplo, el backend podría almacenar únicamente:
+
+- Identificador del pago.
+- Monto.
+- Estado.
+- Fecha.
+- Identificador de membresía o reserva.
+
+**Ventajas:**
+
+- Implementación sencilla.
+- No requiere almacenar datos de tarjetas.
+- Reduce la cantidad de componentes.
+- Permite demostrar operaciones de pago básicas.
+- Puede relacionarse directamente con membresías y reservas.
+
+**Desventajas:**
+
+- No representa el concepto de tokenización exigido por el proyecto.
+- No permite demostrar el uso de una referencia de pasarela.
+- Ofrece una simulación menos cercana a la arquitectura de una integración real.
+- Dificulta explicar cómo se sustituiría posteriormente el procesamiento simulado por una pasarela externa.
+
+**Motivo de descarte:**
+
+Aunque satisfacía el objetivo de no almacenar datos bancarios, no representaba adecuadamente la estrategia de tokenización prevista por RNF-02.
+
+### 2.4 Alternativa D — Simulación de pagos con token por transacción (seleccionada)
+
+Consiste en implementar un servicio backend que genera una referencia opaca para cada pago simulado.
+
+La aplicación registra esa referencia junto con los datos comerciales de la operación, sin recibir ni conservar números de tarjeta, CVV o vencimientos.
+
+**Ventajas:**
+
+- Cumple el objetivo de no almacenar datos de tarjeta.
+- Permite representar una referencia de transacción.
+- No requiere conectarse a una pasarela real.
+- Facilita pruebas automatizadas.
+- Se integra con NestJS y Prisma.
+- Permite relacionar el pago con una membresía o reserva.
+- Puede generar comprobantes PDF.
+- Reduce el alcance de los datos financieros almacenados.
+- Permite demostrar una arquitectura orientada a tokenización.
+
+**Desventajas:**
+
+- No ejecuta cobros reales.
+- No verifica fondos ni autorizaciones bancarias.
+- El token generado no representa una tarjeta tokenizada por un proveedor.
+- No existe conciliación con entidades financieras.
+- No se reciben notificaciones externas.
+- La aprobación simulada no equivale a una autorización financiera.
+- Una integración productiva requeriría modificar el procesamiento.
+
+**Evaluación:**
+
+Se seleccionó esta alternativa porque permite demostrar el tratamiento de pagos y la minimización de datos sensibles sin introducir complejidad financiera externa.
+
+---
+
+## 3. Comparación de alternativas
+
+| Criterio | Datos de tarjeta propios | Pasarela real | Simulación sin token | Simulación con token |
+|---|---|---|---|---|
+| Almacena PAN/CVV | Podría hacerlo | No debería | No | **No** |
+| Procesa dinero real | Posible con infraestructura adicional | Sí | No | **No** |
+| Referencia de operación | Implementación propia | Sí | ID interno | **Token simulado** |
+| Dependencia externa | No necesariamente | Sí | No | **No** |
+| Complejidad inicial | Alta por seguridad | Media-alta | Baja | **Baja-media** |
+| Permite comprobar pagos | Sí | Sí | Sí | **Sí** |
+| Permite generar PDF | Sí | Sí | Sí | **Sí** |
+| Cumple el enfoque de RNF-02 | No, si almacena tarjetas | Sí, con integración adecuada | Parcial | **Sí, como simulación** |
+| Adecuación al TIF | Baja | Media | Media | **Alta** |
+
+La comparación representa una evaluación cualitativa de las alternativas para el contexto académico de FitZone Sports.
+
+**Resultado:** se seleccionó una simulación de pagos basada en tokens opacos generados por el backend, sin almacenamiento de información sensible de tarjetas.
+
+---
+
+## 4. Decisión
+
+Se decidió implementar el módulo Pagos de FitZone Sports mediante una **pasarela de pagos simulada**, que genera un token identificador por operación y registra únicamente información comercial de la transacción.
+
+El backend recibe:
+
+- Tipo de operación.
+- Identificador de la membresía o reserva.
+- Monto.
+
+Posteriormente:
+
+1. Comprueba que la operación de origen exista.
+2. Genera un token simulado.
+3. Registra el pago en PostgreSQL.
+4. Actualiza el estado de la membresía o reserva.
+5. Crea el registro del comprobante.
+6. Genera un archivo PDF.
+7. Devuelve al frontend el resultado y la referencia de descarga.
+
+La aplicación no solicita ni almacena PAN, CVV o fecha de vencimiento en el contrato del endpoint de pagos.
+
+### 4.1 Alcance exacto de la tokenización
+
+Es importante distinguir **tokenización simulada** de **tokenización bancaria real**.
+
+En la implementación actual, FitZone Sports genera el token localmente dentro de `PagosService`.
+
+No existe una llamada a Mercado Pago, MODO u otro proveedor que reciba información bancaria y devuelva un token.
+
+Por lo tanto, el campo `token_pasarela` contiene una referencia de pago simulada.
+
+No constituye una credencial de una entidad financiera ni permite efectuar cobros sobre una tarjeta.
+
+Esta distinción debe mantenerse tanto en la documentación como en la defensa técnica.
+
+### 4.2 Criterio determinante
+
+El factor principal para seleccionar la estrategia fue **demostrar las operaciones de pago y su integración con el negocio sin recibir ni persistir datos sensibles de tarjetas**.
+
+La simulación permite cumplir ese objetivo con una complejidad compatible con el alcance del proyecto.
+
+---
+
+## 5. Arquitectura del módulo Pagos
+
+El módulo está desarrollado con NestJS y utiliza el patrón Repository.
+
+### 5.1 Componentes
+
+| Componente | Responsabilidad |
+|---|---|
+| `PagosController` | Exponer los endpoints HTTP |
+| `PagosService` | Coordinar el procesamiento del pago |
+| `PagosRepository` | Persistir pagos y actualizar operaciones |
+| `ComprobantePdfService` | Generar y recuperar comprobantes PDF |
+| `SimularPagoDto` | Validar los datos de entrada |
+| `PrismaService` | Acceder a PostgreSQL |
+| `pago` | Registrar la transacción |
+| `comprobante` | Relacionar el PDF con el pago |
+
+### 5.2 Arquitectura conceptual
+
+```text
+                 USUARIO
+                    |
+                    v
+             FRONTEND REACT
+             Pantalla de pagos
+                    |
+                    | HTTP / JSON
+                    v
+             PagosController
+                    |
+                    v
+               PagosService
+                    |
+          +---------+---------+
+          |                   |
+          v                   v
+    PagosRepository    ComprobantePdfService
+          |                   |
+          v                   v
+     Prisma ORM           Archivo PDF
+          |
+          v
+      PostgreSQL
+          |
+      +---+---+
+      |       |
+     pago  comprobante
+```
+
+El módulo no se comunica con un proveedor financiero externo.
+
+La referencia de token es generada dentro del propio backend.
+
+### 5.3 Separación de responsabilidades
+
+El controlador recibe y valida la solicitud.
+
+El servicio comprueba el origen del pago, genera el token y coordina el resultado.
+
+El repositorio administra las operaciones transaccionales de persistencia.
+
+El servicio PDF construye el comprobante.
+
+Esta organización permite mantener separadas las reglas de negocio, el acceso a datos y la generación documental.
+
+---
+
+## 6. Contrato de entrada del pago
+
+El endpoint principal es:
+
+```http
+POST /pagos/simular
+Authorization: Bearer <TOKEN_JWT>
+Content-Type: application/json
+```
+
+El DTO se encuentra en:
+
+`backend/src/pagos/dto/simular-pago.dto.ts`
+
+### 6.1 Campos aceptados
+
+La clase utilizada es:
+
+```typescript
+export class SimularPagoDto {
+  @IsIn(['membresia', 'cancha'])
+  origen_tipo: 'membresia' | 'cancha';
+
+  @IsInt()
+  @IsPositive()
+  origen_id: number;
+
+  @IsNumber()
+  @IsPositive()
+  monto: number;
+}
+```
+
+El fragmento resume las validaciones del código real.
+
+### 6.2 Ejemplo de solicitud
+
+```json
+{
+  "origen_tipo": "cancha",
+  "origen_id": 42,
+  "monto": 8000
+}
+```
+
+El ejemplo representa un pago simulado asociado con una reserva de cancha.
+
+### 6.3 Información que no se solicita
+
+El DTO no contiene campos como:
+
+```text
+numero_tarjeta
+pan
+cvv
+cvc
+fecha_vencimiento
+titular_tarjeta
+```
+
+Por lo tanto, la interfaz HTTP del procesamiento de pagos no requiere recibir dichos valores.
+
+### 6.4 Validación de propiedades adicionales
+
+El backend configura globalmente:
+
+```typescript
+app.useGlobalPipes(
+  new ValidationPipe({
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
+  }),
+);
+```
+
+Esta configuración permite rechazar propiedades que no estén declaradas en el DTO.
+
+Por ejemplo, una solicitud que incorpore un campo `cvv` no debería superar la validación de entrada.
+
+### 6.5 Beneficio de seguridad
+
+La decisión reduce la exposición a información bancaria porque el propio contrato limita los datos aceptados.
+
+No obstante, las validaciones del DTO deben complementarse con autorización y reglas de negocio del lado del servidor.
+
+---
+
+## 7. Generación del token de pago
+
+El token se genera en:
+
+`backend/src/pagos/pagos.service.ts`
+
+### 7.1 Implementación
+
+El código utiliza:
+
+```typescript
+import { randomBytes } from 'node:crypto';
+
+const token = `tok_${randomBytes(6).toString('hex')}`;
+```
+
+La función `randomBytes(6)` genera seis bytes aleatorios mediante las capacidades criptográficas de Node.js.
+
+Después se convierten a hexadecimal y se antepone el prefijo `tok_`.
+
+### 7.2 Estructura del token
+
+Un token tiene una apariencia similar a:
+
+```text
+tok_a1b2c3d4e5f6
+```
+
+El ejemplo es ilustrativo.
+
+El prefijo permite reconocer que se trata de una referencia de pago simulada.
+
+### 7.3 Características
+
+- Se genera para cada llamada a `simularPago`.
+- No contiene el número de una tarjeta.
+- No contiene el CVV.
+- No contiene una fecha de vencimiento.
+- No codifica directamente los datos bancarios.
+- Puede utilizarse como referencia de la transacción.
+- Se almacena en PostgreSQL.
+
+### 7.4 Límite de unicidad
+
+El token contiene 48 bits de valor aleatorio.
+
+Esto hace poco probable que dos tokens coincidan en un número reducido de operaciones, pero **no garantiza matemáticamente la unicidad**.
+
+Además, el modelo Prisma revisado no declara una restricción `UNIQUE` sobre `token_pasarela`.
+
+La implementación cuenta con una prueba que genera dos tokens y comprueba que sean diferentes.
+
+Esa prueba verifica el escenario ejecutado, no una garantía absoluta de ausencia de colisiones.
+
+### 7.5 Consideración importante
+
+El token no representa una tarjeta almacenada en una bóveda segura ni puede utilizarse para autorizar futuros cobros.
+
+Es una referencia generada internamente para la demostración.
+
+En una integración real, la tokenización de medios de pago sería responsabilidad de un proveedor especializado.
+
+---
+
+## 8. Persistencia en PostgreSQL
+
+El diseño de la tabla `pago` se encuentra en:
+
+`backend/prisma/schema.prisma`
+
+### 8.1 Modelo implementado
+
+```prisma
+model pago {
+  id                Int         @id @default(autoincrement())
+  membresia_id      Int?
+  reserva_cancha_id Int?
+  monto             Decimal     @db.Decimal(10, 2)
+  estado            estado_pago @default(PENDIENTE)
+  token_pasarela    String?     @db.VarChar(255)
+  creado_at         DateTime    @default(now()) @db.Timestamptz(6)
+  pagado_at         DateTime?   @db.Timestamptz(6)
+
+  membresia      membresia?      @relation(fields: [membresia_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reserva_cancha reserva_cancha? @relation(fields: [reserva_cancha_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  comprobante    comprobante?
+
+  @@index([membresia_id], map: "ix_pago_membresia_id")
+  @@index([reserva_cancha_id], map: "ix_pago_reserva_cancha_id")
+}
+```
+
+### 8.2 Datos almacenados
+
+| Campo | Función |
+|---|---|
+| `id` | Identificador interno |
+| `membresia_id` | Asociación con una membresía |
+| `reserva_cancha_id` | Asociación con una reserva deportiva |
+| `monto` | Importe registrado |
+| `estado` | Estado de la transacción |
+| `token_pasarela` | Referencia simulada |
+| `creado_at` | Fecha de creación |
+| `pagado_at` | Fecha de aprobación |
+
+### 8.3 Datos excluidos
+
+La entidad no define columnas destinadas a almacenar:
+
+- Número completo de tarjeta.
+- Código de seguridad.
+- Vencimiento de tarjeta.
+- Datos de banda magnética.
+- Información equivalente de autenticación de tarjetas.
+
+La ausencia de estos campos es una evidencia estructural del cumplimiento del objetivo de minimización de datos.
+
+### 8.4 Tipos monetarios
+
+El monto utiliza:
+
+```prisma
+monto Decimal @db.Decimal(10, 2)
+```
+
+Esto permite conservar importes con una precisión decimal definida.
+
+Resulta más apropiado para almacenar valores monetarios que depender exclusivamente de números binarios de coma flotante.
+
+### 8.5 Relaciones
+
+Un pago se asocia con una membresía o con una reserva de cancha.
+
+Esto permite identificar el origen comercial de la operación.
+
+También se relaciona con un comprobante.
+
+La relación con `comprobante` permite asociar un documento emitido con el pago registrado.
+
+---
+
+## 9. Estados de pago
+
+El esquema Prisma define tres estados:
+
+```prisma
+enum estado_pago {
+  PENDIENTE
+  APROBADO
+  RECHAZADO
+}
+```
+
+Estos estados representan posibles situaciones de una operación.
+
+### 9.1 Pago pendiente
+
+El estado `PENDIENTE` representa una transacción todavía no confirmada.
+
+### 9.2 Pago aprobado
+
+El estado `APROBADO` representa una transacción aceptada.
+
+### 9.3 Pago rechazado
+
+El estado `RECHAZADO` representa una transacción no autorizada.
+
+### 9.4 Estado utilizado por la API simulada
+
+Aunque el modelo define tres estados, el método `procesarPago` del backend **registra directamente `APROBADO`**.
+
+El flujo principal no consulta un proveedor real ni simula aleatoriamente una autorización o rechazo.
+
+Por lo tanto, el endpoint `POST /pagos/simular` aprueba automáticamente las operaciones que logran completar su procesamiento.
+
+### 9.5 Diferencia con algunas pantallas mock
+
+El frontend contiene un checkout administrativo que permite seleccionar resultados de demostración:
+
+- Aprobado.
+- Pendiente.
+- Rechazado.
+
+Sin embargo, ese checkout utiliza datos mock administrados en memoria del frontend.
+
+No corresponde interpretar esas opciones como respuestas de una pasarela real ni como estados procesados por el endpoint principal del backend.
+
+---
+
+## 10. Procesamiento de pagos de canchas
+
+El primer tipo de operación admitido es el pago de una reserva de cancha.
+
+### 10.1 Validación de origen
+
+El servicio comprueba que la reserva exista:
+
+```typescript
+const reserva =
+  await this.pagosRepository.findReservaCancha(
+    dto.origen_id
+  );
+```
+
+Si no existe, devuelve un error de recurso no encontrado.
+
+### 10.2 Identificación del concepto
+
+El servicio construye la descripción utilizando información de la cancha, fecha y horario.
+
+Por ejemplo:
+
+```text
+Concepto: Reserva de Cancha Deportiva
+Detalle: Cancha 1 (Paddle) - 2026-12-01 19:00 a 20:00 hs
+```
+
+Los valores del ejemplo son ilustrativos.
+
+### 10.3 Registro del pago
+
+El repositorio crea un registro `pago` asociado con `reserva_cancha_id`.
+
+### 10.4 Actualización de la reserva
+
+La operación actualiza el estado de la reserva a:
+
+```text
+CONFIRMADA
+```
+
+De esta manera, el pago simulado se relaciona con la transición de la reserva desde la contratación pendiente hacia su confirmación.
+
+### 10.5 Consecuencia
+
+El módulo Pagos no funciona de manera aislada.
+
+Sus resultados modifican el estado de una operación administrada por el módulo Canchas.
+
+Por esa razón, se decidió coordinar la persistencia mediante una transacción de Prisma.
+
+---
+
+## 11. Procesamiento de pagos de membresías
+
+El segundo tipo de operación admitido corresponde al pago de membresías.
+
+### 11.1 Validación de origen
+
+El servicio consulta:
+
+```typescript
+const membresia =
+  await this.pagosRepository.findMembresia(
+    dto.origen_id
+  );
+```
+
+Si no existe, devuelve un error de recurso no encontrado.
+
+### 11.2 Identificación del concepto
+
+El detalle incluye el nombre del plan y el identificador de membresía.
+
+Ejemplo ilustrativo:
+
+```text
+Concepto: Pago de Membresía
+Detalle: Plan Mensual (Membresía #15)
+```
+
+### 11.3 Registro de pago
+
+El repositorio registra el pago asociado con `membresia_id`.
+
+### 11.4 Actualización del estado
+
+La operación actualiza la membresía a:
+
+```text
+ACTIVO
+```
+
+Esto permite representar la activación posterior al pago.
+
+### 11.5 Relación con RN-03
+
+El estado de membresía influye en funcionalidades como:
+
+- Acceso a instalaciones.
+- Descuentos.
+- Reserva de clases.
+- Condiciones comerciales.
+
+Por lo tanto, el tratamiento del pago forma parte de un flujo de negocio más amplio.
+
+---
+
+## 12. Uso de transacciones ACID
+
+El repositorio utiliza Prisma para coordinar la creación del pago y la actualización de la operación de origen.
+
+### 12.1 Implementación
+
+El método `procesarPago` contiene una transacción:
+
+```typescript
+return this.prisma.$transaction(async (tx) => {
+  const isCancha = data.origen_tipo === 'cancha';
+
+  const nuevoPago = await tx.pago.create({
+    data: {
+      monto: data.monto,
+      estado: 'APROBADO',
+      token_pasarela: data.token_pasarela,
+      reserva_cancha_id: isCancha ? data.origen_id : null,
+      membresia_id: !isCancha ? data.origen_id : null,
+      pagado_at: new Date(),
+    },
+  });
+
+  if (isCancha) {
+    await tx.reserva_cancha.update({
+      where: { id: data.origen_id },
+      data: { estado: 'CONFIRMADA' },
+    });
+  } else {
+    await tx.membresia.update({
+      where: { id: data.origen_id },
+      data: { estado: 'ACTIVO' },
+    });
+  }
+
+  const comprobante = await tx.comprobante.create({
+    data: {
+      pago_id: nuevoPago.id,
+      archivo_url:
+        `storage/comprobantes/recibo-${nuevoPago.id}.pdf`,
+    },
+  });
+
+  return { pago: nuevoPago, comprobante };
+});
+```
+
+### 12.2 Operaciones incluidas
+
+La transacción contiene:
+
+1. Creación del pago.
+2. Actualización de la reserva o membresía.
+3. Creación del registro de comprobante.
+
+### 12.3 Beneficio
+
+Si una de estas operaciones de base de datos falla, Prisma puede revertir la transacción completa.
+
+Esto reduce la posibilidad de que una operación quede parcialmente persistida dentro de PostgreSQL.
+
+### 12.4 Límite de la transacción
+
+La generación física del archivo PDF ocurre después de que finaliza la transacción de base de datos.
+
+Por lo tanto, **la escritura del PDF en disco no forma parte de la transacción ACID**.
+
+Si PostgreSQL confirma el pago y luego falla la escritura del archivo, la base puede conservar un pago aprobado cuyo PDF todavía no se haya guardado correctamente.
+
+El servicio dispone de una función para regenerar el PDF cuando se solicita su descarga y el archivo original no está disponible.
+
+Sin embargo, esto no constituye una transacción distribuida entre PostgreSQL y el sistema de archivos.
+
+---
+
+## 13. Generación de comprobantes PDF
+
+El requisito RF-14 establece la emisión de comprobantes asociados con las operaciones registradas.
+
+La implementación utiliza:
+
+`backend/src/pagos/comprobante-pdf.service.ts`
+
+### 13.1 Características del comprobante
+
+El sistema genera un archivo PDF 1.4 que contiene:
+
+- Identificación de FitZone Sports.
+- Número de comprobante.
+- Fecha de emisión.
+- Concepto comercial.
+- Detalle de la operación.
+- Monto abonado.
+- Referencia del token simulado.
+
+### 13.2 Ejemplo de contenido
+
+```text
+FITZONE SPORTS - COMPROBANTE DE PAGO
+
+Comprobante Nro: #88
+Fecha de emisión: 2026-11-19
+Concepto: Reserva de Cancha Deportiva
+Detalle: Cancha 1 - 19:00 a 20:00 hs
+
+Monto abonado: $ 8000.00
+Token pasarela (RNF-02): tok_a1b2c3d4e5f6
+
+Documento emitido automáticamente
+por FitZone Sports.
+```
+
+El ejemplo es ilustrativo.
+
+### 13.3 Generación del archivo
+
+El servicio construye el contenido PDF en memoria y utiliza `writeFileSync` para guardarlo.
+
+La ubicación utilizada es:
+
+```text
+storage/comprobantes/recibo-<ID_PAGO>.pdf
+```
+
+### 13.4 Registro en PostgreSQL
+
+La tabla `comprobante` almacena:
+
+```prisma
+model comprobante {
+  id          Int      @id @default(autoincrement())
+  pago_id     Int      @unique
+  emitido_at  DateTime @default(now()) @db.Timestamptz(6)
+  archivo_url String   @db.Text
+
+  pago pago @relation(
+    fields: [pago_id],
+    references: [id],
+    onDelete: NoAction,
+    onUpdate: NoAction
+  )
+}
+```
+
+El archivo PDF se almacena en el sistema de archivos, mientras que PostgreSQL conserva la referencia correspondiente.
+
+### 13.5 Descarga
+
+El backend ofrece:
+
+```http
+GET /pagos/:id/comprobante
+```
+
+Este endpoint permite recuperar el PDF asociado con un pago.
+
+### 13.6 Recuperación del PDF
+
+Si el archivo no existe en la ruta registrada, `PagosService` puede construir nuevamente el comprobante utilizando los datos persistidos.
+
+Esto aporta una recuperación básica ante la ausencia del archivo original.
+
+### 13.7 Limitación del almacenamiento
+
+La configuración Docker del backend no define un volumen persistente específico para `storage/comprobantes`.
+
+Por lo tanto, los archivos creados dentro del contenedor pueden perderse cuando ese contenedor se recrea.
+
+La posibilidad de regenerar el PDF reduce parcialmente el problema, pero una instalación productiva debería utilizar almacenamiento persistente.
+
+### 13.8 Consideración de seguridad
+
+El comprobante actual incluye el token simulado completo.
+
+Como ese token no permite autorizar un cargo real, no equivale a exponer una credencial financiera operativa.
+
+No obstante, una futura integración con una pasarela real debería revisar qué identificadores resulta apropiado mostrar en documentos descargables.
+
+---
+
+## 14. Integración con el frontend React
+
+La aplicación dispone de interfaces para registrar operaciones de pago y descargar comprobantes.
+
+### 14.1 Servicio frontend
+
+El archivo:
+
+`frontend/src/services/pagosService.ts`
+
+implementa la comunicación con el backend.
+
+La función principal es:
+
+```typescript
+export async function simularPago(
+  origenTipo: "cancha" | "membresia",
+  origenId: number,
+  monto: number
+): Promise<PagoRespuestaApi> {
+  return apiRequest<PagoRespuestaApi>(
+    "/pagos/simular",
+    {
+      method: "POST",
+      body: {
+        origen_tipo: origenTipo,
+        origen_id: origenId,
+        monto
+      },
+      requireAuth: true,
+    }
+  );
+}
+```
+
+Esta función transmite únicamente los datos comerciales necesarios para identificar la operación.
+
+### 14.2 Portal de pagos
+
+El componente:
+
+`frontend/src/portal/Pagos.tsx`
+
+permite:
+
+1. Seleccionar el origen del pago.
+2. Indicar el identificador de la operación.
+3. Ingresar el monto.
+4. Ejecutar la simulación.
+5. Visualizar el resultado.
+6. Consultar el token.
+7. Descargar el comprobante.
+
+### 14.3 Ausencia de captura bancaria
+
+El portal conectado al backend no solicita PAN, CVV ni vencimiento.
+
+Esto mantiene la interfaz coherente con el contrato del servicio.
+
+### 14.4 Descarga de comprobantes
+
+La función:
+
+```typescript
+descargarComprobantePdf(pagoId)
+```
+
+recupera el archivo mediante `apiRequestBlob`.
+
+Después crea una URL temporal del navegador y activa la descarga.
+
+### 14.5 Checkout administrativo de demostración
+
+El proyecto también conserva:
+
+`frontend/src/admin/AdminMembresiaCheckout.tsx`
+
+Este componente permite seleccionar medios de pago como:
+
+- Mercado Pago.
+- MODO.
+- Tarjeta.
+- Transferencia.
+- Efectivo.
+
+También permite seleccionar resultados simulados.
+
+Sin embargo, utiliza `savePago` de `frontend/src/data/pagosData.ts`, que mantiene una colección de transacciones en memoria del frontend.
+
+Por lo tanto, estas operaciones administrativas mock no deben confundirse con los pagos persistidos mediante Prisma.
+
+### 14.6 Pantalla adicional de checkout
+
+El archivo `frontend/src/admin/Checkout.tsx` muestra un campo de tarjeta de demostración, pero el campo está deshabilitado.
+
+No procesa información bancaria.
+
+La confirmación construye un identificador local de demostración.
+
+### 14.7 Consecuencia arquitectónica
+
+El frontend contiene dos niveles de implementación:
+
+**Flujo conectado:** utiliza la API NestJS y registra pagos en PostgreSQL.
+
+**Flujos mock:** representan pantallas o comportamientos de demostración que no ejecutan necesariamente la transacción del backend.
+
+Esta diferencia debe reconocerse para evitar afirmar que todas las pantallas administrativas utilizan una pasarela persistente real.
+
+---
+
+## 15. Respuesta del endpoint
+
+Después de registrar el pago simulado, el backend devuelve información sobre la operación.
+
+### 15.1 Estructura
+
+La respuesta incluye:
+
+- Identificador de pago.
+- Estado.
+- Token simulado.
+- Detalle de solicitud.
+- Identificador del comprobante.
+- Ruta del archivo PDF.
+- URL de descarga.
+- Fecha de emisión.
+
+### 15.2 Ejemplo ilustrativo
+
+```json
+{
+  "pago_id": 88,
+  "estado": "APROBADO",
+  "token_pasarela": "tok_a1b2c3d4e5f6",
+  "detalle": {
+    "origen_tipo": "cancha",
+    "origen_id": 42,
+    "monto": 8000
+  },
+  "comprobante": {
+    "id": 12,
+    "archivo_url": "storage/comprobantes/recibo-88.pdf",
+    "descarga_url": "/pagos/88/comprobante",
+    "emitido_at": "2026-11-19T15:00:00.000Z"
+  }
+}
+```
+
+Los identificadores y fechas del ejemplo son ilustrativos.
+
+### 15.3 Información excluida
+
+La respuesta no necesita incluir datos de tarjeta.
+
+El frontend puede consultar el estado de la operación utilizando su identificador interno y el token simulado.
+
+---
+
+## 16. Relación con RF-13 y RF-14
+
+### 16.1 RF-13 — Procesamiento de pagos
+
+El sistema permite representar el procesamiento de pagos asociados con:
+
+- Membresías.
+- Reservas de canchas.
+
+La operación se realiza mediante una simulación que aprueba el pago y registra el resultado.
+
+### 16.2 RF-14 — Generación de comprobantes
+
+Cada pago procesado mediante el backend genera un registro de comprobante y un archivo PDF.
+
+El PDF puede descargarse mediante un endpoint específico.
+
+### 16.3 Relación con membresías
+
+El pago de una membresía puede producir su transición a `ACTIVO`.
+
+### 16.4 Relación con reservas de canchas
+
+El pago de una reserva produce su transición a `CONFIRMADA`.
+
+### 16.5 Relación con RNF-02
+
+La decisión evita que el módulo Pagos requiera almacenar datos bancarios completos.
+
+En su lugar, conserva una referencia simulada de transacción y los datos comerciales necesarios.
+
+---
+
+## 17. Pruebas automatizadas
+
+El módulo dispone de pruebas en:
+
+`backend/src/pagos/pagos.service.spec.ts`
+
+El archivo contiene ocho pruebas que cubren distintos comportamientos de los servicios de pagos y comprobantes.
+
+### 17.1 Consulta de pagos
+
+Se comprueba que `findById()`:
+
+- Devuelva un pago existente.
+- Devuelva un error cuando el pago no existe.
+
+### 17.2 Pago de cancha
+
+Se prueba que una operación asociada con una reserva genere el resultado esperado.
+
+La prueba comprueba:
+
+- Estado aprobado.
+- Token con prefijo `tok_`.
+- Referencia de comprobante.
+- Información necesaria para el PDF.
+
+### 17.3 Pago de membresía
+
+Se verifica que el servicio pueda procesar una operación asociada con una membresía existente.
+
+### 17.4 Operación inexistente
+
+Las pruebas comprueban que el servicio rechace un pago cuando no existe la reserva o membresía indicada.
+
+### 17.5 Generación de tokens distintos
+
+Existe una prueba que ejecuta dos llamadas de pago y comprueba que generen referencias diferentes.
+
+El criterio es:
+
+```typescript
+expect(r1.token_pasarela)
+  .not.toBe(r2.token_pasarela);
+```
+
+La prueba verifica el comportamiento de las llamadas ejecutadas.
+
+No reemplaza una restricción de unicidad en PostgreSQL.
+
+### 17.6 Generación de PDF
+
+El archivo también prueba la construcción de un buffer PDF válido.
+
+Comprueba elementos como:
+
+- Cabecera `%PDF-1.4`.
+- Concepto.
+- Detalle.
+- Monto.
+- Marcador de finalización `%%EOF`.
+
+### 17.7 Recuperación del comprobante
+
+Otra prueba verifica que el servicio pueda devolver un PDF y su nombre de archivo a partir de un pago existente.
+
+### 17.8 Ejecución
+
+Desde el directorio `backend`:
+
+```bash
+npx vitest run src/pagos/pagos.service.spec.ts
+```
+
+### 17.9 Evidencia registrada
+
+El archivo:
+
+`docs/rnf/RNF-02.md`
+
+documenta una ejecución de ocho pruebas del módulo Pagos, fechada el 19 de noviembre de 2026.
+
+### 17.10 Integración con otras pruebas
+
+El archivo:
+
+`backend/test/flujos.e2e-spec.ts`
+
+incluye un recorrido completo que realiza:
+
+1. Inicio de sesión.
+2. Reserva de cancha.
+3. Pago simulado.
+4. Descarga del comprobante PDF.
+
+Esto permite verificar que el módulo Pagos participe correctamente en un flujo integrado.
+
+### 17.11 Resultado de CI
+
+En el commit de referencia:
+
+`d037e8015064f13a417991826af7057ec4a201e8`
+
+GitHub Actions registró una ejecución exitosa.
+
+Evidencia:
+
+https://github.com/Stefano-Kiwi/Integrador_ProgV_Sis2026/actions/runs/44624635195
+
+Este resultado respalda las verificaciones automatizadas incluidas en el workflow.
+
+No representa una certificación de seguridad bancaria ni demuestra el procesamiento de dinero real.
+
+---
+
+## 18. Seguridad de los datos de pago
+
+La principal decisión de seguridad consiste en **no solicitar ni persistir datos completos de tarjetas**.
+
+### 18.1 Minimización de información
+
+La aplicación conserva solamente información necesaria para representar la transacción:
+
+- Identificador.
+- Origen.
+- Monto.
+- Estado.
+- Token simulado.
+- Fechas.
+- Comprobante.
+
+### 18.2 Separación de información comercial y bancaria
+
+Las operaciones de negocio necesitan conocer qué se pagó y cuál fue su resultado.
+
+No necesitan conocer el número completo de tarjeta ni el CVV del usuario.
+
+Esta separación reduce la exposición de datos sensibles.
+
+### 18.3 Validación de entrada
+
+El DTO restringe los campos del endpoint.
+
+Además, el `ValidationPipe` global rechaza propiedades no declaradas.
+
+### 18.4 Autenticación
+
+El proyecto utiliza JWT para identificar a los usuarios que realizan solicitudes protegidas.
+
+El módulo Pagos se encuentra integrado con los mecanismos generales de autenticación de NestJS.
+
+### 18.5 Persistencia controlada
+
+Prisma administra los registros de pago y sus relaciones con las entidades del dominio.
+
+### 18.6 Precaución sobre el alcance
+
+La ausencia de columnas de tarjeta demuestra una decisión de minimización, pero **no certifica por sí sola el cumplimiento integral de estándares como PCI DSS**.
+
+Una operación bancaria real necesitaría revisar toda la arquitectura de pagos, sus proveedores, contratos, canales de comunicación y procedimientos de seguridad.
+
+---
+
+## 19. Limitaciones de seguridad identificadas
+
+La implementación cumple el enfoque de simulación, pero presenta aspectos que no deberían trasladarse sin modificaciones a producción.
+
+### 19.1 El monto se recibe desde el frontend
+
+El DTO permite que el cliente envíe un valor `monto` positivo.
+
+El servicio comprueba que la reserva o membresía exista, pero **no verifica que el monto informado coincida necesariamente con el precio oficial de la operación**.
+
+Por ejemplo, la API no debería permitir confirmar una reserva comercial real utilizando un importe arbitrario enviado por el usuario.
+
+**Mejora recomendada:** calcular o recuperar siempre el monto definitivo desde el backend.
+
+### 19.2 Aprobación automática
+
+El repositorio registra directamente:
+
+```typescript
+estado: 'APROBADO'
+```
+
+No existe una autorización financiera externa.
+
+**Mejora recomendada:** incorporar estados basados en respuestas verificadas de una pasarela real.
+
+### 19.3 Ausencia de idempotencia de pago
+
+El flujo no define una clave de idempotencia para identificar reintentos de la misma operación.
+
+Si un cliente reenvía una solicitud, podrían generarse pagos adicionales asociados con el mismo origen.
+
+**Mejora recomendada:** agregar identificadores idempotentes y restricciones apropiadas de persistencia.
+
+### 19.4 Token sin restricción única
+
+`token_pasarela` no posee una restricción `UNIQUE` declarada en el esquema.
+
+Aunque los tokens se generan aleatoriamente, la base de datos no garantiza su unicidad.
+
+**Mejora recomendada:** establecer una clave única para las referencias que deban ser irrepetibles.
+
+### 19.5 Autorización sobre operaciones
+
+El endpoint de simulación está sujeto a la autenticación general, pero no realiza una comprobación explícita de que la reserva o membresía pertenezca al usuario autenticado.
+
+Tampoco debe suponerse que disponer de un identificador de pago autoriza automáticamente a consultar su comprobante.
+
+**Mejora recomendada:** validar la titularidad y el alcance de autorización de cada operación.
+
+### 19.6 Acceso a comprobantes
+
+El endpoint de descarga identifica los comprobantes mediante el ID de pago.
+
+El controlador revisado no comprueba explícitamente la titularidad del pago antes de devolver el PDF.
+
+**Mejora recomendada:** incorporar autorización por recurso para impedir que un usuario autenticado acceda a documentos ajenos.
+
+### 19.7 Token visible en el comprobante
+
+El PDF incluye la referencia completa del pago simulado.
+
+Si en el futuro se utilizara un token real con capacidades operativas, debería evitarse su exposición innecesaria.
+
+### 19.8 Persistencia física del PDF
+
+El comprobante se guarda en el sistema de archivos del backend.
+
+La escritura no forma parte de la transacción de PostgreSQL.
+
+Además, los archivos necesitan almacenamiento persistente para sobrevivir a ciertas recreaciones de contenedores.
+
+### 19.9 Formularios mock independientes
+
+Determinados checkouts administrativos utilizan datos en memoria.
+
+Esto puede generar diferencias entre las operaciones que muestra la interfaz y los pagos existentes en PostgreSQL.
+
+**Mejora recomendada:** unificar los flujos comerciales en el servicio real del backend.
+
+---
+
+## 20. Consecuencias de la decisión
+
+### 20.1 Consecuencias positivas
+
+**Minimización de datos sensibles**
+
+La aplicación no necesita recibir ni almacenar información completa de tarjetas bancarias.
+
+**Menor exposición ante filtraciones**
+
+La base de datos conserva referencias comerciales en lugar de PAN, CVV o vencimientos.
+
+**Simplicidad académica**
+
+La simulación evita integrar un proveedor de pagos real.
+
+**Integración con los módulos existentes**
+
+Los pagos pueden asociarse con membresías y reservas de canchas.
+
+**Consistencia transaccional**
+
+Prisma coordina el registro de pago, la modificación del estado comercial y la creación de metadatos del comprobante.
+
+**Trazabilidad**
+
+Cada pago posee un identificador, un token de referencia y una fecha de registro.
+
+**Comprobantes PDF**
+
+El sistema puede emitir documentos asociados con las operaciones.
+
+**Pruebas automatizadas**
+
+El módulo puede verificarse sin depender de servicios bancarios externos.
+
+**Compatibilidad tecnológica**
+
+La solución utiliza NestJS, TypeScript, Prisma y PostgreSQL.
+
+**Posibilidad de evolución**
+
+La separación entre servicios y repositorios facilita estudiar una futura integración con un proveedor financiero.
+
+### 20.2 Consecuencias negativas
+
+**Ausencia de cobros reales**
+
+La operación simulada no transfiere dinero ni obtiene una autorización bancaria.
+
+**Tokenización no bancaria**
+
+El token se genera internamente y no representa una credencial emitida por una pasarela externa.
+
+**Falta de conciliación**
+
+El sistema no compara sus registros con movimientos financieros reales.
+
+**Aprobación simplificada**
+
+El endpoint principal registra los pagos como aprobados.
+
+**Limitaciones de autorización**
+
+Existen operaciones que requieren controles adicionales sobre la titularidad de los recursos.
+
+**Ausencia de idempotencia**
+
+Los reintentos pueden generar pagos duplicados.
+
+**Monto controlado parcialmente por el cliente**
+
+Es necesario trasladar al backend la determinación definitiva del importe.
+
+**Persistencia de comprobantes**
+
+El almacenamiento de PDF en disco debe reforzarse para una infraestructura productiva.
+
+**Diferencias entre flujos mock y persistentes**
+
+No todas las pantallas administrativas de checkout utilizan el backend de pagos.
+
+### 20.3 Deuda técnica asumida
+
+Se identifican las siguientes mejoras pendientes:
+
+1. Integrar una pasarela de pagos real en entorno sandbox.
+2. Definir un contrato para un adaptador de proveedores.
+3. Delegar la captura bancaria en un proveedor especializado.
+4. Verificar respuestas y notificaciones externas.
+5. Calcular los importes exclusivamente desde el backend.
+6. Incorporar claves de idempotencia.
+7. Aplicar autorización sobre cada operación y comprobante.
+8. Implementar estados de pago no aprobados.
+9. Proteger adecuadamente los identificadores de transacción.
+10. Unificar los checkouts administrativos.
+11. Utilizar almacenamiento persistente para los PDF.
+12. Implementar conciliación y auditoría.
+13. Incorporar pruebas de pagos duplicados y acceso no autorizado.
+14. Definir procedimientos de recuperación frente a fallos parciales.
+
+Estas mejoras no forman parte de la implementación actual y deberán evaluarse antes de una utilización comercial real.
+
+---
+
+## 21. Riesgos y medidas de mitigación
+
+| Riesgo | Consecuencia | Medida recomendada |
+|---|---|---|
+| Almacenamiento de PAN o CVV | Exposición de datos bancarios | Mantener los datos fuera de FitZone Sports |
+| Monto enviado arbitrariamente | Pagos comerciales incorrectos | Recalcular importe en backend |
+| Solicitud repetida | Duplicación de pagos | Clave de idempotencia |
+| Token repetido | Referencias ambiguas | Restricción de unicidad |
+| Pago de recurso ajeno | Operación no autorizada | Verificar titularidad |
+| Descarga de PDF ajeno | Exposición de información | Autorización por comprobante |
+| PDF perdido al recrear contenedor | Archivo no disponible | Volumen o almacenamiento persistente |
+| Escritura PDF fallida | Pago sin archivo físico | Recuperación y auditoría |
+| Diferencias entre mock y backend | Estados inconsistentes | Unificar flujos |
+| Aprobación automática | Confirmación sin cobro real | Integración con proveedor |
+| Falta de conciliación | Operaciones financieras sin verificar | Webhooks y conciliación |
+| Token expuesto | Divulgación de referencia | Limitar datos de salida según su sensibilidad |
+
+Las mitigaciones señaladas representan recomendaciones futuras, salvo los mecanismos que ya existen expresamente en el código.
+
+---
+
+## 22. Evolución futura hacia una pasarela real
+
+La arquitectura actual puede servir como punto de partida para una integración comercial.
+
+Sin embargo, la incorporación de cobros reales requeriría nuevas responsabilidades.
+
+### 22.1 Selección de proveedor
+
+El equipo debería evaluar proveedores según:
+
+- Disponibilidad en Argentina.
+- Métodos de pago aceptados.
+- Comisiones.
+- Herramientas de sandbox.
+- Documentación.
+- Webhooks.
+- Políticas de reembolsos.
+- Requisitos de seguridad.
+
+### 22.2 Captura segura
+
+El usuario debería proporcionar los datos de pago mediante una interfaz administrada o autorizada por el proveedor.
+
+FitZone Sports no debería recibir directamente PAN o CVV cuando exista una alternativa de tokenización externa apropiada.
+
+### 22.3 Adaptador de pasarela
+
+Podría definirse una interfaz de integración:
+
+```typescript
+interface PasarelaPago {
+  crearOperacion(datos: {
+    referencia: string;
+    monto: number;
+  }): Promise<{
+    referenciaExterna: string;
+    estado: string;
+  }>;
+}
+```
+
+Este ejemplo es una propuesta de evolución, no código actualmente implementado.
+
+### 22.4 Estados reales
+
+La pasarela podría informar:
+
+- Pago pendiente.
+- Pago aprobado.
+- Pago rechazado.
+- Pago cancelado.
+- Pago reembolsado.
+
+La aplicación tendría que reflejar esas transiciones conforme a reglas verificadas.
+
+### 22.5 Webhooks
+
+Las notificaciones externas permitirían actualizar las operaciones sin depender de que el usuario mantenga abierta la pantalla.
+
+Sería necesario verificar la autenticidad de dichas notificaciones.
+
+### 22.6 Idempotencia
+
+Cada solicitud debería incluir una referencia única de operación para evitar cargos duplicados ante reintentos.
+
+### 22.7 Conciliación
+
+La aplicación debería comprobar que los pagos registrados coincidan con los resultados informados por el proveedor.
+
+### 22.8 Documentación de una nueva decisión
+
+La migración de una pasarela simulada hacia una integración real representaría un cambio arquitectónico significativo.
+
+Por lo tanto, debería registrarse mediante un nuevo ADR y conservar el ADR-010 como antecedente.
+
+---
+
+## 23. Relación con otros ADR
+
+### ADR-001 — Arquitectura de monolito modular
+
+El módulo Pagos funciona dentro de la misma aplicación NestJS que administra reservas, membresías y usuarios.
+
+### ADR-002 — PostgreSQL
+
+La persistencia de pagos utiliza relaciones, claves foráneas y transacciones sobre PostgreSQL.
+
+### ADR-005 — NestJS y Prisma
+
+El módulo organiza controladores, servicios y repositorios mediante inyección de dependencias.
+
+### ADR-006 — Frontend React
+
+Las pantallas de pagos utilizan componentes React y servicios HTTP para representar las operaciones.
+
+### ADR-008 — Estrategia de pruebas
+
+El módulo dispone de pruebas unitarias y participa en un recorrido de integración que incluye pago y comprobante PDF.
+
+### ADR-009 — Despliegue
+
+Los comprobantes se almacenan en el sistema de archivos del backend, por lo que una instalación contenerizada debe considerar persistencia y recuperación.
+
+---
+
+## 24. Evidencia de implementación
+
+La decisión puede verificarse directamente en los siguientes archivos del repositorio.
+
+### Modelo de pagos
+
+[backend/prisma/schema.prisma](../../backend/prisma/schema.prisma)
+
+Define las entidades `pago` y `comprobante`, sus relaciones y el campo `token_pasarela`.
+
+### DTO de pago
+
+[backend/src/pagos/dto/simular-pago.dto.ts](../../backend/src/pagos/dto/simular-pago.dto.ts)
+
+Define los únicos campos comerciales requeridos para simular una operación.
+
+### Servicio de pagos
+
+[backend/src/pagos/pagos.service.ts](../../backend/src/pagos/pagos.service.ts)
+
+Genera el token simulado y coordina el procesamiento de pagos.
+
+### Repositorio de pagos
+
+[backend/src/pagos/pagos.repository.ts](../../backend/src/pagos/pagos.repository.ts)
+
+Implementa la transacción que crea el pago, modifica la operación de origen y registra el comprobante.
+
+### Controlador HTTP
+
+[backend/src/pagos/pagos.controller.ts](../../backend/src/pagos/pagos.controller.ts)
+
+Expone operaciones de simulación, consulta y descarga de comprobantes.
+
+### Servicio PDF
+
+[backend/src/pagos/comprobante-pdf.service.ts](../../backend/src/pagos/comprobante-pdf.service.ts)
+
+Genera los comprobantes PDF 1.4 y permite su recuperación desde disco.
+
+### Pruebas unitarias
+
+[backend/src/pagos/pagos.service.spec.ts](../../backend/src/pagos/pagos.service.spec.ts)
+
+Contiene pruebas de operaciones de pago, referencias de token y comprobantes.
+
+### Pruebas de integración
+
+[backend/test/flujos.e2e-spec.ts](../../backend/test/flujos.e2e-spec.ts)
+
+Incluye el recorrido de reserva de cancha, pago y descarga de PDF.
+
+### Servicio frontend
+
+[frontend/src/services/pagosService.ts](../../frontend/src/services/pagosService.ts)
+
+Define las solicitudes HTTP y la descarga de comprobantes.
+
+### Portal de pagos
+
+[frontend/src/portal/Pagos.tsx](../../frontend/src/portal/Pagos.tsx)
+
+Implementa la interfaz de pago simulada conectada al backend.
+
+### Checkout administrativo mock
+
+[frontend/src/admin/AdminMembresiaCheckout.tsx](../../frontend/src/admin/AdminMembresiaCheckout.tsx)
+
+Permite simular medios y resultados utilizando datos en memoria.
+
+### Datos de demostración
+
+[frontend/src/data/pagosData.ts](../../frontend/src/data/pagosData.ts)
+
+Contiene las transacciones mock de la consola administrativa.
+
+### Evidencia RNF-02
+
+[docs/rnf/RNF-02.md](../rnf/RNF-02.md)
+
+Documenta la no persistencia de datos bancarios y una ejecución de las pruebas del módulo Pagos.
+
+### Diagrama de secuencia
+
+[docs/diagramas/06-seq-reserva-cancha-pago.svg](../diagramas/06-seq-reserva-cancha-pago.svg)
+
+Representa el recorrido de reserva de cancha y procesamiento del pago.
+
+### Fuente editable del diagrama
+
+[docs/diagramas/06-seq-reserva-cancha-pago.mmd](../diagramas/06-seq-reserva-cancha-pago.mmd)
+
+Permite revisar y modificar el diagrama de secuencia.
+
+### Ejecución de integración continua
+
+**Commit verificado:** `d037e8015064f13a417991826af7057ec4a201e8`  
+**Fecha:** 2026-11-19  
+**Resultado:** GitHub Actions — Success
+
+https://github.com/Stefano-Kiwi/Integrador_ProgV_Sis2026/actions/runs/44624635195
+
+---
+
+## 25. Conclusión
+
+Se decidió implementar el tratamiento de los pagos de FitZone Sports mediante una **pasarela simulada que genera tokens de referencia y no almacena datos sensibles de tarjetas bancarias**.
+
+La decisión responde principalmente al requisito RNF-02, que establece la necesidad de evitar la persistencia de PAN, CVV y fechas de vencimiento.
+
+Durante la evaluación se consideraron el almacenamiento directo de información bancaria, la integración con una pasarela real, una simulación sin tokens y una simulación con token por transacción.
+
+El almacenamiento directo fue descartado por sus riesgos y por resultar innecesario.
+
+La integración real con un proveedor financiero ofrecía mayores capacidades, pero incorporaba complejidad externa que no se consideró necesaria para el alcance académico.
+
+La simulación sin tokens simplificaba el desarrollo, aunque no representaba adecuadamente la arquitectura de tokenización exigida.
+
+Por estas razones se seleccionó la simulación con referencias generadas por el backend.
+
+La implementación actual utiliza `PagosService` para construir un token opaco mediante `randomBytes`, mientras que `PagosRepository` registra la operación en PostgreSQL.
+
+La base de datos conserva únicamente información comercial del pago y su referencia simulada, sin definir columnas para datos de tarjetas.
+
+El procesamiento se integra con las reservas de canchas y las membresías, permitiendo actualizar sus estados mediante transacciones Prisma.
+
+Además, el sistema genera comprobantes PDF que pueden consultarse posteriormente.
+
+La estrategia permite demostrar las principales reglas de negocio y dispone de pruebas automatizadas.
+
+No obstante, debe reconocerse que **la tokenización es simulada y no representa una integración financiera real**.
+
+El backend no realiza cargos bancarios, los pagos de la API se aprueban automáticamente y todavía existen aspectos pendientes de seguridad, como la validación del monto desde el servidor, la idempotencia y la autorización por recurso.
+
+Por lo tanto, la solución es adecuada como representación académica del procesamiento de pagos y la minimización de datos, pero necesita evolucionar antes de operar con transacciones financieras reales.
+
+**Decisión final: utilizar una pasarela simulada que registre pagos de membresías y canchas mediante tokens de referencia generados en NestJS, sin recibir ni persistir datos de tarjetas bancarias, manteniendo PostgreSQL como registro comercial de las operaciones y generando comprobantes PDF asociados a cada pago.**
+
+---
+
+**Estado final:** Aceptado  
+**Fecha de registro:** 2026-11-19  
+**Nota histórica:** la fecha corresponde al registro formal de este documento, sin afirmar que la decisión técnica se tomó originalmente ese mismo día.  
+**Referencia:** ADR-010 — FitZone Sports — Equipo 12.
