@@ -330,7 +330,28 @@
             "description": "Clase programada exitosamente"
           }
         },
-        "summary": "Crear una nueva clase",
+        "summary": "Crear una nueva clase (RF-06)",
+        "tags": [
+          "clases"
+        ]
+      }
+    },
+    "/clases/lista-espera/mia": {
+      "get": {
+        "description": "Devuelve las clases en las que el usuario autenticado se encuentra EN_ESPERA junto con su posición FIFO.",
+        "operationId": "ClasesController_miListaEspera",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Listado de entradas en lista de espera con posición actual"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Consultar mi lista de espera y posición actual (RF-08)",
         "tags": [
           "clases"
         ]
@@ -365,7 +386,7 @@
     },
     "/clases/reserva": {
       "post": {
-        "description": "Reserva cupo en la clase o ingresa a lista de espera si está llena",
+        "description": "Habilitada hasta 48 h antes del inicio y solo para socios con membresía ACTIVO (rechaza 403 si está en mora). Si no hay cupo disponible, agrega al socio a la lista de espera en orden FIFO.",
         "operationId": "ClasesController_reservar",
         "parameters": [],
         "requestBody": {
@@ -381,9 +402,65 @@
         "responses": {
           "201": {
             "description": "Reserva confirmada o posición asignada en lista de espera"
+          },
+          "400": {
+            "description": "Fuera de la ventana de 48 h o clase ya comenzada"
+          },
+          "403": {
+            "description": "Socio en mora (membresía VENCIDO/SUSPENDIDO) o sin membresía activa (RN-03)"
+          },
+          "409": {
+            "description": "Ya posee reserva confirmada o lugar en lista de espera"
           }
         },
-        "summary": "Reservar clase deportiva",
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Reservar clase grupal o enlistarse en espera (RF-07, RF-08, RN-03)",
+        "tags": [
+          "clases"
+        ]
+      }
+    },
+    "/clases/reserva/{id}/cancelar": {
+      "patch": {
+        "description": "Sin penalidad hasta 2 h antes del inicio; con menos de 2 h se registra con penalidad. Al liberar el cupo, el patrón Observer promueve automáticamente al primero de la lista de espera (FIFO) en la misma transacción.",
+        "operationId": "ClasesController_cancelarReserva",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reserva cancelada, estado de penalidad y eventual promoción de lista de espera"
+          },
+          "400": {
+            "description": "La clase ya comenzó"
+          },
+          "403": {
+            "description": "La reserva pertenece a otro usuario"
+          },
+          "404": {
+            "description": "Reserva no encontrada"
+          },
+          "409": {
+            "description": "La reserva ya estaba cancelada"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Cancelar una reserva de clase (RF-07, RF-08)",
         "tags": [
           "clases"
         ]

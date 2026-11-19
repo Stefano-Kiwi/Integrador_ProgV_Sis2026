@@ -176,12 +176,13 @@ model clase {
 }
 
 model reserva_clase {
-  id           Int                  @id @default(autoincrement())
-  usuario_id   Int
-  clase_id     Int
-  estado       estado_reserva_clase @default(CONFIRMADA)
-  reservada_at DateTime             @default(now()) @db.Timestamptz(6)
-  cancelada_at DateTime?            @db.Timestamptz(6)
+  id            Int                  @id @default(autoincrement())
+  usuario_id    Int
+  clase_id      Int
+  estado        estado_reserva_clase @default(CONFIRMADA)
+  reservada_at  DateTime             @default(now()) @db.Timestamptz(6)
+  cancelada_at  DateTime?            @db.Timestamptz(6)
+  con_penalidad Boolean              @default(false)
 
   usuario usuario @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   clase   clase   @relation(fields: [clase_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
