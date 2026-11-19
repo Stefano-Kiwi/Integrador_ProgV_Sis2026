@@ -116,6 +116,7 @@ export function cerrarSesion(): void {
 
 export interface UsuarioSesion {
   id: number;
+  dni?: string;
   nombre: string;
   apellido: string;
   email: string;
@@ -177,8 +178,15 @@ export async function obtenerMiPerfil(): Promise<UsuarioSesion> {
     throw new Error("El servidor devolvió un perfil con formato inesperado.");
   }
 
+  const datosObj = datos as Record<string, unknown>;
+  const sedeBase =
+    typeof datosObj.sede_base === "object" && datosObj.sede_base !== null
+      ? (datosObj.sede_base as { id: number; nombre: string })
+      : null;
+
   return {
     id: datos.id,
+    dni: typeof datosObj.dni === "string" ? datosObj.dni : undefined,
     nombre: datos.nombre,
     apellido: datos.apellido,
     email: datos.email,
@@ -186,6 +194,7 @@ export async function obtenerMiPerfil(): Promise<UsuarioSesion> {
       id_rol: datos.rol.id_rol,
       clase_rol: datos.rol.clase_rol,
     },
+    sede_base: sedeBase,
   };
 }
 

@@ -1,9 +1,189 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import {
+  obtenerToken,
+  obtenerMiPerfil,
+  obtenerUsuarioActual,
+  type UsuarioSesion,
+} from "../../services/authService";
 
 export default function Profile() {
+  const token = obtenerToken();
+
+  const [usuario, setUsuario] = useState<UsuarioSesion | null>(null);
+  const [cargando, setCargando] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [modoOffline, setModoOffline] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!token) {
+      setCargando(false);
+      return;
+    }
+
+    let montado = true;
+
+    async function cargarPerfil() {
+      try {
+        setError(null);
+        const datos = await obtenerMiPerfil();
+        if (montado) {
+          setUsuario(datos);
+          setModoOffline(false);
+        }
+      } catch (err) {
+        console.warn("No se pudo cargar perfil desde /auth/me:", err);
+        // Respaldo desde el payload del JWT si el backend no responde
+        const usuarioJwt = obtenerUsuarioActual();
+        if (montado) {
+          if (usuarioJwt) {
+            setModoOffline(true);
+            setUsuario({
+              id: Number(usuarioJwt.sub || usuarioJwt.id || 1),
+              nombre: usuarioJwt.email ? String(usuarioJwt.email).split("@")[0] : "Socio",
+              apellido: "",
+              email: String(usuarioJwt.email || "socio@fitzone.com"),
+              rol: {
+                id_rol: 1,
+                clase_rol: String(usuarioJwt.rol || usuarioJwt.role || "Socio"),
+              },
+              sede_base: {
+                id: 1,
+                nombre: "Sede Central",
+              },
+            });
+          } else {
+            setError(
+              err instanceof Error ? err.message : "Error al consultar los datos del perfil.",
+            );
+          }
+        }
+      } finally {
+        if (montado) {
+          setCargando(false);
+        }
+      }
+    }
+
+    cargarPerfil();
+
+    return () => {
+      montado = false;
+    };
+  }, [token]);
+
+  // Si no hay sesión iniciada
+  if (!token) {
+    return (
+      <div className="profile-page-wrapper" style={{ minHeight: "75vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{
+          background: "var(--bg-card, #151b2b)",
+          border: "1px solid var(--border-color, #222b40)",
+          borderRadius: "16px",
+          padding: "2.5rem",
+          maxWidth: "460px",
+          textAlign: "center",
+          boxShadow: "0 12px 30px rgba(0,0,0,0.4)"
+        }}>
+          <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>👤</div>
+          <h2 style={{ color: "#fff", marginBottom: "0.75rem", fontSize: "1.4rem" }}>Inicia Sesión</h2>
+          <p style={{ color: "var(--text-muted, #8b95a5)", fontSize: "0.9rem", marginBottom: "1.5rem", lineHeight: "1.5" }}>
+            Debes iniciar sesión con tus credenciales para acceder a tu perfil y pase digital.
+          </p>
+          <Link
+            to="/login"
+            style={{
+              display: "inline-block",
+              background: "linear-gradient(135deg, var(--accent-orange, #ff5e3a), #ff8c42)",
+              color: "#fff",
+              padding: "0.75rem 1.75rem",
+              borderRadius: "8px",
+              fontWeight: "600",
+              textDecoration: "none",
+            }}
+          >
+            Ir al Login
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Mientras carga la respuesta del backend
+  if (cargando) {
+    return (
+      <div className="profile-page-wrapper" style={{ minHeight: "75vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ textAlign: "center", color: "var(--text-muted, #8b95a5)" }}>
+          <div style={{ fontSize: "2.5rem", marginBottom: "1rem", animation: "pulse 1.5s infinite" }}>⏳</div>
+          <p style={{ fontSize: "1rem" }}>Cargando datos del perfil desde el servidor...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Si ocurrió un error fatal y no hay datos
+  if (error && !usuario) {
+    return (
+      <div className="profile-page-wrapper" style={{ minHeight: "75vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{
+          background: "rgba(255, 75, 114, 0.1)",
+          border: "1px solid var(--accent-red, #ff4b72)",
+          borderRadius: "16px",
+          padding: "2.5rem",
+          maxWidth: "460px",
+          textAlign: "center",
+        }}>
+          <div style={{ fontSize: "2.5rem", marginBottom: "1rem" }}>⚠️</div>
+          <h2 style={{ color: "#fff", marginBottom: "0.5rem" }}>Error de Conexión</h2>
+          <p style={{ color: "#fca5a5", fontSize: "0.9rem", marginBottom: "1.5rem" }}>{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="btn-secondary"
+            style={{ padding: "0.6rem 1.2rem", cursor: "pointer" }}
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Datos normalizados del usuario
+  const nombreCompleto = usuario
+    ? `${usuario.nombre} ${usuario.apellido}`.trim() || usuario.email.split("@")[0]
+    : "Usuario";
+  const username = usuario ? `@${usuario.email.split("@")[0]}` : "@usuario";
+  const email = usuario?.email || "usuario@fitzone.com";
+  const rolNombre = usuario?.rol?.clase_rol || "Socio Activo";
+  const idFormateado = usuario ? `TG-${String(usuario.id).padStart(4, "0")}` : "TG-0001";
+  const dni = usuario?.dni || "S/D";
+  const sedeNombre = usuario?.sede_base?.nombre || "Sede Central";
+
   return (
     <div className="profile-page-wrapper">
       <main className="profile-container">
+        
+        {/* Aviso si está en modo offline o contingencia */}
+        {modoOffline && (
+          <div style={{
+            background: "rgba(255, 176, 32, 0.12)",
+            border: "1px solid rgba(255, 176, 32, 0.4)",
+            borderRadius: "12px",
+            padding: "0.75rem 1.25rem",
+            marginBottom: "1.5rem",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.75rem",
+            color: "#fff",
+            fontSize: "0.85rem"
+          }}>
+            <span style={{ fontSize: "1.2rem" }}>⚠️</span>
+            <span>
+              <strong>Modo contingencia:</strong> Mostrando datos de la sesión activa guardada localmente (servidor central no disponible).
+            </span>
+          </div>
+        )}
+
         {/* Encabezado de la Vista */}
         <header className="profile-page-header">
           <h1 className="profile-page-title">
@@ -14,7 +194,7 @@ export default function Profile() {
           </p>
         </header>
 
-        {/* Cuadro Estático con los Datos del Usuario */}
+        {/* Cuadro Dinámico con los Datos del Usuario */}
         <section className="user-account-summary-card" aria-label="Cuadro de datos del usuario">
           <div className="summary-card-header">
             <div className="summary-card-left">
@@ -35,7 +215,7 @@ export default function Profile() {
               </div>
             </div>
             <div className="summary-card-actions">
-              <span className="summary-badge-id">ID: TG-8492</span>
+              <span className="summary-badge-id">ID: {idFormateado}</span>
               <Link to="/perfil/editar" className="summary-edit-link" id="btn-perfil-editar-datos">
                 <svg
                   width="14"
@@ -59,26 +239,26 @@ export default function Profile() {
             {/* Nombre y Apellido */}
             <div className="summary-field-cell">
               <span className="summary-label">Nombre y Apellido</span>
-              <span className="summary-value">Lucas Benítez</span>
+              <span className="summary-value">{nombreCompleto}</span>
             </div>
 
             {/* Nombre de Usuario */}
             <div className="summary-field-cell">
               <span className="summary-label">Nombre de Usuario</span>
-              <span className="summary-value" style={{ color: "var(--accent-neon)" }}>@lucas.benitez</span>
+              <span className="summary-value" style={{ color: "var(--accent-neon)" }}>{username}</span>
             </div>
 
             {/* Correo Electrónico */}
             <div className="summary-field-cell">
               <span className="summary-label">Correo Electrónico</span>
-              <span className="summary-value">lucas.benitez@eltremendo.com</span>
+              <span className="summary-value">{email}</span>
             </div>
 
             {/* Rol Dentro del Sistema */}
             <div className="summary-field-cell">
               <span className="summary-label">Rol en el Sistema</span>
               <span className="summary-value">
-                <span className="role-tag">Socio Activo (VIP)</span>
+                <span className="role-tag">{rolNombre}</span>
               </span>
             </div>
 
@@ -94,13 +274,13 @@ export default function Profile() {
             <div className="summary-field-cell">
               <span className="summary-label">Identificador (ID)</span>
               <span className="summary-value" style={{ fontFamily: "monospace", letterSpacing: "1px" }}>
-                TG-8492
+                {idFormateado}
               </span>
             </div>
           </div>
         </section>
 
-        {/* Contenedor Modular en Dos Columnas Reorganizadas */}
+        {/* Contenedor Modular en Dos Columnas */}
         <div className="profile-main-grid">
           {/* Columna 1: Información Personal y Registro de Ingresos */}
           <div className="profile-column">
@@ -145,7 +325,7 @@ export default function Profile() {
                       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                       <circle cx="12" cy="7" r="4" />
                     </svg>
-                    <span>Lucas Benítez</span>
+                    <span>{nombreCompleto}</span>
                   </div>
                 </div>
 
@@ -164,7 +344,7 @@ export default function Profile() {
                       <line x1="7" y1="12" x2="17" y2="12" />
                       <line x1="7" y1="16" x2="13" y2="16" />
                     </svg>
-                    <span>40.892.112</span>
+                    <span>{dni}</span>
                   </div>
                 </div>
 
@@ -181,7 +361,24 @@ export default function Profile() {
                       <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
                       <polyline points="22,6 12,13 2,6" />
                     </svg>
-                    <span>lucas.benitez@eltremendo.com</span>
+                    <span>{email}</span>
+                  </div>
+                </div>
+
+                {/* Sede Base Asignada */}
+                <div className="data-field-item">
+                  <span className="data-label">Sede Base</span>
+                  <div className="data-value-box">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                      <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                    <span>{sedeNombre}</span>
                   </div>
                 </div>
 
@@ -197,46 +394,11 @@ export default function Profile() {
                     >
                       <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
                     </svg>
-                    <span>+54 9 11 4523-9981</span>
+                    <span>+54 9 11 {dni !== "S/D" ? dni.slice(-4) : "4523"}-9981</span>
                   </div>
                 </div>
 
-                {/* Fecha de Nacimiento */}
-                <div className="data-field-item">
-                  <span className="data-label">Fecha de Nacimiento</span>
-                  <div className="data-value-box">
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                      <line x1="16" y1="2" x2="16" y2="6" />
-                      <line x1="8" y1="2" x2="8" y2="6" />
-                      <line x1="3" y1="10" x2="21" y2="10" />
-                    </svg>
-                    <span>14 de Agosto, 1997 (29 años)</span>
-                  </div>
-                </div>
-
-                {/* Grupo Sanguíneo */}
-                <div className="data-field-item">
-                  <span className="data-label">Grupo Sanguíneo</span>
-                  <div className="data-value-box">
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
-                    </svg>
-                    <span>A+ (Factor Rh Positivo)</span>
-                  </div>
-                </div>
-
-                {/* Domicilio Declarado (Ancho completo) */}
+                {/* Domicilio Habitual */}
                 <div className="data-field-item full-width">
                   <span className="data-label">Domicilio Habitual</span>
                   <div className="data-value-box">
@@ -250,8 +412,7 @@ export default function Profile() {
                       <polyline points="9 22 9 12 15 12 15 22" />
                     </svg>
                     <span>
-                      Av. Cabildo 2450, Piso 4 B, Ciudad Autónoma de Buenos
-                      Aires
+                      Av. Cabildo 2450, Piso 4 B, Ciudad Autónoma de Buenos Aires
                     </span>
                   </div>
                 </div>
@@ -291,7 +452,7 @@ export default function Profile() {
                       <span className="checkin-time">Hoy, 08:30 hs</span>
                       <span className="checkin-location">
                         {" "}
-                        — Sede Central (Molinete 1)
+                        — {sedeNombre} (Molinete 1)
                       </span>
                     </div>
                   </div>
@@ -305,21 +466,7 @@ export default function Profile() {
                       <span className="checkin-time">Ayer, 19:15 hs</span>
                       <span className="checkin-location">
                         {" "}
-                        — Sede Belgrano (Molinete 2)
-                      </span>
-                    </div>
-                  </div>
-                  <span className="checkin-status">✓ Acceso OK</span>
-                </div>
-
-                <div className="checkin-row">
-                  <div className="checkin-info">
-                    <span className="checkin-dot" />
-                    <div>
-                      <span className="checkin-time">18 Sep, 07:45 hs</span>
-                      <span className="checkin-location">
-                        {" "}
-                        — Sede Central (Molinete 1)
+                        — {sedeNombre} (Molinete 2)
                       </span>
                     </div>
                   </div>
@@ -371,8 +518,8 @@ export default function Profile() {
                       <path d="M6 5v14M18 5v14M2 9h4M18 9h4M2 15h4M18 15h4M6 12h12" />
                     </svg>
                     <span>
-                      EL TREMENDO
-                      <span style={{ color: "var(--accent-neon)" }}> GYM</span>
+                      FITZONE
+                      <span style={{ color: "var(--accent-neon)" }}> SPORTS</span>
                     </span>
                   </div>
                   <div
@@ -383,15 +530,15 @@ export default function Profile() {
 
                 <div className="pass-middle">
                   <div className="pass-details">
-                    <span className="pass-tier-name">PLAN BLACK VIP</span>
+                    <span className="pass-tier-name">PLAN {rolNombre.toUpperCase()}</span>
                     <span className="pass-number">
-                      TG - 8492 - 2026 - PASS
+                      TG - {String(usuario?.id || 1).padStart(4, "0")} - 2026 - PASS
                     </span>
-                    <span className="pass-holder">LUCAS BENÍTEZ</span>
+                    <span className="pass-holder">{nombreCompleto.toUpperCase()}</span>
                   </div>
                 </div>
 
-                {/* Credencial QR Estática para Molinetes */}
+                {/* Acceso directo al Pase QR Dinámico */}
                 <div className="pass-qr-strip">
                   <div className="pass-qr-left">
                     <div className="pass-qr-thumbnail" title="Código QR de Acceso">
@@ -400,15 +547,12 @@ export default function Profile() {
                         <rect x="10" y="10" width="24" height="24" fill="#090c10" />
                         <rect x="14" y="14" width="16" height="16" fill="white" />
                         <rect x="18" y="18" width="8" height="8" fill="#090c10" />
-
                         <rect x="66" y="10" width="24" height="24" fill="#090c10" />
                         <rect x="70" y="14" width="16" height="16" fill="white" />
                         <rect x="74" y="18" width="8" height="8" fill="#090c10" />
-
                         <rect x="10" y="66" width="24" height="24" fill="#090c10" />
                         <rect x="14" y="70" width="16" height="16" fill="white" />
                         <rect x="18" y="74" width="8" height="8" fill="#090c10" />
-
                         <rect x="42" y="12" width="6" height="6" fill="#090c10" />
                         <rect x="52" y="18" width="6" height="6" fill="#090c10" />
                         <rect x="42" y="28" width="6" height="6" fill="#090c10" />
@@ -418,15 +562,11 @@ export default function Profile() {
                         <rect x="40" y="52" width="8" height="8" fill="#090c10" />
                         <rect x="68" y="42" width="6" height="6" fill="#090c10" />
                         <rect x="80" y="52" width="8" height="6" fill="#090c10" />
-                        <rect x="44" y="70" width="6" height="6" fill="#090c10" />
-                        <rect x="56" y="66" width="8" height="6" fill="#090c10" />
-                        <rect x="74" y="74" width="10" height="8" fill="#090c10" />
-                        <rect x="62" y="82" width="6" height="8" fill="#090c10" />
                       </svg>
                     </div>
                     <div className="pass-qr-meta">
-                      <span className="pass-qr-title">Credencial QR de Acceso</span>
-                      <span className="pass-qr-desc">Escanea en el molinete para ingresar</span>
+                      <span className="pass-qr-title">Credencial QR Dinámica</span>
+                      <span className="pass-qr-desc">Se renueva cada 5 minutos para molinetes</span>
                       <Link
                         to="/mi-pase-qr"
                         style={{
@@ -435,16 +575,16 @@ export default function Profile() {
                           gap: "0.35rem",
                           marginTop: "0.35rem",
                           color: "var(--accent-neon, #00ff87)",
-                          fontSize: "0.78rem",
+                          fontSize: "0.8rem",
                           fontWeight: "700",
-                          textDecoration: "underline"
+                          textDecoration: "underline",
                         }}
                       >
-                        Abrir Pase Dinámico Anti-Captura →
+                        Abrir Pase QR Pantalla Completa →
                       </Link>
                     </div>
                   </div>
-                  <span className="pass-qr-badge">● QR HABILITADO</span>
+                  <span className="pass-qr-badge">● QR ACTIVO</span>
                 </div>
               </div>
 
@@ -452,38 +592,12 @@ export default function Profile() {
               <div className="membership-billing-rows">
                 <div className="billing-row">
                   <span className="billing-label">Tipo de Suscripción:</span>
-                  <span className="billing-val">Pase Anual Ilimitado</span>
+                  <span className="billing-val">Pase {rolNombre}</span>
                 </div>
 
                 <div className="billing-row">
-                  <span className="billing-label">Método de Débito:</span>
-                  <span className="billing-val">
-                    <svg
-                      style={{
-                        width: "1rem",
-                        height: "1rem",
-                        color: "var(--accent-neon)",
-                      }}
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-                      <line x1="1" y1="10" x2="23" y2="10" />
-                    </svg>
-                    Visa Débito •••• 4821
-                  </span>
-                </div>
-
-                <div className="billing-row">
-                  <span className="billing-label">Próxima Cuota:</span>
-                  <span
-                    className="billing-val"
-                    style={{ color: "var(--accent-neon)" }}
-                  >
-                    15 Octubre, 2026 ($28.500 ARS)
-                  </span>
+                  <span className="billing-label">Sede Habilitada:</span>
+                  <span className="billing-val">{sedeNombre}</span>
                 </div>
 
                 <div className="billing-row">
@@ -518,7 +632,7 @@ export default function Profile() {
                   </svg>
                   <h2 id="section-classes-title">PRÓXIMAS ACTIVIDADES</h2>
                 </div>
-                <span className="card-title-badge">3 Reservas</span>
+                <span className="card-title-badge">2 Reservas</span>
               </div>
 
               <div className="classes-list">
@@ -526,13 +640,13 @@ export default function Profile() {
                 <div className="class-item">
                   <div className="class-left">
                     <div className="class-time-box">
-                      <span className="class-time-day">MAR</span>
+                      <span className="class-time-day">HOY</span>
                       <span className="class-time-hour">19:00</span>
                     </div>
                     <div className="class-details">
                       <div className="class-title">Spinning Power HIIT</div>
                       <div className="class-meta">
-                        Sala de Ciclismo • Coach Sofía Pérez
+                        {sedeNombre} • Sala de Ciclismo
                       </div>
                     </div>
                   </div>
@@ -543,41 +657,17 @@ export default function Profile() {
                 <div className="class-item">
                   <div className="class-left">
                     <div className="class-time-box">
-                      <span className="class-time-day">JUE</span>
+                      <span className="class-time-day">MAÑ</span>
                       <span className="class-time-hour">20:00</span>
                     </div>
                     <div className="class-details">
                       <div className="class-title">Cross Training Pro</div>
                       <div className="class-meta">
-                        Box 1 • Coach Marcos Galván
+                        {sedeNombre} • Box 1
                       </div>
                     </div>
                   </div>
                   <span className="badge-status confirmed">Confirmada</span>
-                </div>
-
-                {/* Clase 3 */}
-                <div className="class-item">
-                  <div className="class-left">
-                    <div
-                      className="class-time-box"
-                      style={{
-                        borderColor: "rgba(255, 94, 58, 0.3)",
-                        color: "var(--accent-orange)",
-                        background: "rgba(255, 94, 58, 0.08)",
-                      }}
-                    >
-                      <span className="class-time-day">SÁB</span>
-                      <span className="class-time-hour">17:00</span>
-                    </div>
-                    <div className="class-details">
-                      <div className="class-title">Cancha Pádel 3</div>
-                      <div className="class-meta">
-                        Zona Deportiva • Turno 90 min
-                      </div>
-                    </div>
-                  </div>
-                  <span className="badge-status waiting">En Lista</span>
                 </div>
               </div>
             </section>
