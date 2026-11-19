@@ -1,59 +1,59 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import MainLayout from "./layouts/MainLayout";
-import Home from "./pages/portal/Home";
-import Login from "./pages/portal/Login";
-import Profile from "./pages/portal/Profile";
-import EditProfile from "./pages/portal/EditProfile";
-import Pagos from "./pages/portal/Pagos";
-import Clases from "./pages/portal/Clases";
-import Canchas from "./pages/portal/Canchas";
-import MiPaseQR from "./pages/portal/MiPaseQR";
-import RequireAuth from "./components/RequireAuth";
+import Home from "./portal/Home";
+import Login from "./portal/Login";
+import Profile from "./portal/Profile";
+import EditProfile from "./portal/EditProfile";
+import Pagos from "./portal/Pagos";
+import Clases from "./portal/Clases";
+import Canchas from "./portal/Canchas";
+import MiPaseQR from "./portal/MiPaseQR";
+import RequireAuth from "./components/organisms/RequireAuth";
 
 // Vistas de Estados Globales
-import Forbidden from "./pages/portal/errors/Forbidden";
-import NotFound from "./pages/portal/errors/NotFound";
-import GeneralError from "./pages/portal/errors/GeneralError";
-import SessionExpired from "./pages/portal/errors/SessionExpired";
+import Forbidden from "./portal/errors/Forbidden";
+import NotFound from "./portal/errors/NotFound";
+import GeneralError from "./portal/errors/GeneralError";
+import SessionExpired from "./portal/errors/SessionExpired";
 
 import AdminLayout from "./layouts/AdminLayout";
-import Dashboard from "./pages/admin/Dashboard";
-import AdminSocio from "./pages/admin/AdminSocio";
-import AdminClases from "./pages/admin/AdminClases";
-import AdminCanchas from "./pages/admin/AdminCanchas";
-import AdminControlAcceso from "./pages/admin/AdminControlAcceso";
-import AdminPagos from "./pages/admin/AdminPagos";
-import AdminPagoDetalle from "./pages/admin/AdminPagoDetalle";
-import AdminSedes from "./pages/admin/AdminSedes";
-import AdminSedeDetalle from "./pages/admin/AdminSedeDetalle";
-import AdminSedeForm from "./pages/admin/AdminSedeForm";
-import AdminInstructores from "./pages/admin/AdminInstructores";
-import AdminTiposClase from "./pages/admin/AdminTiposClase";
-import AdminTiposCancha from "./pages/admin/AdminTiposCancha";
-import AdminPlanes from "./pages/admin/AdminPlanes";
-import AdminLogin from "./pages/admin/AdminLogin";
-import AdminPersonal from "./pages/admin/AdminPersonal";
-import AdminUsuarioForm from "./pages/admin/AdminUsuarioForm";
-import AdminUsuarioDetalle from "./pages/admin/AdminUsuarioDetalle";
-import AdminMembresias from "./pages/admin/AdminMembresias";
-import AdminMembresiaDetalle from "./pages/admin/AdminMembresiaDetalle";
-import AdminMembresiaForm from "./pages/admin/AdminMembresiaForm";
-import AdminMembresiaCheckout from "./pages/admin/AdminMembresiaCheckout";
+import Dashboard from "./admin/Dashboard";
+import AdminSocio from "./admin/AdminSocio";
+import AdminClases from "./admin/AdminClases";
+import AdminCanchas from "./admin/AdminCanchas";
+import AdminControlAcceso from "./admin/AdminControlAcceso";
+import AdminPagos from "./admin/AdminPagos";
+import AdminPagoDetalle from "./admin/AdminPagoDetalle";
+import AdminSedes from "./admin/AdminSedes";
+import AdminSedeDetalle from "./admin/AdminSedeDetalle";
+import AdminSedeForm from "./admin/AdminSedeForm";
+import AdminInstructores from "./admin/AdminInstructores";
+import AdminTiposClase from "./admin/AdminTiposClase";
+import AdminTiposCancha from "./admin/AdminTiposCancha";
+import AdminPlanes from "./admin/AdminPlanes";
+import AdminLogin from "./admin/AdminLogin";
+import AdminPersonal from "./admin/AdminPersonal";
+import AdminUsuarioForm from "./admin/AdminUsuarioForm";
+import AdminUsuarioDetalle from "./admin/AdminUsuarioDetalle";
+import AdminMembresias from "./admin/AdminMembresias";
+import AdminMembresiaDetalle from "./admin/AdminMembresiaDetalle";
+import AdminMembresiaForm from "./admin/AdminMembresiaForm";
+import AdminMembresiaCheckout from "./admin/AdminMembresiaCheckout";
 
 
 // Fase 4: Gestión de Clases y Canchas
-import AdminClaseForm from "./pages/admin/AdminClaseForm";
-import AdminListaEspera from "./pages/admin/AdminListaEspera";
-import AdminCanchasListado from "./pages/admin/AdminCanchasListado";
-import AdminCanchaForm from "./pages/admin/AdminCanchaForm";
-import AdminCanchaDetalle from "./pages/admin/AdminCanchaDetalle";
-import AdminReservasCancha from "./pages/admin/AdminReservasCancha";
-import AdminReservaForm from "./pages/admin/AdminReservaForm";
-import AdminReservaDetalle from "./pages/admin/AdminReservaDetalle";
+import AdminClaseForm from "./admin/AdminClaseForm";
+import AdminListaEspera from "./admin/AdminListaEspera";
+import AdminCanchasListado from "./admin/AdminCanchasListado";
+import AdminCanchaForm from "./admin/AdminCanchaForm";
+import AdminCanchaDetalle from "./admin/AdminCanchaDetalle";
+import AdminReservasCancha from "./admin/AdminReservasCancha";
+import AdminReservaForm from "./admin/AdminReservaForm";
+import AdminReservaDetalle from "./admin/AdminReservaDetalle";
 
 // Fase 5: Configuración y Reportes
-import AdminReportes from "./pages/admin/AdminReportes";
-import AdminConfiguracion from "./pages/admin/AdminConfiguracion";
+import AdminReportes from "./admin/AdminReportes";
+import AdminConfiguracion from "./admin/AdminConfiguracion";
 
 export default function App() {
   return (

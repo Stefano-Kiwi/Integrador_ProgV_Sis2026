@@ -1,4 +1,4 @@
-import { obtenerToken } from "./authService";
+import { apiRequest } from "./apiClient";
 
 export interface ClaseApi {
   id: number;
@@ -32,39 +32,6 @@ export interface ClaseApi {
   };
 }
 
-export async function obtenerClases(): Promise<ClaseApi[]> {
-  const respuesta = await fetch("/backend/clases");
-
-  if (!respuesta.ok) {
-    throw new Error(
-      `No se pudieron consultar las clases (${respuesta.status}).`
-    );
-  }
-
-  const datos: unknown = await respuesta.json();
-
-  if (!Array.isArray(datos)) {
-    throw new Error("El backend no devolvió un listado de clases.");
-  }
-
-  return datos as ClaseApi[];
-}
-
-export async function obtenerClasePorId(
-  id: number
-): Promise<ClaseApi> {
-  const respuesta = await fetch(`/backend/clases/${id}`);
-
-  if (!respuesta.ok) {
-    throw new Error(
-      `No se pudo consultar la clase (${respuesta.status}).`
-    );
-  }
-
-  return (await respuesta.json()) as ClaseApi;
-}
-
-
 export interface NuevaClase {
   sede_id: number;
   tipo_clase_id: number;
@@ -74,57 +41,6 @@ export interface NuevaClase {
   capacidad_maxima: number;
 }
 
-export async function crearClase(
-  datos: NuevaClase
-): Promise<ClaseApi> {
-  const token = obtenerToken();
-
-  if (!token) {
-    throw new Error("Necesitás iniciar sesión para crear clases.");
-  }
-
-  const respuesta = await fetch("/backend/clases", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(datos),
-  });
-
-  if (respuesta.status === 401) {
-    throw new Error("La sesión venció. Iniciá sesión nuevamente.");
-  }
-
-  if (respuesta.status === 403) {
-    throw new Error("No tenés permisos para programar clases.");
-  }
-
-  if (!respuesta.ok) {
-    const errorServidor: unknown = await respuesta.json().catch(() => null);
-    let mensaje = `Error al crear la clase (${respuesta.status}).`;
-
-    if (
-      typeof errorServidor === "object" &&
-      errorServidor !== null &&
-      "message" in errorServidor
-    ) {
-      const detalle = errorServidor.message;
-
-      if (typeof detalle === "string") {
-        mensaje = detalle;
-      } else if (Array.isArray(detalle)) {
-        mensaje = detalle.join(", ");
-      }
-    }
-
-    throw new Error(mensaje);
-  }
-
-  return (await respuesta.json()) as ClaseApi;
-}
-
-
 export interface ResultadoInscripcion {
   estado: "CONFIRMADA" | "EN_ESPERA";
   reserva_id?: number;
@@ -133,41 +49,67 @@ export interface ResultadoInscripcion {
   mensaje: string;
 }
 
+export interface CancelacionClaseRespuesta {
+  reserva_id: number;
+  estado: string;
+  con_penalidad: boolean;
+  mensaje: string;
+  promovido_desde_lista_espera: {
+    listaEsperaId: number;
+    usuarioId: number;
+    reservaId: number;
+    claseId: number;
+    notificacion: string;
+  } | null;
+}
+
+export interface EntradaListaEsperaApi {
+  lista_espera_id: number;
+  clase_id: number;
+  estado: string;
+  posicion: number;
+  creada_at: string;
+  clase: ClaseApi;
+}
+
+export async function obtenerClases(): Promise<ClaseApi[]> {
+  return apiRequest<ClaseApi[]>("/clases");
+}
+
+export async function obtenerClasePorId(id: number): Promise<ClaseApi> {
+  return apiRequest<ClaseApi>(`/clases/${id}`);
+}
+
+export async function crearClase(datos: NuevaClase): Promise<ClaseApi> {
+  return apiRequest<ClaseApi>("/clases", {
+    method: "POST",
+    body: datos,
+    requireAuth: true,
+  });
+}
+
 export async function inscribirUsuarioClase(
   claseId: number,
   usuarioId: number
 ): Promise<ResultadoInscripcion> {
-  const token = obtenerToken();
-
-  if (!token) {
-    throw new Error("Necesitás iniciar sesión.");
-  }
-
-  const respuesta = await fetch("/backend/clases/reserva", {
+  return apiRequest<ResultadoInscripcion>("/clases/reserva", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({
-      clase_id: claseId,
-      usuario_id: usuarioId,
-    }),
+    body: { clase_id: claseId, usuario_id: usuarioId },
+    requireAuth: true,
   });
+}
 
-  if (!respuesta.ok) {
-    const error: unknown = await respuesta.json().catch(() => null);
+export async function cancelarReservaClase(
+  reservaId: number
+): Promise<CancelacionClaseRespuesta> {
+  return apiRequest<CancelacionClaseRespuesta>(`/clases/reserva/${reservaId}/cancelar`, {
+    method: "PATCH",
+    requireAuth: true,
+  });
+}
 
-    let mensaje = `No se pudo registrar la inscripción (${respuesta.status}).`;
-
-    if (typeof error === "object" && error !== null && "message" in error) {
-      const detalle = error.message;
-      if (typeof detalle === "string") mensaje = detalle;
-      else if (Array.isArray(detalle)) mensaje = detalle.join(", ");
-    }
-
-    throw new Error(mensaje);
-  }
-
-  return (await respuesta.json()) as ResultadoInscripcion;
+export async function obtenerMiListaEspera(): Promise<EntradaListaEsperaApi[]> {
+  return apiRequest<EntradaListaEsperaApi[]>("/clases/lista-espera/mia", {
+    requireAuth: true,
+  });
 }
