@@ -8,10 +8,12 @@ FitZone Sports es una plataforma web monolítica modular que unifica la gestión
 
 | Rol | Integrante | Usuario Git |
 | :--- | :--- | :--- |
-| **P1** | *(Completar nombre y apellido)* | `@usuario-p1` |
-| **P2** | *(Completar nombre y apellido)* | `@usuario-p2` |
-| **P3** | *(Completar nombre y apellido)* | `@usuario-p3` |
-| **P4** | *(Completar nombre y apellido)* | `@usuario-p4` |
+| **P1** | *Caraballo Ian* | `@IanCarab` |
+| **P2** | *Carbajal Budón Stéfano* | `@Stefano-Kiwi` |
+| **P3** | *Chang Denis* | `@Sined108` |
+| **P4** | *Polo Lautaro* | `@politen22` |
+| **P5** | *Serantes Matías* | `@MatiasFS99` |
+
 
 ---
 
