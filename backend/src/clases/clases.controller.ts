@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Put } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -21,7 +21,7 @@ import { Roles } from '../common/decorators/roles.decorator.js';
 @ApiTags('clases')
 @Controller(APP_ROUTES.CLASES.ROOT)
 export class ClasesController {
-  constructor(private readonly clasesService: ClasesService) {}
+  constructor(private readonly clasesService: ClasesService) { }
 
   @Get()
   @ApiOperation({ summary: 'Listar clases programadas' })
@@ -59,7 +59,7 @@ export class ClasesController {
   }
 
   @Post()
-  @Roles('Gerente', 'Administrador')
+  @Roles('Instructor', 'Gerente', 'Administrador')
   @ApiOperation({ summary: 'Crear una nueva clase (RF-06)' })
   @ApiCreatedResponse({ description: 'Clase programada exitosamente' })
   create(@Body() dto: CreateClaseDto, @CurrentUser() user: JwtPayload) {
@@ -74,7 +74,16 @@ export class ClasesController {
 
   @Delete(APP_ROUTES.CLASES.BY_ID)
   @Roles('Administrador')
-  delete(@Param('id', ParseIntPipe) id: number) { return this.clasesService.delete(id); }
+  remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: JwtPayload) {
+    return this.clasesService.remove(id, user);
+  }
+
+  @Patch(APP_ROUTES.CLASES.BY_ID + '/cancelar')
+  @Roles('Instructor', 'Gerente', 'Administrador')
+  @ApiOperation({ summary: 'Cancelar una clase dictada por el instructor' })
+  cancelarClase(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: JwtPayload) {
+    return this.clasesService.cancelarClase(id, user);
+  }
 
   @Post(APP_ROUTES.CLASES.RESERVA)
   @ApiBearerAuth('access-token')
@@ -107,13 +116,5 @@ export class ClasesController {
   @ApiConflictResponse({ description: 'La reserva ya estaba cancelada' })
   cancelarReserva(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: JwtPayload) {
     return this.clasesService.cancelarReserva(id, user);
-  }
-
-  @Delete(APP_ROUTES.CLASES.BY_ID)
-  @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Cancelar/Eliminar una clase dictada por el instructor' })
-  @ApiOkResponse({ description: 'Clase cancelada exitosamente' })
-  cancelarClase(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: JwtPayload) {
-    return this.clasesService.cancelarClase(id, user);
   }
 }

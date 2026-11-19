@@ -89,7 +89,14 @@ export async function crearClase(datos: NuevaClase): Promise<ClaseApi> {
 }
 
 export async function cancelarClase(claseId: number): Promise<{ mensaje: string; clase_id: number }> {
-  return apiRequest<{ mensaje: string; clase_id: number }>(`/clases/${claseId}`, {
+  return apiRequest<{ mensaje: string; clase_id: number }>(`/clases/${claseId}/cancelar`, {
+    method: "PATCH",
+    requireAuth: true,
+  });
+}
+
+export async function eliminarClase(claseId: number): Promise<void> {
+  await apiRequest<void>(`/clases/${claseId}`, {
     method: "DELETE",
     requireAuth: true,
   });

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
-import { UnauthorizedException } from '@nestjs/common';
+import { ForbiddenException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service.js';
 import { UsersService } from '../usuarios/users.service.js';
 import bcrypt from 'bcryptjs';
@@ -10,6 +10,7 @@ import bcrypt from 'bcryptjs';
 
 const mockUsersService = {
   findByEmail: vi.fn(),
+  findById: vi.fn(),
 };
 
 const mockJwtService = {
@@ -99,6 +100,39 @@ describe('AuthService', () => {
       }).catch((e: UnauthorizedException) => e.message);
 
       expect(errorSinUser).toBe(errorMalPass);
+    });
+  });
+
+  describe('me()', () => {
+    it('debería devolver el perfil del usuario cuando existe', async () => {
+      const user = { id: 1, email: 'admin@fitzone.com', nombre: 'Admin' };
+      mockUsersService.findById.mockResolvedValue(user);
+
+      const res = await authService.me(1);
+      expect(res).toEqual(user);
+    });
+
+    it('debería lanzar NotFoundException cuando el usuario no existe', async () => {
+      mockUsersService.findById.mockResolvedValue(null);
+
+      await expect(authService.me(999)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('verify()', () => {
+    it('debería autorizar cuando el rol coincide', () => {
+      const res = authService.verify(1, 3, { roles: ['Gerente', 'Administrador'] });
+      expect(res).toEqual({
+        autorizado: true,
+        rol_usuario: 'Gerente',
+        roles_requeridos: ['Gerente', 'Administrador'],
+      });
+    });
+
+    it('debería rechazar con ForbiddenException cuando el rol no coincide', () => {
+      expect(() =>
+        authService.verify(1, 1, { roles: ['Gerente', 'Administrador'] }),
+      ).toThrow(ForbiddenException);
     });
   });
 });

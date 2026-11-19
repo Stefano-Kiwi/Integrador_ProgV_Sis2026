@@ -11,6 +11,7 @@ import { ROLES_KEY } from '../decorators/roles.decorator.js';
 import { RolesGuard } from '../guards/roles.guard.js';
 import { PRICING_STRATEGY_CLASSES, PricingService } from '../../canchas/pricing/index.js';
 import type { JwtPayload } from '../decorators/current-user.decorator.js';
+import { resolverSedeEscritura, esAdministrador } from './branch-scope.js';
 
 const gerenteSede1: JwtPayload = { sub: 1, id_rol: 3, clase_rol: 'Gerente', sede_base_id: 1 };
 const gerenteSinSede: JwtPayload = { sub: 2, id_rol: 3, clase_rol: 'Gerente', sede_base_id: null };
@@ -170,6 +171,19 @@ describe('Restricciones de acceso para Gerente vs Administrador', () => {
 
       expect(() => guard.canActivate(ctxDeleteCancha(gerenteSede1))).toThrow(ForbiddenException);
       expect(guard.canActivate(ctxDeleteCancha(administrador))).toBe(true);
+    });
+
+    it('resolverSedeEscritura y esAdministrador validan correctamente', () => {
+      expect(esAdministrador(administrador)).toBe(true);
+      expect(esAdministrador(gerenteSede1)).toBe(false);
+      expect(esAdministrador(null)).toBe(false);
+
+      expect(resolverSedeEscritura(gerenteSede1, 1)).toBe(1);
+      expect(resolverSedeEscritura(gerenteSede1)).toBe(1);
+      expect(() => resolverSedeEscritura(gerenteSede1, 2)).toThrow(ForbiddenException);
+
+      expect(resolverSedeEscritura(administrador, 3)).toBe(3);
+      expect(() => resolverSedeEscritura(administrador)).toThrow(ForbiddenException);
     });
   });
 });

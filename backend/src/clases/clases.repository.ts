@@ -51,17 +51,6 @@ export class ClasesRepository {
     });
   }
 
-  update(id: number, dto: Partial<CreateClaseDto>) {
-    return this.prisma.clase.update({ where: { id }, data: {
-      ...(dto.sede_id !== undefined ? { sede_id: dto.sede_id } : {}),
-      ...(dto.tipo_clase_id !== undefined ? { tipo_clase_id: dto.tipo_clase_id } : {}),
-      ...(dto.instructor_id !== undefined ? { instructor_id: dto.instructor_id } : {}),
-      ...(dto.inicio_at !== undefined ? { inicio_at: new Date(dto.inicio_at) } : {}),
-      ...(dto.fin_at !== undefined ? { fin_at: new Date(dto.fin_at) } : {}),
-      ...(dto.capacidad_maxima !== undefined ? { capacidad_maxima: dto.capacidad_maxima } : {}),
-    }, include: CLASE_INCLUDE });
-  }
-
   delete(id: number) { return this.prisma.clase.delete({ where: { id } }); }
 
   create(dto: CreateClaseDto): Promise<clase> {
