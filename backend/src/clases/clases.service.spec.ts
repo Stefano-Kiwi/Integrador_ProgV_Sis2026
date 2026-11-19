@@ -346,5 +346,27 @@ describe('ClasesService', () => {
         service.cancelarClase(1, { sub: 60, id_rol: 1 }),
       ).rejects.toThrow(ForbiddenException);
     });
+
+    it('debería rechazar al gerente para que no pueda eliminar clases', async () => {
+      mockClasesRepository.findById.mockResolvedValue({
+        id: 1,
+        instructor: { usuario_id: 50 },
+      });
+
+      await expect(
+        service.cancelarClase(1, { sub: 60, id_rol: 3 }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('debería rechazar al gerente aunque figure como instructor de la clase', async () => {
+      mockClasesRepository.findById.mockResolvedValue({
+        id: 1,
+        instructor: { usuario_id: 60 },
+      });
+
+      await expect(
+        service.cancelarClase(1, { sub: 60, id_rol: 3 }),
+      ).rejects.toThrow(ForbiddenException);
+    });
   });
 });
