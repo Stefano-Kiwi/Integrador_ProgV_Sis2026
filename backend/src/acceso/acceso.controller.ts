@@ -14,8 +14,9 @@ import { ValidarAccesoDto } from './dto/validar-acceso.dto.js';
 import { RegistrarEgresoDto } from './dto/registrar-egreso.dto.js';
 import { SincronizarAccesosDto } from './dto/sincronizar-accesos.dto.js';
 import { APP_ROUTES } from '../routes/index.js';
-import { CurrentUser } from '../common/decorators/current-user.decorator.js';
+import { CurrentUser, type JwtPayload } from '../common/decorators/current-user.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
+import { validarAccesoASede } from '../common/auth/branch-scope.js';
 
 @ApiTags('acceso')
 @ApiBearerAuth('access-token')
@@ -47,7 +48,8 @@ export class AccesoController {
   @ApiUnauthorizedResponse({ description: 'QR con firma inválida o vencido' })
   @ApiForbiddenResponse({ description: 'Socio en mora o sin membresía activa' })
   @ApiConflictResponse({ description: 'El socio ya está dentro de otra sede (RN-01)' })
-  validar(@Body() dto: ValidarAccesoDto) {
+  validar(@Body() dto: ValidarAccesoDto, @CurrentUser() user: JwtPayload) {
+    validarAccesoASede(user, dto.sedeId);
     return this.accesoService.validarIngreso(dto);
   }
 
@@ -69,7 +71,8 @@ export class AccesoController {
   })
   @ApiOkResponse({ description: 'Ocupación actual y aforo máximo de la sede' })
   @ApiNotFoundResponse({ description: 'Sede no encontrada' })
-  aforo(@Param('sedeId', ParseIntPipe) sedeId: number) {
+  aforo(@Param('sedeId', ParseIntPipe) sedeId: number, @CurrentUser() user: JwtPayload) {
+    validarAccesoASede(user, sedeId);
     return this.accesoService.obtenerAforo(sedeId);
   }
 
@@ -81,7 +84,10 @@ export class AccesoController {
       'Registra de forma idempotente los ingresos capturados offline por el terminal de sede y reporta aceptados y conflictos.',
   })
   @ApiOkResponse({ description: 'Resumen de ingresos aceptados y conflictos detectados' })
-  sincronizar(@Body() dto: SincronizarAccesosDto) {
+  sincronizar(@Body() dto: SincronizarAccesosDto, @CurrentUser() user: JwtPayload) {
+    for (const item of dto.ingresos) {
+      validarAccesoASede(user, item.sedeId);
+    }
     return this.accesoService.sincronizarOffline(dto);
   }
 
@@ -92,7 +98,8 @@ export class AccesoController {
   })
   @ApiOkResponse({ description: 'Copia local de socios activos de la red para el terminal de sede' })
   @ApiNotFoundResponse({ description: 'Sede no encontrada' })
-  snapshot(@Param('sedeId', ParseIntPipe) sedeId: number) {
+  snapshot(@Param('sedeId', ParseIntPipe) sedeId: number, @CurrentUser() user: JwtPayload) {
+    validarAccesoASede(user, sedeId);
     return this.accesoService.obtenerSnapshotSede(sedeId);
   }
 }

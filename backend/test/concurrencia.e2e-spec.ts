@@ -51,7 +51,7 @@ describe('Concurrencia real contra PostgreSQL (RN-02 y RN-01)', () => {
 
     const loginAdmin = await request(app.getHttpServer())
       .post('/auth/login')
-      .send({ email: 'admin@fitzone.com', password: 'Admin123!' })
+      .send({ email: 'recepcion.centro@fitzone.com', password: 'Recepcion123!' })
       .expect(200);
     tokenAdmin = loginAdmin.body.access_token;
 

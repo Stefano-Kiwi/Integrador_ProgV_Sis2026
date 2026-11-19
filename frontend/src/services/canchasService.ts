@@ -140,6 +140,24 @@ export async function cambiarEstadoCancha(
   });
 }
 
+export async function actualizarCancha(
+  canchaId: number,
+  datos: Partial<NuevaCancha>
+): Promise<CanchaApi> {
+  return apiRequest<CanchaApi>(`/canchas/${canchaId}`, {
+    method: "PATCH",
+    body: datos,
+    requireAuth: true,
+  });
+}
+
+export async function eliminarCancha(canchaId: number): Promise<void> {
+  await apiRequest(`/canchas/${canchaId}`, {
+    method: "DELETE",
+    requireAuth: true,
+  });
+}
+
 export interface MiReservaCanchaApi {
   id: number;
   fecha: string;

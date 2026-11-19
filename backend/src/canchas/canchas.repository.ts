@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type { cancha, reserva_cancha } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { CreateCanchaDto } from './dto/create-cancha.dto.js';
+import type { UpdateCanchaDto } from './dto/update-cancha.dto.js';
 
 export const CANCHA_INCLUDE = {
   tipo_cancha: true,
@@ -37,15 +38,17 @@ export const RESERVAS_CANCHA_SELECT = {
 export class CanchasRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll() {
+  findAll(sedeId?: number) {
     return this.prisma.cancha.findMany({
+      ...(sedeId !== undefined ? { where: { sede_id: sedeId } } : {}),
       include: CANCHA_INCLUDE,
       orderBy: { id: 'asc' },
     });
   }
 
-  findAllReservas() {
+  findAllReservas(sedeId?: number) {
     return this.prisma.reserva_cancha.findMany({
+      ...(sedeId !== undefined ? { where: { cancha: { sede_id: sedeId } } } : {}),
       select: RESERVAS_CANCHA_SELECT,
       orderBy: { id: 'desc' },
     });
@@ -155,6 +158,42 @@ export class CanchasRepository {
       where: { id },
       data: { estado },
       include: CANCHA_INCLUDE,
+    });
+  }
+
+  update(id: number, dto: UpdateCanchaDto): Promise<cancha> {
+    return this.prisma.cancha.update({
+      where: { id },
+      data: {
+        ...(dto.nombre !== undefined ? { nombre: dto.nombre } : {}),
+        ...(dto.sede_id !== undefined ? { sede_id: dto.sede_id } : {}),
+        ...(dto.tipo_cancha_id !== undefined ? { tipo_cancha_id: dto.tipo_cancha_id } : {}),
+        ...(dto.costo_hora !== undefined ? { costo_hora: dto.costo_hora } : {}),
+      },
+      include: CANCHA_INCLUDE,
+    });
+  }
+
+  remove(id: number): Promise<cancha> {
+    return this.prisma.$transaction(async (tx) => {
+      const reservas = await tx.reserva_cancha.findMany({
+        where: { cancha_id: id },
+        select: { id: true },
+      });
+      const reservaIds = reservas.map((r) => r.id);
+      if (reservaIds.length > 0) {
+        const pagos = await tx.pago.findMany({
+          where: { reserva_cancha_id: { in: reservaIds } },
+          select: { id: true },
+        });
+        const pagoIds = pagos.map((p) => p.id);
+        if (pagoIds.length > 0) {
+          await tx.comprobante.deleteMany({ where: { pago_id: { in: pagoIds } } });
+          await tx.pago.deleteMany({ where: { id: { in: pagoIds } } });
+        }
+        await tx.reserva_cancha.deleteMany({ where: { id: { in: reservaIds } } });
+      }
+      return tx.cancha.delete({ where: { id } });
     });
   }
 }

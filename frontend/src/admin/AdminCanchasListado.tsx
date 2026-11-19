@@ -3,12 +3,17 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   cambiarEstadoCancha,
+  eliminarCancha,
   obtenerCanchas,
   type CanchaApi,
 } from "../services/canchasService";
+import { getPermisosUsuario } from "../services/permissions";
+import { useAppStore } from "../store";
 import "../admin.css";
 
 export default function AdminCanchasListado() {
+  const { usuario } = useAppStore();
+  const permisos = getPermisosUsuario(usuario);
   const [canchas, setCanchas] = useState<CanchaApi[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -19,6 +24,35 @@ export default function AdminCanchasListado() {
   const [vista, setVista] = useState<"cards" | "table">("cards");
   const [intento, setIntento] = useState(0);
   const [cambiandoId, setCambiandoId] = useState<number | null>(null);
+  const [eliminandoId, setEliminandoId] = useState<number | null>(null);
+
+  const sedeEfectiva =
+    permisos.esGerente && permisos.sedeAsignadaId
+      ? String(permisos.sedeAsignadaId)
+      : sede;
+
+  async function manejarEliminar(cancha: CanchaApi) {
+    if (!permisos.puedeEliminarCanchas) return;
+    const confirmar = window.confirm(
+      `¿Seguro que querés eliminar la cancha "${cancha.nombre}"? Esta acción no se puede deshacer.`
+    );
+    if (!confirmar) return;
+
+    setEliminandoId(cancha.id);
+    setError(null);
+    try {
+      await eliminarCancha(cancha.id);
+      setCanchas((prev) => prev.filter((item) => item.id !== cancha.id));
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "No se pudo eliminar la cancha."
+      );
+    } finally {
+      setEliminandoId(null);
+    }
+  }
 
   async function alternarMantenimiento(cancha: CanchaApi) {
     const nuevoEstado =
@@ -85,7 +119,7 @@ export default function AdminCanchasListado() {
         c.tipo_cancha.nombre.toLowerCase().includes(texto) ||
         String(c.id).includes(texto)
       ) &&
-      (sede === "Todas" || String(c.sede_id) === sede) &&
+      (sedeEfectiva === "Todas" || String(c.sede_id) === sedeEfectiva) &&
       (deporte === "Todos" || c.tipo_cancha.nombre === deporte) &&
       (estado === "Todos" || c.estado === estado)
     );
@@ -186,9 +220,18 @@ export default function AdminCanchasListado() {
 
         <div className="filter-group">
           <label className="filter-label">Sede</label>
-          <select className="filter-select" value={sede}
-            onChange={e => setSede(e.target.value)}>
-            <option value="Todas">Todas</option>
+          <select
+            className="filter-select"
+            value={sedeEfectiva}
+            onChange={e => setSede(e.target.value)}
+            disabled={!permisos.puedeCambiarDeSede}
+            title={
+              permisos.esGerente
+                ? "Tu rol Gerente opera exclusivamente sobre tu sede asignada."
+                : undefined
+            }
+          >
+            {!permisos.esGerente && <option value="Todas">Todas</option>}
             {sedes.map(s => (
               <option key={s.id} value={String(s.id)}>
                 {s.nombre}
@@ -305,6 +348,17 @@ export default function AdminCanchasListado() {
                         ? "Pasar a mantenimiento"
                         : "Habilitar cancha"}
                   </button>
+                  {permisos.puedeEliminarCanchas && (
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      style={{ color: "var(--accent-red)" }}
+                      disabled={eliminandoId === c.id}
+                      onClick={() => void manejarEliminar(c)}
+                    >
+                      {eliminandoId === c.id ? "Eliminando..." : "Eliminar"}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -347,6 +401,17 @@ export default function AdminCanchasListado() {
                     >
                       {c.estado === "HABILITADA" ? "Mantenimiento" : "Habilitar"}
                     </button>
+                    {permisos.puedeEliminarCanchas && (
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        style={{ color: "var(--accent-red)" }}
+                        disabled={eliminandoId === c.id}
+                        onClick={() => void manejarEliminar(c)}
+                      >
+                        {eliminandoId === c.id ? "Eliminando..." : "Eliminar"}
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

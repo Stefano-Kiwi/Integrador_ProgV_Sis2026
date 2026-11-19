@@ -10,18 +10,26 @@ import {
   obtenerSedes,
   type SedeApi,
 } from "../services/sedesService";
+import { getPermisosUsuario } from "../services/permissions";
+import { useAppStore } from "../store";
 import "../admin.css";
 
 export default function AdminClaseForm() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const esEdicion = id !== undefined;
+  const { usuario } = useAppStore();
+  const permisos = getPermisosUsuario(usuario);
 
   const [sedes, setSedes] = useState<SedeApi[]>([]);
   const [tipos, setTipos] = useState<ClaseApi["tipo_clase"][]>([]);
   const [instructores, setInstructores] = useState<ClaseApi["instructor"][]>([]);
 
-  const [sedeId, setSedeId] = useState("");
+  const [sedeId, setSedeId] = useState(
+    permisos.esGerente && permisos.sedeAsignadaId
+      ? String(permisos.sedeAsignadaId)
+      : ""
+  );
   const [tipoId, setTipoId] = useState("");
   const [instructorId, setInstructorId] = useState("");
   const [inicio, setInicio] = useState("");
@@ -64,7 +72,11 @@ export default function AdminClaseForm() {
         setTipos(tiposUnicos);
         setInstructores(instructoresUnicos);
 
-        setSedeId(String(sedesApi[0]?.id ?? ""));
+        setSedeId(
+          permisos.esGerente && permisos.sedeAsignadaId
+            ? String(permisos.sedeAsignadaId)
+            : String(sedesApi[0]?.id ?? "")
+        );
         setTipoId(String(tiposUnicos[0]?.id ?? ""));
         setInstructorId(String(instructoresUnicos[0]?.id ?? ""));
       } catch (err) {
@@ -84,7 +96,7 @@ export default function AdminClaseForm() {
     return () => {
       activo = false;
     };
-  }, [esEdicion]);
+  }, [esEdicion, permisos.esGerente, permisos.sedeAsignadaId]);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -261,6 +273,7 @@ export default function AdminClaseForm() {
                   className="form-control"
                   value={sedeId}
                   onChange={e => setSedeId(e.target.value)}
+                  disabled={!permisos.puedeCambiarDeSede}
                   required
                 >
                   {sedes.map(s => (
@@ -269,6 +282,11 @@ export default function AdminClaseForm() {
                     </option>
                   ))}
                 </select>
+                {permisos.esGerente && (
+                  <small style={{ color: "var(--text-muted)", display: "block", marginTop: "0.35rem" }}>
+                    La clase se asignará automáticamente a tu sede.
+                  </small>
+                )}
               </div>
             </div>
 

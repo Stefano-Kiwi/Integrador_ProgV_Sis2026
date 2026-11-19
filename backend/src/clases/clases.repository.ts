@@ -8,6 +8,7 @@ import type {
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { CreateClaseDto } from './dto/create-clase.dto.js';
+import type { UpdateClaseDto } from './dto/update-clase.dto.js';
 
 export const CLASE_INCLUDE = {
   tipo_clase: true,
@@ -30,8 +31,9 @@ export const CLASE_INCLUDE = {
 export class ClasesRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll() {
+  findAll(sedeId?: number) {
     return this.prisma.clase.findMany({
+      ...(sedeId !== undefined ? { where: { sede_id: sedeId } } : {}),
       include: CLASE_INCLUDE,
       orderBy: { inicio_at: 'asc' },
     });
@@ -56,6 +58,29 @@ export class ClasesRepository {
         fin_at: new Date(dto.fin_at),
       },
       include: CLASE_INCLUDE,
+    });
+  }
+
+  update(id: number, dto: UpdateClaseDto): Promise<clase> {
+    return this.prisma.clase.update({
+      where: { id },
+      data: {
+        ...(dto.sede_id !== undefined ? { sede_id: dto.sede_id } : {}),
+        ...(dto.tipo_clase_id !== undefined ? { tipo_clase_id: dto.tipo_clase_id } : {}),
+        ...(dto.instructor_id !== undefined ? { instructor_id: dto.instructor_id } : {}),
+        ...(dto.inicio_at !== undefined ? { inicio_at: new Date(dto.inicio_at) } : {}),
+        ...(dto.fin_at !== undefined ? { fin_at: new Date(dto.fin_at) } : {}),
+        ...(dto.capacidad_maxima !== undefined ? { capacidad_maxima: dto.capacidad_maxima } : {}),
+      },
+      include: CLASE_INCLUDE,
+    });
+  }
+
+  remove(id: number): Promise<clase> {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.lista_espera_clase.deleteMany({ where: { clase_id: id } });
+      await tx.reserva_clase.deleteMany({ where: { clase_id: id } });
+      return tx.clase.delete({ where: { id } });
     });
   }
 

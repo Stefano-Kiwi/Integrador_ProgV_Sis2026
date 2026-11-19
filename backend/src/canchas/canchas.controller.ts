@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -11,6 +11,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { CreateCanchaDto } from './dto/create-cancha.dto.js';
+import { UpdateCanchaDto } from './dto/update-cancha.dto.js';
 import { ReservaCanchaDto } from './dto/reserva-cancha.dto.js';
 import { DisponibilidadQueryDto, DisponibilidadResponseDto } from './dto/disponibilidad.dto.js';
 import { UpdateEstadoCanchaDto } from './dto/update-estado-cancha.dto.js';
@@ -27,26 +28,19 @@ export class CanchasController {
 
   @Public()
   @Get()
-  @ApiOperation({ summary: 'Listar todas las canchas deportivas' })
+  @ApiOperation({ summary: 'Listar canchas deportivas (un Gerente solo ve las de su sede)' })
   @ApiOkResponse({ description: 'Listado de canchas disponibles' })
-  findAll() {
-    return this.canchasService.findAll();
+  findAll(@CurrentUser() user?: JwtPayload) {
+    return this.canchasService.findAll(user);
   }
 
   @Get(APP_ROUTES.CANCHAS.RESERVAS)
   @Roles('Gerente', 'Administrador')
-  @ApiOperation({ summary: 'Listar todas las reservas de canchas' })
-  @ApiOkResponse({ description: 'Listado de reservas con datos del usuario y la cancha' })
-  findAllReservas() {
-    return this.canchasService.findAllReservas();
-  }
-
-  @Get(APP_ROUTES.CANCHAS.MIS_RESERVAS)
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Listar mis reservas de canchas' })
-  @ApiOkResponse({ description: 'Listado de reservas del usuario autenticado' })
-  findMisReservas(@CurrentUser('sub') usuarioId: number) {
-    return this.canchasService.findReservasByUsuario(usuarioId);
+  @ApiOperation({ summary: 'Listar reservas de canchas (un Gerente solo ve las de su sede)' })
+  @ApiOkResponse({ description: 'Listado de reservas con datos del usuario y la cancha' })
+  findAllReservas(@CurrentUser() user: JwtPayload) {
+    return this.canchasService.findAllReservas(user);
   }
 
   @Get(APP_ROUTES.CANCHAS.DISPONIBILIDAD)
@@ -55,36 +49,70 @@ export class CanchasController {
     summary: 'Grilla horaria de disponibilidad de una cancha (RF-10, RF-11)',
     description:
       'Devuelve las franjas del día (LIBRE / OCUPADA / MANTENIMIENTO) con el precio calculado por las ' +
-      'estrategias de tarifa para el usuario autenticado (descuento de socio, recargo en horario pico, tarifa de externo).',
+      'estrategias de tarifa para el usuario autenticado (403 si un Gerente consulta otra sede).',
   })
   @ApiOkResponse({ type: DisponibilidadResponseDto })
   @ApiBadRequestResponse({ description: 'Fecha con formato inválido' })
+  @ApiForbiddenResponse({ description: 'La cancha pertenece a otra sede' })
   @ApiNotFoundResponse({ description: 'Cancha no encontrada' })
   disponibilidad(
     @Param('id', ParseIntPipe) id: number,
     @Query() query: DisponibilidadQueryDto,
-    @CurrentUser('sub') usuarioId: number,
+    @CurrentUser() user: JwtPayload,
   ) {
-    return this.canchasService.disponibilidad(id, query.fecha, usuarioId);
+    return this.canchasService.disponibilidad(id, query.fecha, user.sub, user);
   }
 
   @Public()
   @Get(APP_ROUTES.CANCHAS.BY_ID)
-  @ApiOperation({ summary: 'Obtener detalle de una cancha por ID' })
+  @ApiOperation({ summary: 'Obtener detalle de una cancha por ID (403 si un Gerente consulta otra sede)' })
   @ApiOkResponse({ description: 'Detalle de la cancha' })
+  @ApiForbiddenResponse({ description: 'La cancha pertenece a otra sede' })
   @ApiNotFoundResponse({ description: 'Cancha no encontrada' })
-  findById(@Param('id', ParseIntPipe) id: number) {
-    return this.canchasService.findById(id);
+  findById(@Param('id', ParseIntPipe) id: number, @CurrentUser() user?: JwtPayload) {
+    return this.canchasService.findById(id, user);
   }
 
   @Post()
-  @ApiOperation({ summary: 'Registrar una nueva cancha' })
+  @Roles('Gerente', 'Administrador')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Registrar una nueva cancha (RF-09; Gerente solo en su sede)' })
   @ApiCreatedResponse({ description: 'Cancha registrada exitosamente' })
-  create(@Body() dto: CreateCanchaDto) {
-    return this.canchasService.create(dto);
+  @ApiForbiddenResponse({ description: 'Sin permisos o sede distinta a la del Gerente' })
+  create(@Body() dto: CreateCanchaDto, @CurrentUser() user: JwtPayload) {
+    return this.canchasService.create(dto, user);
+  }
+
+  @Patch(APP_ROUTES.CANCHAS.BY_ID)
+  @Roles('Gerente', 'Administrador')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Modificar una cancha (Gerente solo las de su sede)' })
+  @ApiOkResponse({ description: 'Cancha actualizada correctamente' })
+  @ApiForbiddenResponse({ description: 'Sin permisos o cancha perteneciente a otra sede' })
+  @ApiNotFoundResponse({ description: 'Cancha no encontrada' })
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateCanchaDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.canchasService.update(id, dto, user);
+  }
+
+  @Delete(APP_ROUTES.CANCHAS.BY_ID)
+  @Roles('Administrador')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({
+    summary: 'Eliminar una cancha (reservado exclusivamente a Administrador)',
+  })
+  @ApiOkResponse({ description: 'Cancha eliminada correctamente' })
+  @ApiForbiddenResponse({ description: 'Los Gerentes no tienen permiso para eliminar canchas' })
+  @ApiNotFoundResponse({ description: 'Cancha no encontrada' })
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.canchasService.remove(id);
   }
 
   @Post(APP_ROUTES.CANCHAS.RESERVA)
+  @ApiBearerAuth('access-token')
   @ApiOperation({
     summary: 'Reservar turno de cancha deportiva (RF-10)',
     description:
@@ -119,12 +147,17 @@ export class CanchasController {
   @Roles('Gerente', 'Administrador')
   @ApiBearerAuth('access-token')
   @ApiOperation({
-    summary: 'Habilitar o inhabilitar una cancha por mantenimiento (RF-12)',
+    summary: 'Habilitar o inhabilitar una cancha por mantenimiento (RF-12; Gerente solo su sede)',
     description: 'Con EN_MANTENIMIENTO se bloquean las reservas futuras; las reservas ya existentes no se modifican.',
   })
   @ApiOkResponse({ description: 'Cancha con su nuevo estado' })
+  @ApiForbiddenResponse({ description: 'La cancha pertenece a otra sede' })
   @ApiNotFoundResponse({ description: 'Cancha no encontrada' })
-  cambiarEstado(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateEstadoCanchaDto) {
-    return this.canchasService.cambiarEstado(id, dto.estado);
+  cambiarEstado(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateEstadoCanchaDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.canchasService.cambiarEstado(id, dto.estado, user);
   }
 }

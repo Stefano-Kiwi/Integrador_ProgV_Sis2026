@@ -4,76 +4,18 @@ import {cerrarSesion, obtenerMiPerfil, obtenerToken,} from "../services/authServ
 import { obtenerSedes } from "../services/sedesService";
 import type { SedeApi } from "../services/sedesService";
 import type { UsuarioSesion } from "../services/authService";
+import {
+  getPermisosUsuario,
+  getRutasPermitidasAdmin,
+  puedeAccederARutaAdmin,
+} from "../services/permissions";
+import { useAppStore } from "../store";
 
 import "../admin.css";
 
 interface AdminLayoutProps {
   children?: ReactNode;
 }
-
-type UserRole = "admin" | "gerente" | "recepcion" | "instructor";
-
-interface RoleConfig {
-  name: string;
-  badge: string;
-  avatar: string;
-  allowedPaths: string[];
-}
-
-const ROLES_CONFIG: Record<UserRole, RoleConfig> = {
-  admin: {
-    name: "Recepción / Admin de Sede",
-    badge: "Recepcionista",
-    avatar: "/src/assets/gerardo.jpg",
-    // Recepcionista / administrador de sede: acceso, clases, canchas, reservas, socios y pagos (NO sedes ni configuración de precios)
-    allowedPaths: [
-      "/admin",
-      "/admin/controlacceso",
-      "/admin/clases",
-      "/admin/canchas",
-      "/admin/reservas",
-      "/admin/socios",
-      "/admin/membresias",
-      "/admin/pagos",
-    ],
-  },
-  gerente: {
-    name: "Gerente Central",
-    badge: "Gerente Central",
-    avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
-    // Gerente central: todo lo anterior + sedes, planes, precios/configuración, personal y reportes
-    allowedPaths: [
-      "/admin",
-      "/admin/controlacceso",
-      "/admin/sedes",
-      "/admin/personal",
-      "/admin/instructores",
-      "/admin/tipos-clase",
-      "/admin/tipos-cancha",
-      "/admin/planes",
-      "/admin/socios",
-      "/admin/membresias",
-      "/admin/clases",
-      "/admin/canchas",
-      "/admin/reservas",
-      "/admin/pagos",
-      "/admin/reportes",
-      "/admin/configuracion",
-    ],
-  },
-  recepcion: {
-    name: "Lucas Benítez",
-    badge: "Recepcionista",
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-    allowedPaths: ["/admin/socios", "/admin/membresias", "/admin/canchas", "/admin/reservas", "/admin/controlacceso", "/admin/pagos"],
-  },
-  instructor: {
-    name: "Martín Palermo",
-    badge: "Instructor Fitness",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
-    allowedPaths: ["/admin/clases", "/admin/instructores", "/admin/tipos-clase", "/admin/controlacceso"],
-  },
-};
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const location = useLocation();
@@ -412,26 +354,26 @@ useEffect(() => {
     },
   ];
 
-  const rolReal = usuario?.rol.clase_rol;
+  const permisos = getPermisosUsuario(usuario);
+  const { seleccionarSede } = useAppStore();
 
-  // Bloqueo por URL directa: rutas exclusivas de Gerente (sedes y configuración de tarifas/precios)
+  // Bloqueo por URL directa según rol centralizado (permissions.ts)
   useEffect(() => {
-    if (!rolReal) return;
-    if (rolReal === "Cliente") {
-      navigate("/403", { replace: true });
-      return;
-    }
-    const soloGerente =
-      location.pathname.startsWith("/admin/sedes") ||
-      location.pathname.startsWith("/admin/configuracion");
-    if (soloGerente && rolReal !== "Gerente") {
+    if (!usuario) return;
+    if (!puedeAccederARutaAdmin(location.pathname, usuario)) {
       navigate("/403", { replace: true });
     }
-  }, [rolReal, location.pathname, navigate]);
+  }, [usuario, location.pathname, navigate]);
 
-  const rutasPermitidas = rolReal === "Administrador" ? ROLES_CONFIG.admin.allowedPaths : rolReal === "Gerente" 
-  ? ROLES_CONFIG.gerente.allowedPaths: rolReal === "Instructor"
-          ? ROLES_CONFIG.instructor.allowedPaths: [];
+  // Si es Gerente, fijar siempre su sede asignada (no puede cambiar manualmente a otra sede)
+  useEffect(() => {
+    if (permisos.esGerente && permisos.sedeAsignadaId) {
+      setCurrentSede(String(permisos.sedeAsignadaId));
+      seleccionarSede(permisos.sedeAsignadaId);
+    }
+  }, [permisos.esGerente, permisos.sedeAsignadaId, seleccionarSede]);
+
+  const rutasPermitidas = getRutasPermitidasAdmin(usuario);
   const activeSedeData = sedes.find((sede) => String(sede.id) === currentSede,);
 
   // Filtrado de categorías e ítems autorizados por el rol activo
@@ -498,8 +440,12 @@ useEffect(() => {
                 id="sede-select"
                 className="sede-select-dropdown"
                 value={currentSede}
-                disabled={sedes.length === 0}
-                onChange={(event) => setCurrentSede(event.target.value)}
+                disabled={sedes.length === 0 || !permisos.puedeCambiarDeSede}
+                onChange={(event) => {
+                  if (!permisos.puedeCambiarDeSede) return;
+                  setCurrentSede(event.target.value);
+                  seleccionarSede(Number(event.target.value) || null);
+                }}
               >
                 <option value="">
                   {sedes.length === 0

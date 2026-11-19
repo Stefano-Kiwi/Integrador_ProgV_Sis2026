@@ -10,12 +10,16 @@ import {
   obtenerSedes,
   type SedeApi,
 } from "../services/sedesService";
+import { getPermisosUsuario } from "../services/permissions";
+import { useAppStore } from "../store";
 import "../admin.css";
 
 export default function AdminCanchaForm() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const esEdicion = id !== undefined;
+  const { usuario } = useAppStore();
+  const permisos = getPermisosUsuario(usuario);
 
   const [sedes, setSedes] = useState<SedeApi[]>([]);
   const [tipos, setTipos] = useState<
@@ -23,7 +27,11 @@ export default function AdminCanchaForm() {
   >([]);
 
   const [nombre, setNombre] = useState("");
-  const [sedeId, setSedeId] = useState("");
+  const [sedeId, setSedeId] = useState(
+    permisos.esGerente && permisos.sedeAsignadaId
+      ? String(permisos.sedeAsignadaId)
+      : ""
+  );
   const [tipoId, setTipoId] = useState("");
   const [costoHora, setCostoHora] = useState("");
 
@@ -54,7 +62,11 @@ export default function AdminCanchaForm() {
 
         setSedes(sedesApi);
         setTipos(tiposUnicos);
-        setSedeId(String(sedesApi[0]?.id ?? ""));
+        setSedeId(
+          permisos.esGerente && permisos.sedeAsignadaId
+            ? String(permisos.sedeAsignadaId)
+            : String(sedesApi[0]?.id ?? "")
+        );
         setTipoId(String(tiposUnicos[0]?.id ?? ""));
       } catch (err) {
         if (activo) {
@@ -78,7 +90,7 @@ export default function AdminCanchaForm() {
     return () => {
       activo = false;
     };
-  }, [esEdicion]);
+  }, [esEdicion, permisos.esGerente, permisos.sedeAsignadaId]);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -213,6 +225,7 @@ export default function AdminCanchaForm() {
                   className="form-control"
                   value={sedeId}
                   onChange={e => setSedeId(e.target.value)}
+                  disabled={!permisos.puedeCambiarDeSede}
                   required
                 >
                   {sedes.map(s => (
@@ -221,6 +234,11 @@ export default function AdminCanchaForm() {
                     </option>
                   ))}
                 </select>
+                {permisos.esGerente && (
+                  <small style={{ color: "var(--text-muted)", display: "block", marginTop: "0.35rem" }}>
+                    La cancha se asignará automáticamente a tu sede.
+                  </small>
+                )}
               </div>
 
               <div className="form-group">

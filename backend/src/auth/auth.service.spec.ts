@@ -44,6 +44,7 @@ describe('AuthService', () => {
         id: 1,
         email: 'admin@fitzone.com',
         id_rol: 3,
+        sede_base_id: 1,
         password_hash: hash,
       });
 
@@ -56,6 +57,8 @@ describe('AuthService', () => {
       expect(mockJwtService.signAsync).toHaveBeenCalledWith({
         sub: 1,
         id_rol: 3,
+        clase_rol: 'Gerente',
+        sede_base_id: 1,
       });
     });
 

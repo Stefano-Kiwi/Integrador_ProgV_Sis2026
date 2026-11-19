@@ -36,7 +36,12 @@ export class AuthService {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
-    const access_token = await this.jwtService.signAsync({ sub: user.id, id_rol: user.id_rol });
+    const access_token = await this.jwtService.signAsync({
+      sub: user.id,
+      id_rol: user.id_rol,
+      clase_rol: ROLE_NAME_MAP[user.id_rol],
+      sede_base_id: user.sede_base_id ?? null,
+    });
     return { access_token };
   }
 

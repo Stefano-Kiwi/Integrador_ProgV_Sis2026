@@ -9,8 +9,14 @@ import { Prisma } from '@prisma/client';
 import { ClasesRepository } from './clases.repository.js';
 import { CupoLiberadoSubject } from './observer/index.js';
 import type { CreateClaseDto } from './dto/create-clase.dto.js';
+import type { UpdateClaseDto } from './dto/update-clase.dto.js';
 import type { ReservaClaseDto } from './dto/reserva-clase.dto.js';
 import type { JwtPayload } from '../common/decorators/current-user.decorator.js';
+import {
+  obtenerSedeRestringida,
+  resolverSedeEscritura,
+  validarAccesoASede,
+} from '../common/auth/branch-scope.js';
 
 /** RF-07: reserva habilitada hasta 48 horas antes; cancelación sin penalidad hasta 2 horas antes. */
 export const HORAS_MAX_ANTICIPACION_RESERVA = 48;
@@ -25,20 +31,37 @@ export class ClasesService {
     private readonly cupoLiberadoSubject: CupoLiberadoSubject,
   ) {}
 
-  findAll() {
-    return this.clasesRepository.findAll();
+  findAll(user?: JwtPayload) {
+    const sedeRestringida = obtenerSedeRestringida(user);
+    return this.clasesRepository.findAll(sedeRestringida ?? undefined);
   }
 
-  async findById(id: number) {
+  async findById(id: number, user?: JwtPayload) {
     const clase = await this.clasesRepository.findById(id);
     if (!clase) {
       throw new NotFoundException(`Clase con ID ${id} no encontrada`);
     }
+    validarAccesoASede(user, clase.sede_id);
     return clase;
   }
 
-  create(dto: CreateClaseDto) {
-    return this.clasesRepository.create(dto);
+  async create(dto: CreateClaseDto, user?: JwtPayload) {
+    const sedeId = resolverSedeEscritura(user, dto.sede_id);
+    return this.clasesRepository.create({ ...dto, sede_id: sedeId });
+  }
+
+  async update(id: number, dto: UpdateClaseDto, user?: JwtPayload) {
+    const existente = await this.findById(id, user);
+    const sedeDestino =
+      dto.sede_id !== undefined
+        ? resolverSedeEscritura(user, dto.sede_id)
+        : existente.sede_id;
+    return this.clasesRepository.update(id, { ...dto, sede_id: sedeDestino });
+  }
+
+  async remove(id: number) {
+    await this.findById(id);
+    return this.clasesRepository.remove(id);
   }
 
   /** RF-07 + RN-03 + RF-08: reserva cupo o agrega a lista de espera si está completa. */

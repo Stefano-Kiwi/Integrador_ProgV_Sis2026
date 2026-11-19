@@ -17,12 +17,24 @@ export class JwtAuthGuard implements CanActivate {
       context.getClass(),
     ]);
 
-    if (isPublic) {
-      return true;
-    }
-
     const request = context.switchToHttp().getRequest<Request>();
     const token = this.extractTokenFromHeader(request);
+
+    if (isPublic) {
+      // En rutas públicas, si viene un Bearer válido igual poblamos request.user
+      // para poder aplicar restricciones por sede cuando el consultante es Gerente.
+      if (token) {
+        try {
+          const payload = await this.jwtService.verifyAsync(token, {
+            secret: process.env.JWT_SECRET,
+          });
+          (request as unknown as Record<string, unknown>)['user'] = payload;
+        } catch {
+          // Token inválido en ruta pública: se trata como anónimo
+        }
+      }
+      return true;
+    }
 
     if (!token) {
       throw new UnauthorizedException('Token de autenticación no suministrado o inválido');

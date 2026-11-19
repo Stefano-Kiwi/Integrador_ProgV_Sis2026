@@ -451,7 +451,7 @@
             "description": "Listado de sedes disponibles"
           }
         },
-        "summary": "Listar todas las sedes",
+        "summary": "Listar sedes (un Gerente solo recibe su sede asignada)",
         "tags": [
           "sedes"
         ]
@@ -474,7 +474,7 @@
             "description": "Sede creada exitosamente"
           }
         },
-        "summary": "Crear una nueva sede",
+        "summary": "Crear una nueva sede (solo Administrador)",
         "tags": [
           "sedes"
         ]
@@ -497,11 +497,14 @@
           "200": {
             "description": "Detalle de la sede"
           },
+          "403": {
+            "description": "El gerente solo puede consultar su propia sede"
+          },
           "404": {
             "description": "Sede no encontrada"
           }
         },
-        "summary": "Obtener sede por ID",
+        "summary": "Obtener sede por ID (403 si un Gerente consulta otra sede)",
         "tags": [
           "sedes"
         ]
@@ -581,7 +584,7 @@
             "description": "Listado de clases"
           }
         },
-        "summary": "Listar clases programadas",
+        "summary": "Listar clases programadas (un Gerente solo ve las de su sede)",
         "tags": [
           "clases"
         ]
@@ -602,9 +605,17 @@
         "responses": {
           "201": {
             "description": "Clase programada exitosamente"
+          },
+          "403": {
+            "description": "Sin permisos o sede distinta a la del Gerente"
           }
         },
-        "summary": "Crear una nueva clase (RF-06)",
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Crear una nueva clase (RF-06; Gerente solo en su sede)",
         "tags": [
           "clases"
         ]
@@ -631,26 +642,6 @@
         ]
       }
     },
-    "/clases/reservas/mias": {
-      "get": {
-        "operationId": "ClasesController_findMisReservas",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Listado de reservas de clase del usuario autenticado"
-          }
-        },
-        "security": [
-          {
-            "access-token": []
-          }
-        ],
-        "summary": "Consultar mis reservas de clases (RF-07)",
-        "tags": [
-          "clases"
-        ]
-      }
-    },
     "/clases/{id}": {
       "get": {
         "operationId": "ClasesController_findById",
@@ -668,11 +659,90 @@
           "200": {
             "description": "Detalle de la clase"
           },
+          "403": {
+            "description": "La clase pertenece a otra sede"
+          },
           "404": {
             "description": "Clase no encontrada"
           }
         },
-        "summary": "Obtener detalle de una clase",
+        "summary": "Obtener detalle de una clase (403 si un Gerente consulta otra sede)",
+        "tags": [
+          "clases"
+        ]
+      },
+      "patch": {
+        "operationId": "ClasesController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateClaseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Clase actualizada correctamente"
+          },
+          "403": {
+            "description": "Sin permisos o clase perteneciente a otra sede"
+          },
+          "404": {
+            "description": "Clase no encontrada"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Modificar una clase (Gerente solo las de su sede)",
+        "tags": [
+          "clases"
+        ]
+      },
+      "delete": {
+        "operationId": "ClasesController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Clase eliminada correctamente"
+          },
+          "403": {
+            "description": "Los Gerentes no tienen permiso para eliminar clases"
+          },
+          "404": {
+            "description": "Clase no encontrada"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Eliminar una clase (reservado exclusivamente a Administrador)",
         "tags": [
           "clases"
         ]
@@ -769,7 +839,7 @@
             "description": "Listado de canchas disponibles"
           }
         },
-        "summary": "Listar todas las canchas deportivas",
+        "summary": "Listar canchas deportivas (un Gerente solo ve las de su sede)",
         "tags": [
           "canchas"
         ]
@@ -790,9 +860,17 @@
         "responses": {
           "201": {
             "description": "Cancha registrada exitosamente"
+          },
+          "403": {
+            "description": "Sin permisos o sede distinta a la del Gerente"
           }
         },
-        "summary": "Registrar una nueva cancha",
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Registrar una nueva cancha (RF-09; Gerente solo en su sede)",
         "tags": [
           "canchas"
         ]
@@ -807,27 +885,12 @@
             "description": "Listado de reservas con datos del usuario y la cancha"
           }
         },
-        "summary": "Listar todas las reservas de canchas",
-        "tags": [
-          "canchas"
-        ]
-      }
-    },
-    "/canchas/reservas/mias": {
-      "get": {
-        "operationId": "CanchasController_findMisReservas",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Listado de reservas del usuario autenticado"
-          }
-        },
         "security": [
           {
             "access-token": []
           }
         ],
-        "summary": "Listar mis reservas de canchas",
+        "summary": "Listar reservas de canchas (un Gerente solo ve las de su sede)",
         "tags": [
           "canchas"
         ]
@@ -835,7 +898,7 @@
     },
     "/canchas/{id}/disponibilidad": {
       "get": {
-        "description": "Devuelve las franjas del día (LIBRE / OCUPADA / MANTENIMIENTO) con el precio calculado por las estrategias de tarifa para el usuario autenticado (descuento de socio, recargo en horario pico, tarifa de externo).",
+        "description": "Devuelve las franjas del día (LIBRE / OCUPADA / MANTENIMIENTO) con el precio calculado por las estrategias de tarifa para el usuario autenticado (403 si un Gerente consulta otra sede).",
         "operationId": "CanchasController_disponibilidad",
         "parameters": [
           {
@@ -872,6 +935,9 @@
           "400": {
             "description": "Fecha con formato inválido"
           },
+          "403": {
+            "description": "La cancha pertenece a otra sede"
+          },
           "404": {
             "description": "Cancha no encontrada"
           }
@@ -904,11 +970,90 @@
           "200": {
             "description": "Detalle de la cancha"
           },
+          "403": {
+            "description": "La cancha pertenece a otra sede"
+          },
           "404": {
             "description": "Cancha no encontrada"
           }
         },
-        "summary": "Obtener detalle de una cancha por ID",
+        "summary": "Obtener detalle de una cancha por ID (403 si un Gerente consulta otra sede)",
+        "tags": [
+          "canchas"
+        ]
+      },
+      "patch": {
+        "operationId": "CanchasController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCanchaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cancha actualizada correctamente"
+          },
+          "403": {
+            "description": "Sin permisos o cancha perteneciente a otra sede"
+          },
+          "404": {
+            "description": "Cancha no encontrada"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Modificar una cancha (Gerente solo las de su sede)",
+        "tags": [
+          "canchas"
+        ]
+      },
+      "delete": {
+        "operationId": "CanchasController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cancha eliminada correctamente"
+          },
+          "403": {
+            "description": "Los Gerentes no tienen permiso para eliminar canchas"
+          },
+          "404": {
+            "description": "Cancha no encontrada"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Eliminar una cancha (reservado exclusivamente a Administrador)",
         "tags": [
           "canchas"
         ]
@@ -940,6 +1085,11 @@
             "description": "El turno ya se encuentra ocupado (409)"
           }
         },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
         "summary": "Reservar turno de cancha deportiva (RF-10)",
         "tags": [
           "canchas"
@@ -1013,6 +1163,9 @@
           "200": {
             "description": "Cancha con su nuevo estado"
           },
+          "403": {
+            "description": "La cancha pertenece a otra sede"
+          },
           "404": {
             "description": "Cancha no encontrada"
           }
@@ -1022,7 +1175,7 @@
             "access-token": []
           }
         ],
-        "summary": "Habilitar o inhabilitar una cancha por mantenimiento (RF-12)",
+        "summary": "Habilitar o inhabilitar una cancha por mantenimiento (RF-12; Gerente solo su sede)",
         "tags": [
           "canchas"
         ]
@@ -1748,6 +1901,39 @@
           "capacidad_maxima"
         ]
       },
+      "UpdateClaseDto": {
+        "type": "object",
+        "properties": {
+          "sede_id": {
+            "type": "number",
+            "minimum": 1,
+            "example": 1
+          },
+          "tipo_clase_id": {
+            "type": "number",
+            "minimum": 1,
+            "example": 1
+          },
+          "instructor_id": {
+            "type": "number",
+            "minimum": 1,
+            "example": 1
+          },
+          "inicio_at": {
+            "type": "string",
+            "example": "2026-12-01T18:00:00.000Z"
+          },
+          "fin_at": {
+            "type": "string",
+            "example": "2026-12-01T19:00:00.000Z"
+          },
+          "capacidad_maxima": {
+            "type": "number",
+            "minimum": 1,
+            "example": 25
+          }
+        }
+      },
       "ReservaClaseDto": {
         "type": "object",
         "properties": {
@@ -1910,6 +2096,31 @@
           "nombre",
           "costo_hora"
         ]
+      },
+      "UpdateCanchaDto": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 100,
+            "example": "Cancha 1 (Paddle)"
+          },
+          "sede_id": {
+            "type": "number",
+            "minimum": 1,
+            "example": 1
+          },
+          "tipo_cancha_id": {
+            "type": "number",
+            "minimum": 1,
+            "example": 1
+          },
+          "costo_hora": {
+            "type": "number",
+            "minimum": 0,
+            "example": 9500
+          }
+        }
       },
       "ReservaCanchaDto": {
         "type": "object",

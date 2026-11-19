@@ -16,10 +16,16 @@ import {
   puedeTransicionar,
 } from './reserva-reglas.js';
 import type { CreateCanchaDto } from './dto/create-cancha.dto.js';
+import type { UpdateCanchaDto } from './dto/update-cancha.dto.js';
 import type { ReservaCanchaDto } from './dto/reserva-cancha.dto.js';
 import type { EstadoCanchaValor } from './dto/update-estado-cancha.dto.js';
 import type { DisponibilidadResponseDto } from './dto/disponibilidad.dto.js';
 import type { JwtPayload } from '../common/decorators/current-user.decorator.js';
+import {
+  obtenerSedeRestringida,
+  resolverSedeEscritura,
+  validarAccesoASede,
+} from '../common/auth/branch-scope.js';
 
 /** id_rol del personal (Gerente, Administrador) según el mapa de roles de roles.guard.ts. */
 const ID_ROLES_PERSONAL = [3, 4];
@@ -33,28 +39,46 @@ export class CanchasService {
     private readonly pricingService: PricingService,
   ) {}
 
-  findAll() {
-    return this.canchasRepository.findAll();
+  findAll(user?: JwtPayload) {
+    const sedeRestringida = obtenerSedeRestringida(user);
+    return this.canchasRepository.findAll(sedeRestringida ?? undefined);
   }
 
-  findAllReservas() {
-    return this.canchasRepository.findAllReservas();
+  findAllReservas(user?: JwtPayload) {
+    const sedeRestringida = obtenerSedeRestringida(user);
+    return this.canchasRepository.findAllReservas(sedeRestringida ?? undefined);
   }
 
   findReservasByUsuario(usuarioId: number) {
     return this.canchasRepository.findReservasByUsuario(usuarioId);
   }
 
-  async findById(id: number) {
+  async findById(id: number, user?: JwtPayload) {
     const cancha = await this.canchasRepository.findById(id);
     if (!cancha) {
       throw new NotFoundException(`Cancha con ID ${id} no encontrada`);
     }
+    validarAccesoASede(user, cancha.sede_id);
     return cancha;
   }
 
-  create(dto: CreateCanchaDto) {
-    return this.canchasRepository.create(dto);
+  async create(dto: CreateCanchaDto, user?: JwtPayload) {
+    const sedeId = resolverSedeEscritura(user, dto.sede_id);
+    return this.canchasRepository.create({ ...dto, sede_id: sedeId });
+  }
+
+  async update(id: number, dto: UpdateCanchaDto, user?: JwtPayload) {
+    const existente = await this.findById(id, user);
+    const sedeDestino =
+      dto.sede_id !== undefined
+        ? resolverSedeEscritura(user, dto.sede_id)
+        : existente.sede_id;
+    return this.canchasRepository.update(id, { ...dto, sede_id: sedeDestino });
+  }
+
+  async remove(id: number) {
+    await this.findById(id);
+    return this.canchasRepository.remove(id);
   }
 
   /** Calcula el precio de un turno con las estrategias (RF-11). RN-03: sin membresía ACTIVO paga como externo. */
@@ -116,13 +140,18 @@ export class CanchasService {
   }
 
   /** RF-10: grilla horaria del día con franjas libres/ocupadas y el precio calculado por las estrategias. */
-  async disponibilidad(canchaId: number, fecha: string, usuarioId: number): Promise<DisponibilidadResponseDto> {
+  async disponibilidad(
+    canchaId: number,
+    fecha: string,
+    usuarioId: number,
+    user?: JwtPayload,
+  ): Promise<DisponibilidadResponseDto> {
     const fechaDate = new Date(fecha);
     if (Number.isNaN(fechaDate.getTime())) {
       throw new BadRequestException('La fecha no es válida (formato esperado: YYYY-MM-DD)');
     }
 
-    const cancha = await this.findById(canchaId);
+    const cancha = await this.findById(canchaId, user);
     const [reservas, esSocioActivo] = await Promise.all([
       this.canchasRepository.findReservasActivasByFecha(canchaId, fechaDate),
       this.canchasRepository.usuarioEsSocioActivo(usuarioId),
@@ -192,8 +221,8 @@ export class CanchasService {
   }
 
   /** RF-12: habilita o inhabilita la cancha. No modifica reservas ya existentes. */
-  async cambiarEstado(id: number, estado: EstadoCanchaValor) {
-    await this.findById(id);
+  async cambiarEstado(id: number, estado: EstadoCanchaValor, user?: JwtPayload) {
+    await this.findById(id, user);
     return this.canchasRepository.updateEstado(id, estado);
   }
 }

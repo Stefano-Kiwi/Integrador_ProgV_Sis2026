@@ -2,9 +2,12 @@ import AdminInscripcionClase from "../components/organisms/AdminInscripcionClase
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
+  eliminarClase,
   obtenerClases,
   type ClaseApi,
 } from "../services/clasesService";
+import { useAppStore } from "../store";
+import { getPermisosUsuario } from "../services/permissions";
 import "../admin.css";
 
 const fechaCompleta = (fecha: string) =>
@@ -37,7 +40,10 @@ const colores: Record<string, string> = {
 };
 
 export default function AdminClases() {
+  const { usuario } = useAppStore();
+  const permisos = getPermisosUsuario(usuario);
   const [clases, setClases] = useState<ClaseApi[]>([]);
+  const [eliminandoId, setEliminandoId] = useState<number | null>(null);
   const [seleccionadaId, setSeleccionadaId] = useState<number | null>(null);
   const [disciplina, setDisciplina] = useState("Todas");
   const [instructor, setInstructor] = useState("Todos");
@@ -380,7 +386,37 @@ export default function AdminClases() {
   claseId={seleccionada.id}
   finalizada={finalizada(seleccionada)}
   onInscripcionExitosa={() => setIntento(v => v + 1)}
-/>  
+/>
+                {permisos.puedeEliminarClases && (
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    disabled={eliminandoId === seleccionada.id}
+                    style={{
+                      marginTop: "0.85rem",
+                      width: "100%",
+                      borderColor: "var(--accent-red, #ff4b72)",
+                      color: "var(--accent-red, #ff4b72)",
+                    }}
+                    onClick={async () => {
+                      if (!window.confirm("¿Seguro que deseas eliminar esta clase?")) return;
+                      setEliminandoId(seleccionada.id);
+                      setError(null);
+                      try {
+                        await eliminarClase(seleccionada.id);
+                        setIntento((v) => v + 1);
+                      } catch (err) {
+                        setError(
+                          err instanceof Error ? err.message : "No se pudo eliminar la clase."
+                        );
+                      } finally {
+                        setEliminandoId(null);
+                      }
+                    }}
+                  >
+                    {eliminandoId === seleccionada.id ? "Eliminando..." : "Eliminar clase"}
+                  </button>
+                )}
                 <p style={{
                   marginTop: "1rem",
                   color: "var(--text-muted)",
