@@ -1,0 +1,99 @@
+**Bitácora - Serantes, Matías - Rol**
+
+**Proyecto FitZone Sports - Programación V - Equipo 12**
+
+---
+
+## SEMANA 1 - Unidad I (Arquitectura)
+
+**Actividad:**
+
+Asumí el rol de líder de esta primera semana. Revisamos en equipo el alcance del proyecto, los requisitos, las tecnologías a emplear y la división de los módulos para definir el rumbo de la arquitectura inicial.
+
+---
+
+## SEMANA 2 - Unidad I (Arquitectura)
+
+**Actividad:**
+
+Trabajamos en conjunto con todo el equipo para estructurar el diagrama C4 (hasta el nivel 2) y documentar las primeras decisiones arquitectónicas (ADRs). También colaboré en el desarrollo del diagrama relacional de la base de datos y en la revisión del modelado visual en Figma.
+
+---
+
+## SEMANA 3 - Unidad II (Frameworks)
+
+**Actividad:**
+
+Con Stéfano creamos el DDL de PostgreSQL, configuramos la base en Docker Compose e integramos Prisma en NestJS para mapear las entidades principales. Además, ayudé a definir el contrato de la API REST usando OpenAPI/Swagger para establecer cómo consumirá el frontend el login.
+
+---
+
+## SEMANA 4 - Unidad II (Frameworks)
+
+**Actividad:**
+
+Con Stéfano implementamos los repositorios y servicios del backend, dejando operativos y probados los endpoints CRUD básicos para las entidades mapeadas contra la base de datos PostgreSQL.
+
+---
+
+## SEMANA 5 - Unidad III (Patrones de diseño)
+
+**Actividad:**
+
+Con Stéfano cerramos la configuración del ORM mapeando las 17 tablas del DDL con Prisma y establecimos los usuarios y restricciones de seguridad en la base de datos. De manera individual, me encargué del módulo de estrategia de precios, implementando el servicio de cálculo de descuentos con desglose y sus correspondientes tests parametrizados.
+
+---
+
+## SEMANA 6 - Unidad III (Patrones de diseño)
+
+**Actividad:**
+
+Con Stéfano desarrollamos el Adapter para la pasarela de pagos simulada y el Builder para la generación de comprobantes. Participé junto al equipo en la justificación de los patrones de diseño aplicados y registramos los avances en el LOG.md.
+
+---
+
+## SEMANA 7 - Unidad III
+
+**Actividad:**
+
+Con Stéfano completamos la autenticación, la generación de tokens y la protección de endpoints por roles. Por mi parte, completé las reglas de negocio para precios, descuentos y totales, validando diferentes escenarios. Luego integramos este servicio con la pasarela de pagos simulada contemplando transacciones aprobadas y rechazadas.
+
+---
+
+## SEMANA 8 - Unidad III
+
+**Actividad:**
+
+Con Stéfano finalizamos los endpoints CRUD principales incorporando validaciones y persistencia con Prisma, además de la gestión de sesión y navegación protegida. Verifiqué que el flujo de pagos y comprobantes persista correctamente en PostgreSQL garantizando la consistencia de los importes. También colaboré en la actualización de la documentación técnica.
+
+---
+
+## SEMANA 9 - Unidad IV (Componentes)
+
+**Actividad:**
+
+Con Stéfano realizamos la revisión del contrato de la API junto al equipo de frontend, ajustando rutas, campos y formatos de respuesta necesarios para asegurar una integración fluida.
+
+---
+
+## SEMANA 10 - Unidad IV (Componentes)
+
+**Actividad:**
+
+Me aboqué a la validación e integración de reservas y pagos. Revisé la disponibilidad de turnos, la persistencia y la consistencia matemática entre las reservas, los importes calculados y las transacciones de pago para dejar listos los servicios de cara al frontend.
+
+---
+
+## SEMANA 11 - Unidad V (Pruebas)
+
+**Actividad:**
+
+Con Stéfano desarrollamos la suite de pruebas automatizadas del backend para evaluar los servicios y endpoints críticos frente a datos inválidos y conflictos de reservas. En conjunto con todo el equipo, revisamos los pendientes y actualizamos la documentación técnica final.
+
+---
+
+## CIERRE - 18/11 al 19/11 (Congelamiento)
+
+**Actividad:**
+
+Realicé correcciones finales, refactorización de código y ajustes generales tanto en backend como en frontend para asegurar la estabilidad de la aplicación previa a la entrega final.
