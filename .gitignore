@@ -1,0 +1,10 @@
+# Entorno local (nunca versionar secretos)
+.env
+.env.local
+.env.*.local
+
+# Dependencias y artefactos generados
+node_modules/
+dist/
+coverage/
+backend/storage/

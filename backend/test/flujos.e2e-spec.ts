@@ -31,6 +31,26 @@ describe('Flujos de integración (e2e)', () => {
   const fechaReserva = '2027-07-20';
   const horaReserva = 19; // horario pico
 
+  const limpiarReservaPrueba = async () => {
+    const reservas = await prisma.reserva_cancha.findMany({
+      where: { cancha_id: canchaId, fecha: new Date(fechaReserva), hora_inicio: horaReserva },
+      select: { id: true },
+    });
+    const reservaIds = reservas.map((r) => r.id);
+    if (reservaIds.length > 0) {
+      const pagos = await prisma.pago.findMany({
+        where: { reserva_cancha_id: { in: reservaIds } },
+        select: { id: true },
+      });
+      const pagoIds = pagos.map((p) => p.id);
+      if (pagoIds.length > 0) {
+        await prisma.comprobante.deleteMany({ where: { pago_id: { in: pagoIds } } });
+        await prisma.pago.deleteMany({ where: { id: { in: pagoIds } } });
+      }
+      await prisma.reserva_cancha.deleteMany({ where: { id: { in: reservaIds } } });
+    }
+  };
+
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
@@ -84,9 +104,7 @@ describe('Flujos de integración (e2e)', () => {
     canchaId = cancha.id;
     sedeId = cancha.sede_id;
 
-    await prisma.reserva_cancha.deleteMany({
-      where: { cancha_id: canchaId, fecha: new Date(fechaReserva), hora_inicio: horaReserva },
-    });
+    await limpiarReservaPrueba();
     await prisma.acceso.updateMany({
       where: { usuario_id: socio1Id, egreso_at: null },
       data: { egreso_at: new Date() },
@@ -95,9 +113,7 @@ describe('Flujos de integración (e2e)', () => {
 
   afterAll(async () => {
     if (prisma) {
-      await prisma.reserva_cancha.deleteMany({
-        where: { cancha_id: canchaId, fecha: new Date(fechaReserva), hora_inicio: horaReserva },
-      });
+      await limpiarReservaPrueba();
       await prisma.acceso.updateMany({
         where: { usuario_id: socio1Id, egreso_at: null },
         data: { egreso_at: new Date() },

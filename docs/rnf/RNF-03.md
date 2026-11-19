@@ -16,10 +16,10 @@ La consulta de disponibilidad de canchas (`GET /canchas/:id/disponibilidad?fecha
       WHERE "estado" <> 'CANCELADA';
   ```
 
-## Comando de verificación (`EXPLAIN ANALYZE`)
-Con PostgreSQL levantado (`cd backend/database && docker compose up -d && cd .. && npm run db:migrate && npm run seed`), ejecutar:
+## Evidencia ejecutada (`EXPLAIN ANALYZE` real sobre PostgreSQL 18)
+Comando ejecutado el 2026-11-19 contra el contenedor `fitzone_postgres`:
 ```bash
-docker exec -i grupo12_ProgV_integrador psql -U postgres -d fitzone_sports -c "
+docker exec -i fitzone_postgres psql -U postgres -d fitzone_sports -c "
 EXPLAIN (ANALYZE, BUFFERS)
 SELECT hora_inicio, estado
 FROM reserva_cancha
@@ -29,4 +29,19 @@ WHERE cancha_id = 1
 "
 ```
 
-> **Nota de ejecución:** Al generar este documento Docker Desktop no estaba corriendo en el entorno local. Ejecutar el comando anterior con el contenedor activo y pegar la salida de `Index Scan using ux_reserva_cancha_slot` / `ix_reserva_cancha_disponibilidad` y `Execution Time: < 1 ms` debajo para completar la captura final.
+Salida real:
+```text
+                                                                QUERY PLAN
+------------------------------------------------------------------------------------------------------------------------------------------
+ Index Scan using ux_reserva_cancha_slot on reserva_cancha  (cost=0.15..8.17 rows=1 width=6) (actual time=0.039..0.040 rows=1.00 loops=1)
+   Index Cond: ((cancha_id = 1) AND (fecha = (CURRENT_DATE + 2)))
+   Index Searches: 1
+   Buffers: shared hit=2
+ Planning:
+   Buffers: shared hit=146
+ Planning Time: 1.359 ms
+ Execution Time: 0.068 ms
+(8 rows)
+```
+
+Se verifica el uso directo del índice (`Index Scan using ux_reserva_cancha_slot`) con un tiempo de ejecución de **0.068 ms**.
