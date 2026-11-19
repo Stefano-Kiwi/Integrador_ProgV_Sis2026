@@ -1,0 +1,27 @@
+---
+title: Secuencia · Reserva concurrente (RN-02) · Autor Stéfano · 2026-11-19 · v1.1
+---
+sequenceDiagram
+  autonumber
+  actor A as Socio A
+  actor B as Socio B
+  participant API as CanchasService / Repository
+  participant DB as PostgreSQL
+  Note over A,B: Ambos reservan la misma cancha, fecha y horario en el mismo instante
+  par Socio A
+    A->>API: POST /canchas/reserva
+    API->>DB: BEGIN ($transaction)
+    API->>DB: INSERT reserva_cancha (estado = PENDIENTE_PAGO)
+  and Socio B
+    B->>API: POST /canchas/reserva
+    API->>DB: BEGIN ($transaction)
+    API->>DB: INSERT reserva_cancha (estado = PENDIENTE_PAGO)
+  end
+  Note over DB: El índice único parcial ux_reserva_cancha_slot (WHERE estado <> CANCELADA) serializa los INSERT: solo uno entra
+  DB-->>API: OK para la primera transacción
+  API->>DB: COMMIT
+  API-->>A: 201 Created (turno bloqueado en PENDIENTE_PAGO)
+  DB-->>API: violación de unicidad (Prisma P2002) para la segunda
+  API->>DB: ROLLBACK
+  API-->>B: 409 Conflict ("El turno seleccionado ya se encuentra reservado")
+  Note over A,B: Resultado: exactamente 1 reserva creada y 0 sobreventa, garantizado en BD

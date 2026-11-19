@@ -1,0 +1,17 @@
+---
+title: Estados · Reserva de cancha (RF-10) · Autor Stéfano · 2026-11-19 · v1.1
+---
+stateDiagram-v2
+  [*] --> PendientePago : POST /canchas/reserva (turno bloqueado)
+  PendientePago --> Confirmada : pago aprobado (POST /pagos/simular)
+  PendientePago --> Cancelada : cancelación antes de pagar (sin penalidad)
+  Confirmada --> Cumplida : el turno transcurre
+  Confirmada --> Cancelada : cancelación con >= 24 h (sin penalidad, reembolso 100%)
+  Confirmada --> Cancelada : cancelación con < 24 h (con penalidad 50%)
+  Cancelada --> [*]
+  Cumplida --> [*]
+  note right of Cancelada
+    Al cancelar se libera el turno:
+    ux_reserva_cancha_slot (WHERE estado <> CANCELADA)
+    deja de bloquear el horario
+  end note

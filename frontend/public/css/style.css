@@ -3576,3 +3576,16 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* Corrección de dropdowns de la Navbar en dispositivos móviles */
+@media (max-width: 768px) {
+  .localidad-menu .nav-dropdown-menu,
+  .profile-menu .nav-dropdown-menu {
+    left: 0;
+    right: auto;
+    min-width: 220px;
+    max-width: calc(100vw - 2rem);
+    box-sizing: border-box;
+    transform-origin: top left;
+  }
+}

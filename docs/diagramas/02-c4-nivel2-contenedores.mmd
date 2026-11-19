@@ -1,0 +1,23 @@
+%% Autor: Stéfano | Fecha: 2026-11-19 | Versión: 1.0
+C4Container
+  title Contenedores (C4-2) · FitZone Sports · Autor: Stéfano · 2026-11-19 · v1.0
+  Person(socio, "Socio / Cliente externo", "Usa el portal desde el teléfono")
+  Person(staff, "Recepcionista, Admin y Gerente", "Usa la consola de administración")
+  System_Boundary(fz, "FitZone Sports") {
+    Container(nginx, "Servidor web y proxy", "Nginx", "Sirve el build del frontend y redirige /backend hacia la API")
+    Container(portal, "Portal del socio", "React + TypeScript (Vite)", "SPA responsive: QR rotativo, clases, canchas, pagos, perfil")
+    Container(admin, "Consola de administración", "React + TypeScript (Vite)", "Agenda, canchas, membresías, reportes")
+    Container(terminal, "Terminal de sede", "React (vista de control de acceso) + localStorage", "Valida QR contra copia local; cola de ingresos para resincronizar")
+    Container(api, "API backend", "NestJS + Prisma, monolito modular", "Módulos Usuarios, Acceso, Clases, Canchas y Pagos. Contrato OpenAPI en /api")
+    ContainerDb(db, "Base de datos", "PostgreSQL", "Datos transaccionales; índices únicos parciales anti-sobreventa")
+  }
+  System_Ext(pasarela, "Pasarela de pagos", "Simulada: devuelve token de pago")
+  Rel(socio, portal, "Usa", "HTTPS")
+  Rel(staff, admin, "Usa", "HTTPS")
+  Rel(staff, terminal, "Escanea QR en el mostrador", "")
+  Rel(portal, nginx, "Carga la SPA y llama a la API", "HTTPS")
+  Rel(admin, nginx, "Carga la SPA y llama a la API", "HTTPS")
+  Rel(nginx, api, "Proxy /backend", "HTTP/JSON")
+  Rel(terminal, api, "Sincroniza snapshot e ingresos diferidos", "HTTP/JSON, solo con conexión")
+  Rel(api, db, "Lee y escribe", "SQL vía Prisma (TCP 5432)")
+  Rel(api, pasarela, "Solicita autorización de pago", "HTTPS/JSON")
