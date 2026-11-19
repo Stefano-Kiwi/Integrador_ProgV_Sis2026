@@ -442,6 +442,60 @@
         ]
       }
     },
+    "/canchas/{id}/disponibilidad": {
+      "get": {
+        "description": "Devuelve las franjas del día (LIBRE / OCUPADA / MANTENIMIENTO) con el precio calculado por las estrategias de tarifa para el usuario autenticado (descuento de socio, recargo en horario pico, tarifa de externo).",
+        "operationId": "CanchasController_disponibilidad",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "fecha",
+            "required": true,
+            "in": "query",
+            "description": "Fecha a consultar (YYYY-MM-DD)",
+            "schema": {
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "example": "2026-12-01",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisponibilidadResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Fecha con formato inválido"
+          },
+          "404": {
+            "description": "Cancha no encontrada"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Grilla horaria de disponibilidad de una cancha (RF-10, RF-11)",
+        "tags": [
+          "canchas"
+        ]
+      }
+    },
     "/canchas/{id}": {
       "get": {
         "operationId": "CanchasController_findById",
@@ -471,6 +525,7 @@
     },
     "/canchas/reserva": {
       "post": {
+        "description": "El precio se calcula con las estrategias de tarifa (RF-11). Un usuario sin membresía ACTIVO (cliente externo, o socio con membresía VENCIDO/SUSPENDIDO) paga tarifa de externo (RN-03). La no sobreventa (RN-02) está garantizada por el índice único parcial ux_reserva_cancha_slot.",
         "operationId": "CanchasController_reservar",
         "parameters": [],
         "requestBody": {
@@ -485,13 +540,98 @@
         },
         "responses": {
           "201": {
-            "description": "Turno bloqueado pendiente de pago"
+            "description": "Turno bloqueado pendiente de pago, con el desglose de precio"
+          },
+          "400": {
+            "description": "La cancha está en mantenimiento"
           },
           "409": {
-            "description": "El turno ya se encuentra ocupado"
+            "description": "El turno ya se encuentra ocupado (409)"
           }
         },
-        "summary": "Reservar turno de cancha deportiva",
+        "summary": "Reservar turno de cancha deportiva (RF-10)",
+        "tags": [
+          "canchas"
+        ]
+      }
+    },
+    "/canchas/reserva/{id}/cancelar": {
+      "patch": {
+        "description": "Estados: PENDIENTE_PAGO → CONFIRMADA → CUMPLIDA / CANCELADA. Sin penalidad si faltan 24 h o más, o si la reserva aún no se pagó. Con menos de 24 h y reserva pagada se retiene el 50% del monto.",
+        "operationId": "CanchasController_cancelar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reserva cancelada, con indicación de penalidad y monto reembolsable"
+          },
+          "403": {
+            "description": "La reserva pertenece a otro usuario"
+          },
+          "404": {
+            "description": "Reserva no encontrada"
+          },
+          "409": {
+            "description": "La reserva ya está CANCELADA o CUMPLIDA"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Cancelar una reserva de cancha",
+        "tags": [
+          "canchas"
+        ]
+      }
+    },
+    "/canchas/{id}/estado": {
+      "patch": {
+        "description": "Con EN_MANTENIMIENTO se bloquean las reservas futuras; las reservas ya existentes no se modifican.",
+        "operationId": "CanchasController_cambiarEstado",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEstadoCanchaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cancha con su nuevo estado"
+          },
+          "404": {
+            "description": "Cancha no encontrada"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Habilitar o inhabilitar una cancha por mantenimiento (RF-12)",
         "tags": [
           "canchas"
         ]
@@ -921,6 +1061,114 @@
           "usuario_id"
         ]
       },
+      "PrecioFranjaDto": {
+        "type": "object",
+        "properties": {
+          "precio_base": {
+            "type": "number",
+            "example": 8000
+          },
+          "descuento": {
+            "type": "number",
+            "example": 1200
+          },
+          "recargo": {
+            "type": "number",
+            "example": 0
+          },
+          "monto_total": {
+            "type": "number",
+            "example": 6800
+          },
+          "estrategias_aplicadas": {
+            "example": [
+              "TarifaEstandar",
+              "DescuentoSocio"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "precio_base",
+          "descuento",
+          "recargo",
+          "monto_total",
+          "estrategias_aplicadas"
+        ]
+      },
+      "FranjaDisponibilidadDto": {
+        "type": "object",
+        "properties": {
+          "hora_inicio": {
+            "type": "number",
+            "example": 19,
+            "description": "Hora de inicio del turno"
+          },
+          "hora_fin": {
+            "type": "number",
+            "example": 20,
+            "description": "Hora de fin del turno"
+          },
+          "estado": {
+            "enum": [
+              "LIBRE",
+              "OCUPADA",
+              "MANTENIMIENTO"
+            ],
+            "type": "string",
+            "description": "MANTENIMIENTO: la cancha está inhabilitada y no admite reservas"
+          },
+          "precio": {
+            "description": "Precio calculado por las estrategias para el usuario autenticado",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PrecioFranjaDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "hora_inicio",
+          "hora_fin",
+          "estado",
+          "precio"
+        ]
+      },
+      "DisponibilidadResponseDto": {
+        "type": "object",
+        "properties": {
+          "cancha_id": {
+            "type": "number",
+            "example": 1
+          },
+          "fecha": {
+            "type": "string",
+            "example": "2026-12-01"
+          },
+          "cancha_estado": {
+            "type": "string",
+            "enum": [
+              "HABILITADA",
+              "EN_MANTENIMIENTO"
+            ]
+          },
+          "franjas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FranjaDisponibilidadDto"
+            }
+          }
+        },
+        "required": [
+          "cancha_id",
+          "fecha",
+          "cancha_estado",
+          "franjas"
+        ]
+      },
       "CreateCanchaDto": {
         "type": "object",
         "properties": {
@@ -988,6 +1236,23 @@
           "usuario_id",
           "fecha",
           "hora_inicio"
+        ]
+      },
+      "UpdateEstadoCanchaDto": {
+        "type": "object",
+        "properties": {
+          "estado": {
+            "enum": [
+              "HABILITADA",
+              "EN_MANTENIMIENTO"
+            ],
+            "type": "string",
+            "example": "EN_MANTENIMIENTO",
+            "description": "Nuevo estado. EN_MANTENIMIENTO bloquea reservas futuras sin afectar las ya confirmadas."
+          }
+        },
+        "required": [
+          "estado"
         ]
       },
       "SimularPagoDto": {

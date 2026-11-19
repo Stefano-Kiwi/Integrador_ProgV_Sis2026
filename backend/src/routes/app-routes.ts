@@ -32,6 +32,9 @@ export const APP_ROUTES = {
     BY_ID: ':id',
     RESERVA: 'reserva',
     RESERVAS: 'reservas',
+    DISPONIBILIDAD: ':id/disponibilidad',
+    CANCELAR_RESERVA: 'reserva/:id/cancelar',
+    ESTADO: ':id/estado',
   },
   PAGOS: {
     ROOT: 'pagos',
