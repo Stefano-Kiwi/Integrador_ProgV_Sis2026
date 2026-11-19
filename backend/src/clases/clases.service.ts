@@ -25,25 +25,51 @@ export class ClasesService {
     private readonly cupoLiberadoSubject: CupoLiberadoSubject,
   ) {}
 
-  findAll() {
+  async findAll(user: JwtPayload) {
+    if (user.id_rol === 3) {
+      const sedeId = await this.clasesRepository.findSedeBaseId(user.sub);
+      return sedeId === null ? [] : this.clasesRepository.findAll(sedeId);
+    }
     return this.clasesRepository.findAll();
   }
 
-  async findById(id: number) {
+  async findById(id: number, user?: JwtPayload) {
     const clase = await this.clasesRepository.findById(id);
     if (!clase) {
       throw new NotFoundException(`Clase con ID ${id} no encontrada`);
     }
+    if (user?.id_rol === 3 && (await this.clasesRepository.findSedeBaseId(user.sub)) !== clase.sede_id) {
+      throw new ForbiddenException('Solo podés consultar clases de tu sede.');
+    }
     return clase;
   }
 
-  create(dto: CreateClaseDto) {
+  async create(dto: CreateClaseDto, user: JwtPayload) {
+    if (user.id_rol === 3 && (await this.clasesRepository.findSedeBaseId(user.sub)) !== dto.sede_id) {
+      throw new ForbiddenException('Solo podés crear clases en tu sede.');
+    }
     return this.clasesRepository.create(dto);
   }
 
+  async update(id: number, dto: Partial<CreateClaseDto>, user: JwtPayload) {
+    const clase = await this.findById(id, user);
+    if (user.id_rol === 3 && (await this.clasesRepository.findSedeBaseId(user.sub)) !== clase.sede_id) {
+      throw new ForbiddenException('Solo podés editar clases de tu sede.');
+    }
+    if (dto.sede_id !== undefined && user.id_rol === 3 && dto.sede_id !== clase.sede_id) {
+      throw new ForbiddenException('No podés mover una clase a otra sede.');
+    }
+    return this.clasesRepository.update(id, dto);
+  }
+
+  async delete(id: number) {
+    await this.findById(id);
+    return this.clasesRepository.delete(id);
+  }
+
   /** RF-07 + RN-03 + RF-08: reserva cupo o agrega a lista de espera si está completa. */
-  async reservar(dto: ReservaClaseDto, ahora: Date = new Date()) {
-    const clase = await this.findById(dto.clase_id);
+  async reservar(dto: ReservaClaseDto, ahora: Date = new Date(), user?: JwtPayload) {
+    const clase = await this.findById(dto.clase_id, user);
 
     // RN-03: un socio en mora (VENCIDO / SUSPENDIDO) o sin membresía activa no puede reservar clases.
     const estadoMembresia = await this.clasesRepository.findEstadoMembresiaUsuario(dto.usuario_id);

@@ -7,7 +7,7 @@ import { PlanesService } from '../planes/planes.service.js';
 import { RolesGuard } from './guards/roles.guard.js';
 
 describe('SedesService, PlanesService y RolesGuard', () => {
-  const mockSedesRepo = { findAll: vi.fn(), findById: vi.fn(), create: vi.fn() };
+  const mockSedesRepo = { findAll: vi.fn(), findById: vi.fn(), findByIds: vi.fn(), findSedeBaseId: vi.fn(), create: vi.fn() };
   const mockPlanesRepo = { findAll: vi.fn(), findById: vi.fn(), create: vi.fn() };
   let sedesService: SedesService;
   let planesService: PlanesService;
@@ -20,7 +20,7 @@ describe('SedesService, PlanesService y RolesGuard', () => {
 
   it('SedesService: lista, busca, crea y traduce P2002 a 409', async () => {
     mockSedesRepo.findAll.mockResolvedValue([{ id: 1, nombre: 'Centro' }]);
-    expect(await sedesService.findAll()).toHaveLength(1);
+    expect(await sedesService.findAll({ sub: 1, id_rol: 4 })).toHaveLength(1);
 
     mockSedesRepo.findById.mockResolvedValueOnce({ id: 1 }).mockResolvedValueOnce(null);
     expect(await sedesService.findById(1)).toEqual({ id: 1 });

@@ -1,15 +1,22 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import type { sede } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 import { SedesRepository } from './sedes.repository.js';
 import type { CreateSedeDto } from './dto/create-sede.dto.js';
+import type { JwtPayload } from '../common/decorators/current-user.decorator.js';
 
 @Injectable()
 export class SedesService {
   constructor(private readonly sedesRepository: SedesRepository) {}
 
-  findAll(): Promise<sede[]> {
-    return this.sedesRepository.findAll();
+  async findAll(user: JwtPayload): Promise<sede[]> {
+    if (user.id_rol === 4) return this.sedesRepository.findAll();
+    const sedeId = await this.sedesRepository.findSedeBaseId(user.sub);
+    return sedeId ? this.sedesRepository.findByIds([sedeId]) : [];
+  }
+
+  sedeBaseId(usuarioId: number): Promise<number | null> {
+    return this.sedesRepository.findSedeBaseId(usuarioId);
   }
 
   async findById(id: number): Promise<sede> {
@@ -29,5 +36,13 @@ export class SedesService {
       }
       throw error;
     }
+  }
+
+  async update(id: number, dto: Partial<CreateSedeDto>, user: JwtPayload): Promise<sede> {
+    const sede = await this.findById(id);
+    if (user.id_rol === 3 && sede.id !== await this.sedesRepository.findSedeBaseId(user.sub)) {
+      throw new ForbiddenException('Solo podés modificar la información de tu sede.');
+    }
+    return this.sedesRepository.update(id, dto);
   }
 }

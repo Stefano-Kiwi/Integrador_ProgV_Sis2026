@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Put } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -11,23 +11,23 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { CreateClaseDto } from './dto/create-clase.dto.js';
+import { UpdateClaseDto } from './dto/update-clase.dto.js';
 import { ReservaClaseDto } from './dto/reserva-clase.dto.js';
 import { ClasesService } from './clases.service.js';
 import { APP_ROUTES } from '../routes/index.js';
-import { Public } from '../common/decorators/public.decorator.js';
 import { CurrentUser, type JwtPayload } from '../common/decorators/current-user.decorator.js';
+import { Roles } from '../common/decorators/roles.decorator.js';
 
 @ApiTags('clases')
 @Controller(APP_ROUTES.CLASES.ROOT)
 export class ClasesController {
   constructor(private readonly clasesService: ClasesService) {}
 
-  @Public()
   @Get()
   @ApiOperation({ summary: 'Listar clases programadas' })
   @ApiOkResponse({ description: 'Listado de clases' })
-  findAll() {
-    return this.clasesService.findAll();
+  findAll(@CurrentUser() user: JwtPayload) {
+    return this.clasesService.findAll(user);
   }
 
   @Get(APP_ROUTES.CLASES.MI_LISTA_ESPERA)
@@ -50,21 +50,31 @@ export class ClasesController {
     return this.clasesService.findReservasByUsuario(usuarioId);
   }
 
-  @Public()
   @Get(APP_ROUTES.CLASES.BY_ID)
   @ApiOperation({ summary: 'Obtener detalle de una clase' })
   @ApiOkResponse({ description: 'Detalle de la clase' })
   @ApiNotFoundResponse({ description: 'Clase no encontrada' })
-  findById(@Param('id', ParseIntPipe) id: number) {
-    return this.clasesService.findById(id);
+  findById(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: JwtPayload) {
+    return this.clasesService.findById(id, user);
   }
 
   @Post()
+  @Roles('Gerente', 'Administrador')
   @ApiOperation({ summary: 'Crear una nueva clase (RF-06)' })
   @ApiCreatedResponse({ description: 'Clase programada exitosamente' })
-  create(@Body() dto: CreateClaseDto) {
-    return this.clasesService.create(dto);
+  create(@Body() dto: CreateClaseDto, @CurrentUser() user: JwtPayload) {
+    return this.clasesService.create(dto, user);
   }
+
+  @Put(APP_ROUTES.CLASES.BY_ID)
+  @Roles('Gerente', 'Administrador')
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateClaseDto, @CurrentUser() user: JwtPayload) {
+    return this.clasesService.update(id, dto, user);
+  }
+
+  @Delete(APP_ROUTES.CLASES.BY_ID)
+  @Roles('Administrador')
+  delete(@Param('id', ParseIntPipe) id: number) { return this.clasesService.delete(id); }
 
   @Post(APP_ROUTES.CLASES.RESERVA)
   @ApiBearerAuth('access-token')
@@ -78,8 +88,8 @@ export class ClasesController {
   @ApiBadRequestResponse({ description: 'Fuera de la ventana de 48 h o clase ya comenzada' })
   @ApiForbiddenResponse({ description: 'Socio en mora (membresía VENCIDO/SUSPENDIDO) o sin membresía activa (RN-03)' })
   @ApiConflictResponse({ description: 'Ya posee reserva confirmada o lugar en lista de espera' })
-  reservar(@Body() dto: ReservaClaseDto) {
-    return this.clasesService.reservar(dto);
+  reservar(@Body() dto: ReservaClaseDto, @CurrentUser() user: JwtPayload) {
+    return this.clasesService.reservar(dto, undefined, user);
   }
 
   @Patch(APP_ROUTES.CLASES.CANCELAR_RESERVA)
